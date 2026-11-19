@@ -1,6 +1,6 @@
 // The REST API (backend/rest.ts) through the kit's restRoute, as /api/v1 serves it: the site export and the photos for the build's read
 // token, the operations mirroring the MCP tools, the print bodies built from the field table, and openapi.json as committed.
-import { readFileSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { checkOpsMirrorTools, openApiDocument, restRoute } from "next-app-kit/rest";
 import { signedInCookie } from "next-app-kit/testing";
@@ -120,6 +120,9 @@ describe("GET /api/v1/photos/{id}", () => {
     expect(same.headers.get("cache-control")).toBe("private, no-cache");
     expect((await same.arrayBuffer()).byteLength).toBe(0);
     expect((await get('"an-older-cutout"')).status).toBe(200);
+    // The ETag is checked before the file is read: a caller holding the current cutout costs no disk read (here, the file is gone).
+    rmSync(photoPath(rt, photo));
+    expect((await get(`"${photo.sha256}"`)).status).toBe(304);
   });
 
   it("a read token may not change anything", async () => {

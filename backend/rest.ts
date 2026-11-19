@@ -4,7 +4,7 @@
 // (printfields.ts), so no field is written out here again. A domain refusal answers by its reason: not found 404, invalid 400,
 // conflict 409. A read token may only GET (the kit refuses the rest with 403); the site build's token is one.
 import { readFile } from "node:fs/promises";
-import { fail, openApiDocument, type OpenApiInfo, type Op, type Reply } from "next-app-kit/rest";
+import { etagMatches, fail, openApiDocument, type OpenApiInfo, type Op, type Reply } from "next-app-kit/rest";
 import { createApiToken, listApiTokens, revokeApiToken, type RestCaller } from "next-app-kit/tokens";
 import * as z from "zod";
 import { API_TOKEN_PREFIX } from "./accounts";
@@ -279,9 +279,12 @@ export const REST_OPS: Op<Runtime>[] = [
     params: PHOTO_ID,
     ok: { status: 200, description: "The JPEG", binary: true, etag: true },
     errors: [401, 404],
-    handle: async ({ ctx, params }) => {
+    handle: async ({ ctx, params, headers }) => {
       const photo = getPhoto(ctx, params.id!);
       if (!photo.ok) return answer(photo, 200);
+      const etag = `"${photo.value.sha256}"`;
+      // A caller that holds this cutout already gets its 304 (from the kit, for a 200 whose ETag it names) without the file being read.
+      if (etagMatches(headers.get("if-none-match"), etag)) return { status: 200, etag };
       let bytes: Buffer;
       try {
         bytes = await readFile(photoPath(ctx, photo.value));
@@ -291,8 +294,13 @@ export const REST_OPS: Op<Runtime>[] = [
       }
       // The cutouts are served `private, no-cache` (a new crop changes one under the same id), so the site build asks again each time; the
       // kit answers 304 when its If-None-Match names this ETag, and the bytes don't move.
-      const headers = { "content-type": "image/jpeg", "content-length": String(bytes.length), "cache-control": "private, no-cache" };
-      return { status: 200, etag: `"${photo.value.sha256}"`, raw: new Response(new Uint8Array(bytes), { headers }) };
+      return {
+        status: 200,
+        etag,
+        raw: new Response(new Uint8Array(bytes), {
+          headers: { "content-type": "image/jpeg", "content-length": String(bytes.length), "cache-control": "private, no-cache" },
+        }),
+      };
     },
   },
   // Categories
