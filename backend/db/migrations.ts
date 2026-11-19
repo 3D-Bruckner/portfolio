@@ -69,4 +69,20 @@ export const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    // Each photo keeps its original (DATA_DIR/photos/<printId>/<photoId>.orig.<jpg|png|webp>, without metadata) and a cutout chosen
+    // from it, which is what <photoId>.jpg and width, height, bytes and sha256 are. original_*: the original's stored pixel size (before
+    // its orientation is applied) and file size; null for a photo stored before originals were kept. crop_*: the cutout's rectangle in
+    // the original as shown (orientation applied); all null = the whole photo.
+    name: "cutouts",
+    sql: `
+      alter table photos add column original_width integer;
+      alter table photos add column original_height integer;
+      alter table photos add column original_bytes integer;
+      alter table photos add column crop_left integer;
+      alter table photos add column crop_top integer;
+      alter table photos add column crop_width integer;
+      alter table photos add column crop_height integer;
+    `,
+  },
 ];

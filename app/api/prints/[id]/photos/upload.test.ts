@@ -46,7 +46,7 @@ describe("POST /api/prints/[id]/photos", () => {
     expect(body).toMatchObject({ printId: print.id, width: 1800, height: 2400 });
     const got = getPrint(rt, print.id);
     expect(got.ok && got.value.coverPhotoId).toBe(body.id);
-    expect(storedFiles()).toEqual([`${body.id}.jpg`]);
+    expect(storedFiles().sort()).toEqual([`${body.id}.jpg`, `${body.id}.orig.jpg`]);
   });
 
   it("refusesHeic: answers 400 with „Bitte als JPEG hochladen“, in English for an English page", async () => {

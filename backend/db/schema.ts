@@ -51,6 +51,15 @@ export interface PhotosTable {
   bytes: number;
   sha256: string;
   created_at: string;
+  /** The original's stored pixel size and file size; null for a photo stored before originals were kept. */
+  original_width: number | null;
+  original_height: number | null;
+  original_bytes: number | null;
+  /** The cutout's rectangle in the original as shown (orientation applied); all null = the whole photo. */
+  crop_left: number | null;
+  crop_top: number | null;
+  crop_width: number | null;
+  crop_height: number | null;
 }
 
 export interface ReservedSlugsTable {
@@ -81,4 +90,5 @@ export type PrintRowPatch = Updateable<PrintsTable>;
 export type PrintSourceRow = Selectable<PrintSourcesTable>;
 export type PhotoRow = Selectable<PhotosTable>;
 export type NewPhotoRow = Insertable<PhotosTable>;
+export type PhotoRowPatch = Updateable<PhotosTable>;
 export type ReservedSlugRow = Selectable<ReservedSlugsTable>;

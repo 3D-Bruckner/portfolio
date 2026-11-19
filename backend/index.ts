@@ -11,7 +11,7 @@ export { healthResponse } from "./health";
 export { log } from "./log";
 export { movePrint, moveShowcase, setShowcase } from "./order";
 export type { Outcome, Reason } from "./outcome";
-export { addPhoto, deletePhoto, getPhoto, PHOTO_TYPES, photoPath, reorderPhotos, setCover, type Photo } from "./photos";
+export { addPhoto, deletePhoto, getPhoto, originalFile, PHOTO_TYPES, photoPath, reorderPhotos, setCover, setCrop, type Crop, type Photo } from "./photos";
 export { PRINT_FIELDS, parsePrintInput, parsePrintPatch, printInputSchema, printPatchSchema } from "./printfields";
 export {
   createPrint,

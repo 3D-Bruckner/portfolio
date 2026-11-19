@@ -242,13 +242,16 @@ export function publishPrint(rt: Runtime, id: string): Outcome<Print> {
   });
 }
 
+/** What taking a print off the site writes: back to a draft, out of the portfolio order and the showcases. */
+export const OFF_THE_SITE = { status: "draft", position: null, showcase_position: null } as const satisfies PrintRowPatch;
+
 /** Takes a print off the site, back to a draft; it leaves the portfolio order and the showcases. */
 export function unpublishPrint(rt: Runtime, id: string): Outcome<Print> {
   return mutation(rt, (siteChange) => {
     const row = rt.store.print(id);
     if (!row) return notFound(`No print ${id}.`);
     if (row.status === "draft") return ok(load(rt, id));
-    rt.store.updatePrint(id, { status: "draft", position: null, showcase_position: null, updated_at: rt.clock().toISOString() });
+    rt.store.updatePrint(id, { ...OFF_THE_SITE, updated_at: rt.clock().toISOString() });
     siteChange();
     return ok(load(rt, id));
   });

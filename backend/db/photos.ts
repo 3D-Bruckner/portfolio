@@ -1,6 +1,6 @@
 // The queries on photos' rows (the files are the domain's, under DATA_DIR/photos/<printId>/).
 import type { Exec } from "./connection";
-import type { NewPhotoRow, PhotoRow } from "./schema";
+import type { NewPhotoRow, PhotoRow, PhotoRowPatch } from "./schema";
 
 export function photoQueries({ q, all, first, run }: Exec) {
   return {
@@ -17,6 +17,7 @@ export function photoQueries({ q, all, first, run }: Exec) {
           .select((eb) => eb.fn.max<number | null>("position").as("max"))
           .where("print_id", "=", printId),
       )?.max ?? null,
+    updatePhoto: (id: string, patch: PhotoRowPatch): boolean => run(q.updateTable("photos").set(patch).where("id", "=", id)) > 0,
     setPhotoPosition: (id: string, position: number) => void run(q.updateTable("photos").set({ position }).where("id", "=", id)),
     deletePhoto: (id: string): boolean => run(q.deleteFrom("photos").where("id", "=", id)) > 0,
   };
