@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requirePerson } from "@/app/_lib/signin";
 import { runtime } from "@/app/_lib/runtime";
-import { listPrints, type Print } from "@/backend";
+import { listPrints, readiness, type Print } from "@/backend";
 import { copyFor, type Copy } from "@/components/copy";
 import { AddIcon, ChevronIcon, PhotoIcon, ShowcaseIcon } from "@/components/icons";
 import { Tabs } from "@/components/Tabs";
@@ -46,6 +46,9 @@ export default async function Home({ params, searchParams }: PageProps<"/[lang]"
   );
 }
 
+/** How many tips "For the website" the print's page shows. */
+const tipsOf = (p: Print) => readiness(p).filter((h) => h.level === "tip").length;
+
 function PrintList({ prints, empty, t }: { prints: Print[]; empty: string; t: Copy }) {
   if (prints.length === 0) return <p className="text-muted">{empty}</p>;
   return (
@@ -78,6 +81,7 @@ function PrintList({ prints, empty, t }: { prints: Print[]; empty: string; t: Co
                     {p.photos.length === 0 ? t.list.noPhoto : t.list.photos(p.photos.length)}
                     {p.price !== null && ` · ${t.list.price(p.price)}`}
                   </span>
+                  {tipsOf(p) > 0 && <span>{t.print.readiness.tips(tipsOf(p))}</span>}
                   {p.showcase && (
                     <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-px text-xs font-semibold text-ink">
                       <ShowcaseIcon aria-hidden="true" className="size-3.5" />

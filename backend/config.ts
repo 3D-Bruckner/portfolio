@@ -21,6 +21,8 @@ export type Config = {
   siteRepo: string;
   /** UPLOAD_SITE_WORKFLOW: the workflow file that builds the site. */
   siteWorkflow: string;
+  /** UPLOAD_SITE_URL: the site itself; a published print's page there is <siteUrl>/portfolio/<slug>/. */
+  siteUrl: string;
   /** UPLOAD_MAX_PHOTO_MB: the largest photo an upload may send, in megabytes (default 40); what is stored is far smaller. */
   maxPhotoMb: number;
   /** UPLOAD_DEV_USER: development only, everyone reaching the app is this person. */
@@ -43,6 +45,7 @@ const schema = z.object({
   UPLOAD_GITHUB_TOKEN: optional,
   UPLOAD_SITE_REPO: optional,
   UPLOAD_SITE_WORKFLOW: optional,
+  UPLOAD_SITE_URL: z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.url({ protocol: /^https?$/ }).optional()),
   UPLOAD_MAX_PHOTO_MB: z.preprocess(
     (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
     z.coerce.number({ error: MAX_PHOTO }).int(MAX_PHOTO).min(1, MAX_PHOTO).optional(),
@@ -92,6 +95,7 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
       .filter(Boolean),
     siteRepo: e.UPLOAD_SITE_REPO ?? "3D-Bruckner/3dbruckner",
     siteWorkflow: e.UPLOAD_SITE_WORKFLOW ?? "pages.yml",
+    siteUrl: (e.UPLOAD_SITE_URL ?? "https://3dbruckner.de").replace(/\/$/, ""),
     maxPhotoMb: e.UPLOAD_MAX_PHOTO_MB ?? 40,
   };
   if (e.UPLOAD_SMTP_URL) config.smtpUrl = e.UPLOAD_SMTP_URL;

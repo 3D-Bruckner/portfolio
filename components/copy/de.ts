@@ -149,6 +149,7 @@ export const de: Copy = {
         sources: "MakerWorld-Link",
       },
     },
+    onSite: "Auf der Website ansehen",
     suggestedPrice: (euros: number) => `Nach Preisformel (PLA): ${euros} €`,
     takeSuggestion: "Übernehmen",
     readiness: {

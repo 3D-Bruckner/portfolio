@@ -131,6 +131,7 @@ export const en = {
       sources: { label: "Sources", hint: "Where the model comes from." },
       slug: { label: "Address on the site", hint: "Follows the title until you change it yourself; fixed once the print is published." },
     },
+    onSite: "See it on the website",
     suggestedPrice: (euros: number) => `Price formula (PLA): ${euros} €`,
     takeSuggestion: "Use it",
     readiness: {
