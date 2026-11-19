@@ -3,14 +3,14 @@
 // posts to savePrint, whose parse is the table's (printform.ts). Submitted by hand (startTransition), not as <form action>, so a refused
 // save keeps what was typed.
 import Link from "next/link";
-import { startTransition, useActionState, useRef, useState, type FormEvent } from "react";
+import { startTransition, useActionState, useEffect, useRef, useState, type FormEvent } from "react";
 import { suggestedPrice, type ThreeMfReading } from "@/backend/client";
 import { useCopy } from "@/components/CopyProvider";
 import { AddIcon, CloseIcon } from "@/components/icons";
 import { Notice } from "@/components/Notice";
 import { ui } from "@/components/ui";
 import { savePrint } from "../actions";
-import { FORM_GROUPS, type FieldSpec, type PrintFieldName } from "./fieldorder";
+import { FORM_GROUPS, FORM_ORDER, type FieldSpec, type PrintFieldName } from "./fieldorder";
 import { ThreeMfFill, type FillPart } from "./ThreeMfFill";
 
 export type FormValues = {
@@ -34,6 +34,12 @@ type Props = {
   values: FormValues | null;
   slugFixed: boolean;
 };
+
+/** Each field's posted entries (a source's label and url go under "sources"), as one string to compare. */
+function snapshot(form: HTMLFormElement): Record<string, string> {
+  const entries = [...new FormData(form).entries()].map(([k, v]) => [k, String(v)] as const);
+  return Object.fromEntries(FORM_ORDER.map((n) => [n, JSON.stringify(entries.filter(([k]) => k === n || k.startsWith(`${n}.`)))]));
+}
 
 /** 135 → "2 h 15 min". */
 const formatMinutes = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}` : `${m} min`);
@@ -70,7 +76,9 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
     put("price", r.price);
     put("title", r.title, true);
     put("description", r.description, true);
-    if (r.source && !sources.some((s) => s.url.trim())) {
+    // A source counts as there when its address field holds something now (typed, not only the one the page came with).
+    const typed = [...(form.current?.querySelectorAll<HTMLInputElement>('input[name="sources.url"]') ?? [])].some((i) => i.value.trim());
+    if (r.source && !typed) {
       setSources([{ ...r.source, key: nextKey }]);
       setNextKey(nextKey + 1);
       filled.push("sources");
@@ -78,9 +86,23 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
     return filled;
   }
 
+  // The form's values as they were shown (and as last saved), per field: a save sends only the fields that differ, so what Claude or
+  // another tab changed since stays (printform.ts, _fields).
+  const shown = useRef<Record<string, string> | null>(null);
+  useEffect(() => {
+    if (form.current) shown.current = snapshot(form.current);
+  }, []);
+  useEffect(() => {
+    if (result?.ok && form.current) shown.current = snapshot(form.current);
+  }, [result]);
+
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    if (printId !== null && shown.current) {
+      const now = snapshot(e.currentTarget);
+      fd.set("_fields", FORM_ORDER.filter((n) => now[n] !== shown.current![n]).join(","));
+    }
     startTransition(() => dispatch(fd));
   }
 

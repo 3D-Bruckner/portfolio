@@ -37,8 +37,9 @@ function BuildLine({ lang, status: pending }: { lang: string; status: Promise<Bu
   const status = use(pending);
   let text: string;
   if (!status) text = t.unknown;
-  else if (status.pending) text = t.pending;
+  // A failed start leaves the build pending (it is tried again): the failure is what to say.
   else if (status.lastError) text = t.failed;
+  else if (status.pending) text = t.pending;
   else if (status.run) {
     const { run } = status;
     const state = run.status !== "completed" ? run.status : run.conclusion === "success" || run.conclusion === "failure" ? run.conclusion : "other";

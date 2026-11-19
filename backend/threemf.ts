@@ -197,9 +197,21 @@ export async function readThreeMf(src: ByteSource): Promise<ThreeMfResult> {
     return { ok: false, reason: "not_3mf" };
   }
   if (!entries || !entries.some((e) => e.name === "[Content_Types].xml" || e.name.startsWith("3D/"))) return { ok: false, reason: "not_3mf" };
+  // Each part on its own: a model file too large to read (a mesh inline) still leaves the slicer's numbers, and the other way round.
+  const part = async (name: string): Promise<string | null | Error> => {
+    try {
+      return await text(src, entries!, name);
+    } catch (e) {
+      return e instanceof Error ? e : new Error(String(e));
+    }
+  };
+  const sliceRead = await part("Metadata/slice_info.config");
+  const modelRead = await part("3D/3dmodel.model");
+  const there = [sliceRead, modelRead].filter((r) => r !== null);
+  if (there.length > 0 && there.every((r) => r instanceof Error)) return { ok: false, reason: "unreadable" };
   try {
-    const slice = await text(src, entries, "Metadata/slice_info.config");
-    const modelXml = await text(src, entries, "3D/3dmodel.model");
+    const slice = sliceRead instanceof Error ? null : sliceRead;
+    const modelXml = modelRead instanceof Error ? null : modelRead;
     const totals = slice ? sliceInfo(slice) : { plates: 0, filaments: [] as Filament[] };
     const sliced = totals.printTimeMinutes !== undefined || totals.weightGrams !== undefined;
     const colors = totals.filaments.length;

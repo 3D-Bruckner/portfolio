@@ -119,7 +119,8 @@ function checkWrite(rt: Runtime, id: string | null, v: PrintValues & { slug: str
   if (unknown.length > 0) return invalid(`categoryIds: no category ${unknown.join(", ")}; create a category before using it`);
   if (v.slug === "") return invalid("title: needs a letter or digit, since the print's address (slug) is made from it");
   const other = rt.store.printBySlug(v.slug);
-  if (other && other.id !== id) return conflict(`The slug "${v.slug}" is taken by the print "${other.title}"; choose another title or slug.`);
+  if (other && other.id !== id)
+    return conflict(`The slug "${v.slug}" is taken by the print "${other.title}"; choose another title${id === null ? "" : " or slug"}.`);
   if (o.slugChosen) {
     const reserved = rt.store.reservedSlug(v.slug);
     if (reserved) return conflict(`The slug "${v.slug}" is reserved: ${reserved.reason}, and a published print's address is never reused.`);

@@ -97,6 +97,13 @@ describe("readThreeMf", () => {
     const big = threeMf({ "Metadata/slice_info.config": `<config>${"<!-- x -->".repeat(1_000_000)}</config>` });
     expect(await readThreeMf(bytesSource(big))).toEqual({ ok: false, reason: "unreadable" });
   });
+
+  it("onePartTooLarge: a model too large to read still leaves the slicer's numbers", async () => {
+    const file = threeMf({ "Metadata/slice_info.config": SLICE, "3D/3dmodel.model": `<model>${"<vertex/>".repeat(1_000_000)}</model>` });
+    const got = await readThreeMf(bytesSource(file));
+    expect(got.ok && got.value).toMatchObject({ sliced: true, printTimeMinutes: 110, weightGrams: 39 });
+    expect(got.ok && "title" in got.value).toBe(false);
+  });
 });
 
 describe("plainText", () => {

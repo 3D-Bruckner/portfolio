@@ -37,7 +37,7 @@ export const CROP = cropSchema.nullable();
 
 /** A new API token's settings. */
 export const tokenInputSchema = z.object({
-  name: z.string().trim().min(1).max(100).describe("What it is for, e.g. 'site build'."),
+  name: z.string().trim().min(1).max(60).describe("What it is for, e.g. 'site build'."),
   scope: z.enum(["read", "read+write"]).describe("`read` may only GET (the site build's); `read+write` may change things."),
   expiresInDays: z.number().int().min(1).max(365).nullable().describe("Its lifetime in days; null: it never expires (chosen on purpose)."),
 });

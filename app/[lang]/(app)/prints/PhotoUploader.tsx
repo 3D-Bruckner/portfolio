@@ -43,8 +43,10 @@ function send(printId: string, file: File, onProgress: (percent: number) => void
       moved();
       if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
     };
+    // Sent whole: the server is working on it now, which can take long for a big photo. Stopping it then would leave the photo stored
+    // and offer to send it again (a second copy), so only the request's overall timeout is left.
     xhr.upload.onload = () => {
-      moved();
+      clearTimeout(watchdog);
       onSent();
     };
     xhr.onload = () => {

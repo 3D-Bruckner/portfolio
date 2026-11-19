@@ -33,6 +33,11 @@ describe("the build line", () => {
     expect(rest).toContain("Website wird in Kürze aktualisiert");
   });
 
+  it("failedStartSaysSo: a dispatch that failed (and is pending a retry) says it couldn't be started", async () => {
+    const stream = await renderToReadableStream(<BuildLineSlot lang="de" status={Promise.resolve({ pending: true, lastError: "401" } as BuildStatus)} />);
+    expect(await restOf(stream.getReader())).toContain("ließ sich nicht starten");
+  });
+
   it("a status that fails to load can't reject: the line says it couldn't be read", async () => {
     const status = lineStatus(Promise.reject(new Error("database is locked")));
     await expect(status).resolves.toBeUndefined();

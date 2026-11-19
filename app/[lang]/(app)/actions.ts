@@ -54,10 +54,16 @@ async function act<T>(
 const generic = (_o: unknown, t: Copy) => t.common.failed;
 
 /** A refused print write in words: the field the table's check named, a slug clash, or a missing print. */
-function printProblem(o: { reason: string; message: string }, t: Copy): string {
+function printProblem(o: { reason: string; message: string }, t: Copy, creating = false): string {
   if (o.reason === "not_found") return t.print.errors.notFound;
+  // A publish refused for what is missing (changed elsewhere since the page was opened): say what.
+  if (o.message.startsWith("Publishing needs")) {
+    const parts = t.print.missingParts;
+    const missing = [/a title/.test(o.message) && parts.title, /a description/.test(o.message) && parts.description, /photo/.test(o.message) && parts.photo];
+    return t.print.missing(missing.filter((m): m is string => typeof m === "string"));
+  }
   const slug = /slug "([^"]+)"/.exec(o.message)?.[1];
-  if (slug) return t.print.errors.slug(slug);
+  if (slug) return creating ? t.print.errors.slugNew(slug) : t.print.errors.slug(slug);
   const field = /^([A-Za-z]+)[.:]/.exec(o.message)?.[1];
   if (field && field in t.print.fields) return t.print.errors.field(t.print.fields[field as PrintFieldName].label);
   return t.common.failed;
@@ -72,7 +78,7 @@ export async function savePrint(id: string | null, _prev: Result | null, fd: For
   const rt = runtime();
   if (id === null) {
     const made = createPrint(rt, formValues(fd, "create") as Parameters<typeof createPrint>[1]);
-    if (!made.ok) return { ok: false, error: printProblem(made, t) };
+    if (!made.ok) return { ok: false, error: printProblem(made, t, true) };
     redirect(`/prints/${made.value.id}`);
   }
   const saved = updatePrint(rt, id, formValues(fd, "edit"));
@@ -161,7 +167,8 @@ export async function pin(id: string, on: boolean): Promise<Result> {
 
 // ---- categories
 
-const categoryProblem = (o: { reason: string }, t: Copy) => (o.reason === "conflict" ? t.categories.exists : t.common.failed);
+const categoryProblem = (o: { reason: string }, t: Copy) =>
+  o.reason === "conflict" ? t.categories.exists : o.reason === "invalid" ? t.categories.needsLetter : t.common.failed;
 
 export async function addCategory(_prev: Result | null, fd: FormData): Promise<Result> {
   return act(

@@ -193,6 +193,7 @@ export const en = {
     errors: {
       field: (label: string) => `Please check “${label}”.`,
       slug: (slug: string) => `The address “${slug}” is taken or was a deleted print's. Choose another title or address.`,
+      slugNew: (slug: string) => `The address “${slug}” is taken or was a deleted print's. Choose another title.`,
       notFound: "This print doesn't exist (any more).",
     },
   },
@@ -261,6 +262,7 @@ export const en = {
     inUse: "Used by prints: take it off them before deleting it.",
     empty: "No categories yet.",
     exists: "A category with this name (or one that differs only in its spelling) exists already.",
+    needsLetter: "A category's name needs at least one letter or digit.",
     created: "Category created",
     renamed: "Category renamed",
     deleted: "Category deleted",

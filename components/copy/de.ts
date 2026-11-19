@@ -16,7 +16,7 @@ export const de: Copy = {
   },
   photos: {
     signedOut: "Bitte zuerst anmelden.",
-    readOnly: "Dieses Token darf nur lesen",
+    readOnly: "Dieser Token darf nur lesen",
     noPrint: "Diesen Druck gibt es nicht (mehr).",
     noFile: "Mit dem Hochladen kam kein Foto an.",
     notAccepted: "Bitte als JPEG hochladen",
@@ -193,6 +193,7 @@ export const de: Copy = {
       field: (label: string) => `Bitte „${label}“ prüfen.`,
       slug: (slug: string) =>
         `Die Adresse „${slug}“ ist vergeben oder gehörte einem gelöschten Druck. Bitte einen anderen Titel oder eine andere Adresse wählen.`,
+      slugNew: (slug: string) => `Die Adresse „${slug}“ ist vergeben oder gehörte einem gelöschten Druck. Bitte einen anderen Titel wählen.`,
       notFound: "Diesen Druck gibt es nicht (mehr).",
     },
   },
@@ -261,6 +262,7 @@ export const de: Copy = {
     inUse: "Drucke nutzen sie: Erst bei ihnen entfernen, dann löschen.",
     empty: "Noch keine Kategorien.",
     exists: "Eine Kategorie mit diesem Namen (oder einem, der sich nur in der Schreibweise unterscheidet) gibt es schon.",
+    needsLetter: "Ein Kategoriename braucht mindestens einen Buchstaben oder eine Ziffer.",
     created: "Kategorie angelegt",
     renamed: "Kategorie umbenannt",
     deleted: "Kategorie gelöscht",
