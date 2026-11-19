@@ -166,7 +166,8 @@ export function createPrint(rt: Runtime, input: PrintInput): Outcome<Print> {
     colors: null,
     categoryIds: [],
     sources: [],
-    ...parsed.value,
+    // zod keeps a key that is present but undefined; it means "left out", so it must not overwrite a default.
+    ...(Object.fromEntries(Object.entries(parsed.value).filter(([, v]) => v !== undefined)) as PrintInput),
   };
   v.categoryIds = [...new Set(v.categoryIds)];
   const slug = toSlug(v.title);

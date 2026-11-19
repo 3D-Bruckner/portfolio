@@ -102,6 +102,11 @@ describe("createPrint", () => {
     });
   });
 
+  it("takes a key that is present but undefined as left out", () => {
+    const p = value(createPrint(rt, { title: "Vase", description: "", sources: undefined, categoryIds: undefined, price: undefined, selfDesigned: undefined }));
+    expect(p).toMatchObject({ sources: [], categoryIds: [], price: null, selfDesigned: false });
+  });
+
   it("refuses a second print whose title gives a slug another print has, naming it", () => {
     value(createPrint(rt, input("Beyblade – Dragoon")));
     const o = createPrint(rt, input("Beyblade Dragoon"));
