@@ -12,8 +12,10 @@
 // file (the print's folder stays: another upload to the same print may be writing into it). What a photo is goes by what sharp reads in
 // it, not the type its sender declared. A print's first photo becomes its cover; a change to a published print's photos is a site change.
 // A photo stored before originals were kept has only its cutout (original and crop null), and that cutout can't be changed.
+// - <photoId>.thumb.<sha prefix>.jpg, made on first ask: the cutout at 256 px on its long edge, for the lists; named by the cutout's
+//   sha256, so a new cutout gets a new one (the old is removed then), and removed with its photo.
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import sharp, { type OutputInfo } from "sharp";
 import type { PhotoRow } from "./db";
@@ -78,6 +80,35 @@ const photosDir = (rt: Runtime, printId: string): string => join(rt.config.dataD
 
 /** Where a photo's cutout (the JPEG the site gets) is stored. */
 export const photoPath = (rt: Runtime, photo: Pick<Photo, "id" | "printId">): string => join(photosDir(rt, photo.printId), `${photo.id}.jpg`);
+
+/** The long edge of a thumbnail, in pixels: a list's 64 px at three times the pixel density, with room to spare. */
+const THUMB_EDGE = 256;
+
+const thumbPath = (rt: Runtime, photo: Pick<Photo, "id" | "printId" | "sha256">): string =>
+  join(photosDir(rt, photo.printId), `${photo.id}.thumb.${photo.sha256.slice(0, 16)}.jpg`);
+
+/** A photo's thumbnails on disk but `keep` (none kept when null). */
+function removeThumbs(rt: Runtime, photo: Pick<Photo, "id" | "printId">, keep: string | null): void {
+  const dir = photosDir(rt, photo.printId);
+  if (!existsSync(dir)) return;
+  for (const name of readdirSync(dir)) if (name.startsWith(`${photo.id}.thumb.`) && join(dir, name) !== keep) rmSync(join(dir, name), { force: true });
+}
+
+/**
+ * The cutout as a thumbnail (long edge 256 px, never enlarged, no metadata), for the lists. Made on the first ask and kept beside the
+ * cutout under its sha256, so it is made again only for a new cutout; the previous one is removed then.
+ */
+export async function photoThumb(rt: Runtime, photo: Pick<Photo, "id" | "printId" | "sha256">): Promise<Buffer> {
+  const path = thumbPath(rt, photo);
+  if (existsSync(path)) return readFileSync(path);
+  const bytes = await sharp(photoPath(rt, photo)).resize(THUMB_EDGE, THUMB_EDGE, { fit: "inside", withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer();
+  // Written beside its place and renamed into it, so a list asking twice at once never reads half a file.
+  const tmp = `${path}.${randomUUID()}.tmp`;
+  writeFileSync(tmp, bytes);
+  renameSync(tmp, path);
+  removeThumbs(rt, photo, path);
+  return bytes;
+}
 
 const originalPathAs = (rt: Runtime, photo: Pick<Photo, "id" | "printId">, format: OriginalFormat): string =>
   join(photosDir(rt, photo.printId), `${photo.id}.orig.${ORIGINALS[format].ext}`);
@@ -313,6 +344,14 @@ export function deletePhoto(rt: Runtime, photoId: string): Outcome<{ unpublished
           "photo deleted, but its photo file could not be removed",
         );
       }
+    }
+    try {
+      removeThumbs(rt, photo, null);
+    } catch (e) {
+      rt.log.error(
+        { photoId: photo.id, printId: photo.printId, error: e instanceof Error ? e.message : String(e) },
+        "photo deleted, but its thumbnail could not be removed",
+      );
     }
   }
   return out;

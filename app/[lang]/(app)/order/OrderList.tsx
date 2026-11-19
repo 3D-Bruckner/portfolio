@@ -78,7 +78,7 @@ export function OrderList({ kind, prints }: { kind: "showcases" | "portfolio"; p
                 </span>
                 {p.cover ? (
                   // eslint-disable-next-line @next/next/no-img-element -- the app's own photo route, private and per-session
-                  <img src={p.cover} alt="" className="size-12 shrink-0 rounded-md bg-surface object-cover" />
+                  <img src={p.cover} alt="" width={48} height={48} loading="lazy" className="size-12 shrink-0 rounded-md bg-surface object-cover" />
                 ) : (
                   <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-surface text-muted">
                     <PhotoIcon aria-hidden="true" className={ui.iconSize} />

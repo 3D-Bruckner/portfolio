@@ -74,7 +74,12 @@ export function PhotoGrid({ printId, published, coverId, photos }: { printId: st
               >
                 <div className="relative">
                   {/* eslint-disable-next-line @next/next/no-img-element -- the app's own photo route, private and per-session */}
-                  <img src={`/photos/${id}?v=${p.sha256}`} alt={tg.photo(n)} className="aspect-square w-full rounded-lg bg-paper object-contain" />
+                  <img
+                    src={`/photos/${id}?v=${p.sha256}`}
+                    alt={tg.photo(n)}
+                    loading="lazy"
+                    className="aspect-square w-full rounded-lg bg-paper object-contain"
+                  />
                   <span
                     aria-hidden="true"
                     title={tg.drag}

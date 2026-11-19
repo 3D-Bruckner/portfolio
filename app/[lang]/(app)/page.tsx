@@ -54,7 +54,14 @@ function PrintList({ prints, empty, t }: { prints: Print[]; empty: string; t: Co
             <Link href={`/prints/${p.id}`} className="flex items-center gap-3 py-3">
               {cover ? (
                 // eslint-disable-next-line @next/next/no-img-element -- the app's own photo route, private and per-session
-                <img src={`/photos/${cover}?v=${sha}`} alt="" width={64} height={64} className="size-16 shrink-0 rounded-lg bg-surface object-cover" />
+                <img
+                  src={`/photos/${cover}?size=thumb&v=${sha}`}
+                  alt=""
+                  width={64}
+                  height={64}
+                  loading="lazy"
+                  className="size-16 shrink-0 rounded-lg bg-surface object-cover"
+                />
               ) : (
                 <span className="flex size-16 shrink-0 items-center justify-center rounded-lg bg-surface text-muted">
                   <PhotoIcon aria-hidden="true" className="size-6" />

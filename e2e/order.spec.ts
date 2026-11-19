@@ -38,3 +38,19 @@ test("showcasePin: a pinned print is a showcase, above the rest", async ({ page,
   await page.getByRole("button", { name: `${title} lösen` }).click();
   await expect(page.getByRole("region", { name: "Showcases" })).not.toContainText(title);
 });
+
+test("listThumbnails: the lists show each cover as a small thumbnail, loaded as it scrolls into view", async ({ page }) => {
+  const title = unique("Vorschaubild");
+  await publishedPrint(page, title);
+  for (const [path, list] of [
+    ["/", page.getByRole("tabpanel", { name: "Veröffentlicht" })],
+    ["/order", page.getByRole("list", { name: "Portfolio" })],
+  ] as const) {
+    await page.goto(path);
+    if (path === "/") await page.getByRole("tab", { name: "Veröffentlicht" }).click();
+    const img = list.getByRole("listitem").filter({ hasText: title }).locator("img");
+    await expect(img).toHaveAttribute("loading", "lazy");
+    await expect(img).toHaveAttribute("src", /\?size=thumb&v=/);
+    await expect.poll(() => img.evaluate((e: HTMLImageElement) => Math.max(e.naturalWidth, e.naturalHeight)), { message: path }).toBe(256);
+  }
+});

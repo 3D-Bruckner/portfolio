@@ -52,6 +52,7 @@ DATA_DIR/
   auth.sqlite                       next-app-kit's: people, sessions, passkeys, API tokens, MCP clients and grants
   photos/<printId>/<photoId>.jpg              the cutout: the part the site shows, long edge ≤ 2400 px, JPEG quality 85, no metadata
   photos/<printId>/<photoId>.orig.<jpg|png|webp>   the original as taken, without its metadata (orientation and colour profile kept)
+  photos/<printId>/<photoId>.thumb.<sha>.jpg  the cutout's thumbnail for the lists (256 px), made on first ask; can be deleted
 ```
 
 **A backup needs all of it**: both SQLite files (copied with `sqlite3 <file> ".backup <copy>"`, not `cp`, while the app runs) and the whole `photos/` folder, cutouts and originals. Without an original a photo's crop can't be changed any more; without a cutout the site build gets a 404 for it.

@@ -32,6 +32,7 @@ flowchart LR
 
 - The original, `<photoId>.orig.<jpg|png|webp>`, is kept as taken without its metadata: a JPEG's image data byte for byte, its segments filtered by `backend/jpegmeta.ts` (no decode; a whitelist: what a decoder needs, the orientation and the colour profile stay, other APPn and comments go, any other marker refuses the file); a PNG or WebP re-encoded losslessly, upright, with its colour profile only.
 - The cutout, `<photoId>.jpg`, is the crop chosen with `setCrop` (in the original as shown; the whole photo by default), long edge capped at 2400 px, JPEG quality 85, no metadata. A photo's `width`, `height`, `bytes` and `sha256` are the cutout's.
+- The thumbnail, `<photoId>.thumb.<sha256 prefix>.jpg`, is the cutout at 256 px on its long edge, made on the first `/photos/<id>?size=thumb` and kept; the lists show it. A new cutout gets a new one (the old is removed then); it goes with its photo.
 - The upload itself stays in the request's temporary file. Upload `POST /api/prints/[id]/photos` (one file, session cookie, the kit's `readMultipart`); the cutout `GET /photos/[id]` (session or API token, ETag = sha256, `no-cache` since a new crop changes it, 304 when unchanged); the original `GET /photos/[id]/original` (session only, for the crop frame). Who is asking comes from `rt.person(headers)` and `rt.apiCaller(req)`, which sign-in fills in.
 
 ## Surfaces

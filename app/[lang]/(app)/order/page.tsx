@@ -16,7 +16,7 @@ export default async function OrderPage({ params }: PageProps<"/[lang]/order">) 
   const t = copyFor((await params).lang).order;
   const prints = siteOrder(runtime()).map((p) => {
     const cover = p.photos.find((ph) => ph.id === p.coverPhotoId) ?? p.photos[0];
-    return { id: p.id, title: p.title, showcase: p.showcase, cover: cover ? `/photos/${cover.id}?v=${cover.sha256}` : null };
+    return { id: p.id, title: p.title, showcase: p.showcase, cover: cover ? `/photos/${cover.id}?size=thumb&v=${cover.sha256}` : null };
   });
   return (
     <>

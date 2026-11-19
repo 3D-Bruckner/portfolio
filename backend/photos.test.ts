@@ -4,7 +4,7 @@ import { join } from "node:path";
 import sharp, { type Sharp } from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Outcome } from "./outcome";
-import { addPhoto, deletePhoto, getPhoto, originalPath, photoPath, reorderPhotos, setCover, setCrop, type Photo } from "./photos";
+import { addPhoto, deletePhoto, getPhoto, originalPath, photoPath, photoThumb, reorderPhotos, setCover, setCrop, type Photo } from "./photos";
 import { createPrint, deletePrint, getPrint, publishPrint, type Print } from "./prints";
 import { seedPhoto, testRuntime, type TestRuntime } from "./testing/runtime";
 
@@ -334,6 +334,44 @@ describe("deletePhoto", () => {
 
   it("refuses a photo that doesn't exist", () => {
     expect(deletePhoto(rt, "nope")).toMatchObject({ ok: false, reason: "not_found" });
+  });
+});
+
+describe("photoThumb", () => {
+  const thumbs = () => photoFiles().filter((f) => f.includes(".thumb."));
+
+  it("thumbnailOfCutout: a 256 px rendition of the cutout, made once and kept beside it, made anew for a new cutout", async () => {
+    const p = draft();
+    const a = value(await addPhoto(rt, p.id, { path: await image(1200, 900), type: "image/jpeg" }));
+    const first = await photoThumb(rt, a);
+    const meta = await sharp(first).metadata();
+    expect([meta.format, meta.width, meta.height]).toEqual(["jpeg", 256, 192]);
+    expect(meta.exif).toBeUndefined();
+    expect(thumbs()).toHaveLength(1);
+    // Kept: asked again, the file on disk is what comes back (here, changed behind its back to show it is not made again).
+    const kept = join(rt.config.dataDir, "photos", p.id, thumbs()[0]!);
+    writeFileSync(kept, Buffer.from("kept"));
+    expect((await photoThumb(rt, a)).toString()).toBe("kept");
+    // A new cutout has a new sha256: its thumbnail is made from it, and the old one goes.
+    const cropped = value(await setCrop(rt, a.id, { left: 0, top: 0, width: 400, height: 800 }));
+    const second = await sharp(await photoThumb(rt, cropped)).metadata();
+    expect([second.width, second.height]).toEqual([128, 256]);
+    expect(thumbs()).toHaveLength(1);
+    expect(thumbs()[0]).not.toBe(kept.split("/").pop());
+  });
+
+  it("never enlarges a small cutout", async () => {
+    const a = value(await addPhoto(rt, draft().id, { path: await image(200, 100), type: "image/jpeg" }));
+    const meta = await sharp(await photoThumb(rt, a)).metadata();
+    expect([meta.width, meta.height]).toEqual([200, 100]);
+  });
+
+  it("goes with its photo", async () => {
+    const p = draft();
+    const a = await jpeg(p.id);
+    await photoThumb(rt, a);
+    value(deletePhoto(rt, a.id));
+    expect(thumbs()).toEqual([]);
   });
 });
 

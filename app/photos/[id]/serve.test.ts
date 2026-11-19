@@ -47,6 +47,25 @@ describe("GET /photos/[id]", () => {
     expect(changed.headers.get("etag")).toBe(`"${cropped.value.sha256}"`);
   });
 
+  it("serves a 256 px thumbnail with ?size=thumb, for lists, with its own ETag", async () => {
+    rt.person = async () => ({ id: "u1", email: "marcel@example.com" });
+    const thumb = (headers: Record<string, string> = {}, size = "thumb") =>
+      servePhoto(rt, new Request(`http://localhost/photos/${photo.id}?size=${size}&v=${photo.sha256}`, { headers }), photo.id);
+    const r = await thumb();
+    expect(r.status).toBe(200);
+    expect(r.headers.get("content-type")).toBe("image/jpeg");
+    expect(r.headers.get("cache-control")).toBe("private, no-cache");
+    const etag = r.headers.get("etag")!;
+    expect(etag).not.toBe(`"${photo.sha256}"`);
+    const meta = await sharp(Buffer.from(await r.arrayBuffer())).metadata();
+    expect([meta.width, meta.height]).toEqual([256, 171]);
+    expect((await thumb({ "if-none-match": etag })).status).toBe(304);
+    expect((await thumb({}, "huge")).status).toBe(400);
+    // The same gate as the photo.
+    rt.person = async () => null;
+    expect((await thumb()).status).toBe(401);
+  });
+
   it("serves it to an API token (a read one is enough)", async () => {
     rt.apiCaller = async (req) =>
       req.headers.get("authorization") === "Bearer upl_read" ? { person: "u1", actor: "marcel@example.com", scope: "read", kind: "token" } : null;
