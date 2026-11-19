@@ -86,6 +86,7 @@ export const de: Copy = {
   },
   build: {
     pending: "Website wird in Kürze aktualisiert",
+    checking: "Stand der Website wird abgefragt…",
     upToDate: "Website ist aktuell",
     failed: "Der Website-Build ließ sich nicht starten; er wird gleich noch einmal versucht",
     run: (state: string, when: string) => `Letzter Website-Build ${state}, ${when}`,

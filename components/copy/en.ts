@@ -86,6 +86,7 @@ export const en = {
   },
   build: {
     pending: "Website will be updated shortly",
+    checking: "Checking the website…",
     upToDate: "Website is up to date",
     failed: "The website build didn't start; it is tried again soon",
     run: (state: string, when: string) => `Last website build ${state}, ${when}`,

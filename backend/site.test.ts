@@ -228,16 +228,45 @@ describe("the site build's trigger", () => {
   it("asks GitHub for the latest run at most every 20 s (REST and the MCP tool both poll it)", async () => {
     const run = { status: "in_progress", conclusion: null, html_url: "https://github.com/x/y/actions/runs/1", created_at: "2026-11-19T09:59:00Z" };
     const answer = () => Response.json({ total_count: 1, workflow_runs: [run] });
-    const { rt, calls, at } = fake({ UPLOAD_GITHUB_TOKEN: TOKEN }, [answer, () => new Response("", { status: 502 }), answer]);
+    const { rt, calls, at } = fake({ UPLOAD_GITHUB_TOKEN: TOKEN }, [answer, answer]);
     expect((await buildStatus(rt)).run?.status).toBe("in_progress");
     at(19);
     expect((await buildStatus(rt)).run?.status).toBe("in_progress");
     expect(calls).toHaveLength(1);
-    // After 20 s it asks again; a failed answer isn't kept, so the next status asks once more.
     at(20);
-    expect((await buildStatus(rt)).run).toBeUndefined();
     expect((await buildStatus(rt)).run?.status).toBe("in_progress");
-    expect(calls).toHaveLength(3);
+    expect(calls).toHaveLength(2);
+  });
+
+  it("failedLookupKept: a failed ask is kept for 20 s too, so a GitHub outage costs one request per 20 s, not one per page", async () => {
+    const run = { status: "completed", conclusion: "success", html_url: "https://github.com/x/y/actions/runs/1", created_at: "2026-11-19T09:59:00Z" };
+    const { rt, calls, at } = fake({ UPLOAD_GITHUB_TOKEN: TOKEN }, [
+      () => new Response("", { status: 401 }),
+      () => Response.json({ total_count: 1, workflow_runs: [run] }),
+    ]);
+    expect((await buildStatus(rt)).run).toBeUndefined();
+    at(5);
+    expect((await buildStatus(rt)).run).toBeUndefined();
+    at(19.9);
+    expect((await buildStatus(rt)).run).toBeUndefined();
+    expect(calls).toHaveLength(1);
+    at(20);
+    expect((await buildStatus(rt)).run?.conclusion).toBe("success");
+    expect(calls).toHaveLength(2);
+  });
+
+  it("asks that arrive while GitHub is still answering share the one request", async () => {
+    const { rt, calls } = fake({ UPLOAD_GITHUB_TOKEN: TOKEN });
+    let answer!: (r: Response) => void;
+    rt.fetch = ((url: string | URL | Request, init?: RequestInit) => {
+      calls.push({ url: String(url), init: init ?? {} });
+      return new Promise<Response>((resolve) => (answer = resolve));
+    }) as typeof fetch;
+    const asks = [buildStatus(rt), buildStatus(rt), buildStatus(rt)];
+    await vi.waitFor(() => expect(calls).toHaveLength(1));
+    answer(Response.json({ total_count: 0, workflow_runs: [] }));
+    expect(await Promise.all(asks)).toEqual([{ pending: false }, { pending: false }, { pending: false }]);
+    expect(calls).toHaveLength(1);
   });
 
   it("a change that can't be marked pending is logged; the save it came from still succeeds", () => {

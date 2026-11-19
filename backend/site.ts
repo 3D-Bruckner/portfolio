@@ -60,8 +60,9 @@ export function noteSiteChange(rt: Runtime): void {
 const busy = new WeakSet<object>();
 const toldNoToken = new WeakSet<object>();
 const runAsked = new WeakMap<object, { at: number; run: BuildRun | undefined }>();
+const runAsking = new WeakMap<object, Promise<BuildRun | undefined>>();
 
-/** How long GitHub's answer about the latest run is kept: the REST status and the MCP tool may both poll it. */
+/** How long GitHub's answer about the latest run (or its failure to answer) is kept: the pages' build line, REST and MCP all ask. */
 const RUN_KEPT_MS = 20_000;
 
 /** Dispatches the site build when one is pending, the quiet minute has passed and no retry is waiting; otherwise does nothing. */
@@ -192,19 +193,28 @@ const runsSchema = z.object({
   ),
 });
 
-/** latestRun, asked at most every 20 s while GitHub answers; a failed ask isn't kept. */
-async function keptRun(rt: Runtime, token: string): Promise<BuildRun | undefined> {
+/**
+ * latestRun, asked at most every 20 s: an answer is kept that long, and so is a failed ask (no run), so a GitHub that times out or
+ * refuses the token costs one request per 20 s, not one per page. Asks that arrive while one is under way wait for it.
+ */
+function keptRun(rt: Runtime, token: string): Promise<BuildRun | undefined> {
   const now = rt.clock().getTime();
   const kept = runAsked.get(rt.store);
-  if (kept && now - kept.at < RUN_KEPT_MS) return kept.run;
-  const asked = await latestRun(rt, token);
-  if (asked.answered) runAsked.set(rt.store, { at: now, run: asked.run });
-  else runAsked.delete(rt.store);
-  return asked.run;
+  if (kept && now - kept.at < RUN_KEPT_MS) return Promise.resolve(kept.run);
+  const asking = runAsking.get(rt.store);
+  if (asking) return asking;
+  const ask = latestRun(rt, token)
+    .then((run) => {
+      runAsked.set(rt.store, { at: now, run });
+      return run;
+    })
+    .finally(() => runAsking.delete(rt.store));
+  runAsking.set(rt.store, ask);
+  return ask;
 }
 
 /** The latest run of the site's workflow that a dispatch started; no run when there is none or GitHub doesn't answer. */
-async function latestRun(rt: Runtime, token: string): Promise<{ answered: boolean; run?: BuildRun }> {
+async function latestRun(rt: Runtime, token: string): Promise<BuildRun | undefined> {
   try {
     const r = await rt.fetch(workflowUrl(rt, "/runs?event=workflow_dispatch&per_page=1"), {
       headers: githubHeaders(token),
@@ -212,16 +222,13 @@ async function latestRun(rt: Runtime, token: string): Promise<{ answered: boolea
     });
     if (!r.ok) {
       rt.log.warn({ status: r.status }, "site build status: GitHub didn't answer");
-      return { answered: false };
+      return undefined;
     }
     const run = runsSchema.parse(await r.json()).workflow_runs[0];
-    if (!run) return { answered: true };
-    return {
-      answered: true,
-      run: { status: run.status ?? "unknown", conclusion: run.conclusion, url: run.html_url, startedAt: run.run_started_at ?? run.created_at },
-    };
+    if (!run) return undefined;
+    return { status: run.status ?? "unknown", conclusion: run.conclusion, url: run.html_url, startedAt: run.run_started_at ?? run.created_at };
   } catch (e) {
     rt.log.warn({ error: thrown(e) }, "site build status: GitHub didn't answer");
-    return { answered: false };
+    return undefined;
   }
 }
