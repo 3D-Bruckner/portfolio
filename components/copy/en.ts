@@ -15,6 +15,7 @@ export const en = {
   },
   photos: {
     signedOut: "Please sign in first.",
+    readOnly: "This token may only read",
     noPrint: "This print doesn't exist (any more).",
     noFile: "No photo came with the upload.",
     notAccepted: "Please upload it as a JPEG",

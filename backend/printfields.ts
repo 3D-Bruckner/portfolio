@@ -123,7 +123,7 @@ export const PRINT_FIELDS = {
     kind: "ids",
     limit: 20,
     rule: "Ids of existing categories; a new category is created on its own first.",
-    description: "The ids of the print's categories (list them with the categories' list).",
+    description: "The ids of the print's categories, in order: the first is its main one (list them with the categories' list).",
     onCreate: "Left out: none.",
     required: false,
     onEdit: "Left out: unchanged. A list replaces them all; [] removes them.",

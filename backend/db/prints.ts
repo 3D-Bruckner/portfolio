@@ -27,10 +27,11 @@ export function printQueries({ q, all, first, run }: Exec) {
       )?.min ?? null,
 
     printCategoryLinks: (printIds: string[]): { print_id: string; category_id: string }[] =>
-      printIds.length === 0 ? [] : all(q.selectFrom("print_categories").select(["print_id", "category_id"]).where("print_id", "in", printIds)),
+      printIds.length === 0 ? [] : all(q.selectFrom("print_categories").select(["print_id", "category_id"]).where("print_id", "in", printIds).orderBy("idx")),
     setPrintCategories: (printId: string, categoryIds: string[]) => {
       run(q.deleteFrom("print_categories").where("print_id", "=", printId));
-      if (categoryIds.length > 0) run(q.insertInto("print_categories").values(categoryIds.map((category_id) => ({ print_id: printId, category_id }))));
+      if (categoryIds.length > 0)
+        run(q.insertInto("print_categories").values(categoryIds.map((category_id, idx) => ({ print_id: printId, category_id, idx }))));
     },
     printSources: (printIds: string[]): PrintSourceRow[] =>
       printIds.length === 0 ? [] : all(q.selectFrom("print_sources").selectAll().where("print_id", "in", printIds).orderBy("print_id").orderBy("idx")),

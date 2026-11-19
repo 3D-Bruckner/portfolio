@@ -42,6 +42,13 @@ next-app-kit's `signInFromEnv` reads these under the prefix `UPLOAD` (`backend/a
 
 The image itself sets `NODE_ENV=production`, `PORT=3000`, `HOSTNAME=0.0.0.0` and `DATA_DIR=/data`, and runs Node with `--use-system-ca`.
 
+**An API token from the server**, without a browser (the first one, or one for a script such as the site build's): next-app-kit's command, run in the container as its user, for an address in `UPLOAD_ALLOWED_EMAILS` (also one that never signed in). It prints the token once:
+
+```sh
+docker exec -u 1000 upload /nodejs/bin/node node_modules/next-app-kit/dist/cli.js token \
+  --prefix UPLOAD --token-prefix upl_ --email marcel@3dbruckner.de --name "site build" --scope read --days 365
+```
+
 ## The data
 
 Everything upload keeps is in `DATA_DIR`:

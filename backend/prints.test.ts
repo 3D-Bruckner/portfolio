@@ -102,6 +102,16 @@ describe("createPrint", () => {
     });
   });
 
+  it("keepsCategoryOrder: a print's categories stay in the order given, the first its main one; a new order is a change", () => {
+    const gift = value(createCategory(rt, "Geschenkideen"));
+    const home = value(createCategory(rt, "Haushalt & Küche"));
+    const p = value(createPrint(rt, input("Drachenei", { categoryIds: [home.id, gift.id] })));
+    expect(p.categoryIds).toEqual([home.id, gift.id]);
+    expect(p.categories.map((c) => c.name)).toEqual(["Haushalt & Küche", "Geschenkideen"]);
+    const swapped = value(updatePrint(rt, p.id, { categoryIds: [gift.id, home.id] }));
+    expect(swapped.categories.map((c) => c.name)).toEqual(["Geschenkideen", "Haushalt & Küche"]);
+  });
+
   it("takes a key that is present but undefined as left out", () => {
     const p = value(createPrint(rt, { title: "Vase", description: "", sources: undefined, categoryIds: undefined, price: undefined, selfDesigned: undefined }));
     expect(p).toMatchObject({ sources: [], categoryIds: [], price: null, selfDesigned: false });
@@ -267,7 +277,7 @@ describe("siteChangeHook", () => {
     const b = value(createCategory(rt, "Deko"));
     const p = published("Vase", { price: 7, categoryIds: [a.id, b.id], sources: [{ label: "MakerWorld", url: "https://makerworld.com/x" }] });
     const before = rt.siteChanges;
-    // What the web form sends back: every field as shown, an empty short title as "", the categories in another order.
+    // What the web form sends back: every field as shown, an empty short title as "", the categories in their order.
     const same = value(
       updatePrint(rt, p.id, {
         title: p.title,
@@ -278,7 +288,7 @@ describe("siteChangeHook", () => {
         weightGrams: p.weightGrams,
         printTimeMinutes: p.printTimeMinutes,
         colors: p.colors,
-        categoryIds: [b.id, a.id],
+        categoryIds: [a.id, b.id],
         sources: [{ label: "MakerWorld", url: "https://makerworld.com/x" }],
         slug: p.slug,
       }),

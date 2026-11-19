@@ -34,6 +34,8 @@ type Props = {
 };
 
 export function PrintForm({ printId, specs, categories, values, slugFixed }: Props) {
+  const held = values?.categoryIds ?? [];
+  const rank = (id: string) => (held.includes(id) ? held.indexOf(id) : held.length);
   const t = useCopy();
   const [result, dispatch, pending] = useActionState(savePrint.bind(null, printId), null);
   const [sources, setSources] = useState(() => (values?.sources ?? []).map((s, i) => ({ ...s, key: i })));
@@ -124,15 +126,19 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
               </p>
             ) : (
               <div className="mt-2 flex flex-wrap gap-2">
-                {categories.map((c) => (
-                  <label
-                    key={c.id}
-                    className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line px-3 has-checked:border-2 has-checked:border-accent has-checked:font-semibold has-focus-visible:outline-3 has-focus-visible:outline-accent"
-                  >
-                    <input type="checkbox" name={name} value={c.id} defaultChecked={values?.categoryIds.includes(c.id)} className="size-4 accent-accent" />
-                    {c.name}
-                  </label>
-                ))}
+                {/* The print's own categories first, in their order (the first is its main one), then the rest: a save sends the ticked ones
+                    in this order, so it keeps theirs and puts a newly ticked one last. */}
+                {[...categories]
+                  .sort((a, b) => rank(a.id) - rank(b.id))
+                  .map((c) => (
+                    <label
+                      key={c.id}
+                      className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line px-3 has-checked:border-2 has-checked:border-accent has-checked:font-semibold has-focus-visible:outline-3 has-focus-visible:outline-accent"
+                    >
+                      <input type="checkbox" name={name} value={c.id} defaultChecked={values?.categoryIds.includes(c.id)} className="size-4 accent-accent" />
+                      {c.name}
+                    </label>
+                  ))}
               </div>
             )}
           </fieldset>

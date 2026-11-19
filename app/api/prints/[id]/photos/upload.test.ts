@@ -49,6 +49,19 @@ describe("POST /api/prints/[id]/photos", () => {
     expect(storedFiles().sort()).toEqual([`${body.id}.jpg`, `${body.id}.orig.jpg`]);
   });
 
+  it("tokenWithWriteUploads: a script's API token that may write uploads a photo; a read token and a signed-out post may not", async () => {
+    rt.person = async () => null;
+    rt.apiCaller = async () => ({ person: "u1", actor: "import", scope: "read+write", kind: "token" });
+    expect((await uploadPhoto(rt, await post(photoFile()), print.id)).status).toBe(201);
+    rt.apiCaller = async () => ({ person: "u1", actor: "site build", scope: "read", kind: "token" });
+    expect(await answer(await uploadPhoto(rt, await post(photoFile(), "en"), print.id))).toEqual({
+      status: 403,
+      body: { error: "This token may only read" },
+    });
+    rt.apiCaller = async () => null;
+    expect((await uploadPhoto(rt, await post(photoFile()), print.id)).status).toBe(401);
+  });
+
   it("refusesHeic: answers 400 with „Bitte als JPEG hochladen“, in English for an English page", async () => {
     expect(await answer(await uploadPhoto(rt, await post(photoFile("image/heic", "IMG_0001.HEIC")), print.id))).toEqual({
       status: 400,

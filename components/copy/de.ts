@@ -16,6 +16,7 @@ export const de: Copy = {
   },
   photos: {
     signedOut: "Bitte zuerst anmelden.",
+    readOnly: "Dieses Token darf nur lesen",
     noPrint: "Diesen Druck gibt es nicht (mehr).",
     noFile: "Mit dem Hochladen kam kein Foto an.",
     notAccepted: "Bitte als JPEG hochladen",

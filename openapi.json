@@ -84,7 +84,7 @@
                             "maxItems": 20,
                             "type": "array",
                             "items": { "type": "string", "minLength": 1, "maxLength": 100 },
-                            "description": "The ids of the print's categories (list them with the categories' list)."
+                            "description": "The ids of the print's categories, in order: the first is its main one (list them with the categories' list)."
                           },
                           "sources": {
                             "maxItems": 10,
@@ -276,7 +276,7 @@
                     "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }]
                   },
                   "categoryIds": {
-                    "description": "The ids of the print's categories (list them with the categories' list).",
+                    "description": "The ids of the print's categories, in order: the first is its main one (list them with the categories' list).",
                     "maxItems": 20,
                     "type": "array",
                     "items": { "type": "string", "minLength": 1, "maxLength": 100 }
@@ -347,7 +347,7 @@
                       "maxItems": 20,
                       "type": "array",
                       "items": { "type": "string", "minLength": 1, "maxLength": 100 },
-                      "description": "The ids of the print's categories (list them with the categories' list)."
+                      "description": "The ids of the print's categories, in order: the first is its main one (list them with the categories' list)."
                     },
                     "sources": {
                       "maxItems": 10,
@@ -553,7 +553,7 @@
                       "maxItems": 20,
                       "type": "array",
                       "items": { "type": "string", "minLength": 1, "maxLength": 100 },
-                      "description": "The ids of the print's categories (list them with the categories' list)."
+                      "description": "The ids of the print's categories, in order: the first is its main one (list them with the categories' list)."
                     },
                     "sources": {
                       "maxItems": 10,
@@ -733,7 +733,7 @@
                     "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }]
                   },
                   "categoryIds": {
-                    "description": "The ids of the print's categories (list them with the categories' list).",
+                    "description": "The ids of the print's categories, in order: the first is its main one (list them with the categories' list).",
                     "maxItems": 20,
                     "type": "array",
                     "items": { "type": "string", "minLength": 1, "maxLength": 100 }
@@ -809,7 +809,7 @@
                       "maxItems": 20,
                       "type": "array",
                       "items": { "type": "string", "minLength": 1, "maxLength": 100 },
-                      "description": "The ids of the print's categories (list them with the categories' list)."
+                      "description": "The ids of the print's categories, in order: the first is its main one (list them with the categories' list)."
                     },
                     "sources": {
                       "maxItems": 10,
@@ -1036,7 +1036,7 @@
                       "maxItems": 20,
                       "type": "array",
                       "items": { "type": "string", "minLength": 1, "maxLength": 100 },
-                      "description": "The ids of the print's categories (list them with the categories' list)."
+                      "description": "The ids of the print's categories, in order: the first is its main one (list them with the categories' list)."
                     },
                     "sources": {
                       "maxItems": 10,
@@ -1239,7 +1239,7 @@
                       "maxItems": 20,
                       "type": "array",
                       "items": { "type": "string", "minLength": 1, "maxLength": 100 },
-                      "description": "The ids of the print's categories (list them with the categories' list)."
+                      "description": "The ids of the print's categories, in order: the first is its main one (list them with the categories' list)."
                     },
                     "sources": {
                       "maxItems": 10,
@@ -1451,7 +1451,7 @@
                       "maxItems": 20,
                       "type": "array",
                       "items": { "type": "string", "minLength": 1, "maxLength": 100 },
-                      "description": "The ids of the print's categories (list them with the categories' list)."
+                      "description": "The ids of the print's categories, in order: the first is its main one (list them with the categories' list)."
                     },
                     "sources": {
                       "maxItems": 10,
@@ -1662,7 +1662,7 @@
                       "maxItems": 20,
                       "type": "array",
                       "items": { "type": "string", "minLength": 1, "maxLength": 100 },
-                      "description": "The ids of the print's categories (list them with the categories' list)."
+                      "description": "The ids of the print's categories, in order: the first is its main one (list them with the categories' list)."
                     },
                     "sources": {
                       "maxItems": 10,
@@ -1882,7 +1882,7 @@
                       "maxItems": 20,
                       "type": "array",
                       "items": { "type": "string", "minLength": 1, "maxLength": 100 },
-                      "description": "The ids of the print's categories (list them with the categories' list)."
+                      "description": "The ids of the print's categories, in order: the first is its main one (list them with the categories' list)."
                     },
                     "sources": {
                       "maxItems": 10,
@@ -2104,7 +2104,7 @@
                       "maxItems": 20,
                       "type": "array",
                       "items": { "type": "string", "minLength": 1, "maxLength": 100 },
-                      "description": "The ids of the print's categories (list them with the categories' list)."
+                      "description": "The ids of the print's categories, in order: the first is its main one (list them with the categories' list)."
                     },
                     "sources": {
                       "maxItems": 10,
@@ -2313,7 +2313,7 @@
                       "maxItems": 20,
                       "type": "array",
                       "items": { "type": "string", "minLength": 1, "maxLength": 100 },
-                      "description": "The ids of the print's categories (list them with the categories' list)."
+                      "description": "The ids of the print's categories, in order: the first is its main one (list them with the categories' list)."
                     },
                     "sources": {
                       "maxItems": 10,
