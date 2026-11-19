@@ -18,6 +18,23 @@ function named(text: string): string[] {
   ].sort();
 }
 
+/**
+ * The variables a source reads from process.env: `process.env.X`, `process.env["X"]` (either quote) and `const { X, Y: y, Z = … } =
+ * process.env` (a rest element names none).
+ */
+function envReads(source: string): string[] {
+  const dotted = [...source.matchAll(/process\.env\.([A-Z0-9_]+)/g)].map((m) => m[1]!);
+  const bracketed = [...source.matchAll(/process\.env\[\s*["'`]([A-Z0-9_]+)["'`]\s*\]/g)].map((m) => m[1]!);
+  const destructured = [...source.matchAll(/\{([^{}]*)\}\s*=\s*process\.env\b/g)].flatMap((m) =>
+    m[1]!
+      .split(",")
+      .map((part) => part.trim())
+      .filter((part) => part && !part.startsWith("..."))
+      .map((part) => /^["']?([A-Za-z0-9_]+)/.exec(part)?.[1] ?? ""),
+  );
+  return [...dotted, ...bracketed, ...destructured].filter(Boolean);
+}
+
 /** The app's own source files, tests left out. */
 function sources(dir: string): string[] {
   return readdirSync(join(ROOT, dir), { recursive: true, withFileTypes: true })
@@ -113,13 +130,23 @@ describe("loadConfig", () => {
     expect(c.devUser).toBeUndefined();
   });
 
+  it("envReads: every way of reading a variable counts, dotted, bracketed and destructured", () => {
+    const src = [
+      "const a = process.env.UPLOAD_A;",
+      "const b = process.env[\"UPLOAD_B\"] ?? process.env['UPLOAD_C'];",
+      'const { UPLOAD_D, UPLOAD_E: e, UPLOAD_F = "x", ...rest } = process.env;',
+      "const {\n  UPLOAD_G,\n} = process.env;",
+    ].join("\n");
+    expect(envReads(src).sort()).toEqual(["UPLOAD_A", "UPLOAD_B", "UPLOAD_C", "UPLOAD_D", "UPLOAD_E", "UPLOAD_F", "UPLOAD_G"]);
+  });
+
   it("envExampleListsEveryVariable: .env.example and docs/configuration.md name exactly the variables the app reads", () => {
     const every = Object.keys(VARIABLES).sort();
     expect(named(read(".env.example"))).toEqual(every);
     expect(named(read("docs/configuration.md"))).toEqual(every);
     // And nothing reads one that isn't listed (Next.js's own and NODE_ENV aside).
     const files = [...sources("backend"), ...sources("app"), ...sources("components"), "proxy.ts", "instrumentation.ts", "docker-entrypoint.mjs", "Dockerfile"];
-    const read_ = files.flatMap((f) => [...read(f).matchAll(/process\.env\.([A-Z0-9_]+)/g)].map((m) => m[1]!));
+    const read_ = files.flatMap((f) => envReads(read(f)));
     const unlisted = [...new Set(read_)].filter((v) => !(v in VARIABLES) && !["NODE_ENV", "NEXT_RUNTIME", "NEXT_PHASE"].includes(v));
     expect(unlisted).toEqual([]);
   });

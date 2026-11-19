@@ -17,7 +17,7 @@ export default async function AppLayout({ children, params }: LayoutProps<"/[lan
   return (
     <>
       <header className="border-b border-border bg-surface">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 pt-3">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-safe pt-3">
           <span className="font-semibold">{t.app.name}</span>
           {isLocale(lang) && <LanguageSwitch lang={lang} />}
         </div>
@@ -29,7 +29,7 @@ export default async function AppLayout({ children, params }: LayoutProps<"/[lan
           </>
         )}
       </header>
-      <main className="mx-auto max-w-3xl px-4 py-6">{children}</main>
+      <main className="mx-auto max-w-3xl px-safe py-6">{children}</main>
     </>
   );
 }

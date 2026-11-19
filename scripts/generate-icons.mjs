@@ -1,6 +1,7 @@
 // Writes the PNG icons from app/icon.svg (3dbruckner.de's mark, copied from its favicon.svg): the Home Screen icon (180, full-bleed: iOS
-// rounds it itself), the manifest's 192 and 512 (rounded like the SVG) and a maskable 512 (full-bleed, the mark inside the central 80 %
-// that Android's masks keep). Run `node scripts/generate-icons.mjs` after changing app/icon.svg and commit the PNGs.
+// rounds it itself), the manifest's 192 and 512 (rounded like the SVG) and a maskable 512 (full-bleed, the mark scaled to 70 % so it stays
+// inside the circle of 80 % diameter that every Android mask keeps, the mark's corners included). Run `node scripts/generate-icons.mjs`
+// after changing app/icon.svg and commit the PNGs.
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
 
@@ -10,7 +11,7 @@ const open = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">';
 const BG = "#15171C";
 const rounded = svg;
 const fullBleed = `${open}<rect width="32" height="32" fill="${BG}"/>${body}</svg>`;
-const maskable = `${open}<rect width="32" height="32" fill="${BG}"/><g transform="translate(3.2 3.2) scale(0.8)">${body}</g></svg>`;
+const maskable = `${open}<rect width="32" height="32" fill="${BG}"/><g transform="translate(4.8 4.8) scale(0.7)">${body}</g></svg>`;
 
 const out = (name) => new URL(`../${name}`, import.meta.url).pathname;
 const png = (source, size, name) =>

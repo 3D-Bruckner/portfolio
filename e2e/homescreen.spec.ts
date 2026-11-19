@@ -39,6 +39,12 @@ test.describe("on a phone", () => {
     // Playwright can't emulate env(safe-area-inset-*); the proof is that the rules use it, and a picture for a look.
     const rules = await page.evaluate(() => getComputedStyle(document.querySelector("body > header")!).paddingTop);
     expect(rules).toBe("0px"); // no inset in a desktop browser: the rule resolves to 0, not to a failure
+    // The sides: the content rows keep clear of the notch (1rem, or the inset where wider), the body doesn't, so the headers reach the edges.
+    const sides = await page.evaluate(() => {
+      const pad = (el: Element) => getComputedStyle(el).paddingLeft + " " + getComputedStyle(el).paddingRight;
+      return { body: pad(document.body), main: pad(document.querySelector("main")!), header: pad(document.querySelector("body > header > div")!) };
+    });
+    expect(sides).toEqual({ body: "0px 0px", main: "16px 16px", header: "16px 16px" });
     const dir = process.env.SCREENSHOT_DIR;
     if (dir) {
       mkdirSync(dir, { recursive: true });

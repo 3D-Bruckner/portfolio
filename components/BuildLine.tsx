@@ -7,7 +7,7 @@ import { ui } from "@/components/ui";
 
 // The header's line about the website build. The page never waits for it: the status (backend's buildStatus, which may ask GitHub) comes
 // as a promise and streams in behind a quiet placeholder, so a slow or failing GitHub can't hold up a page or a server action's refresh.
-const LINE = "mx-auto flex min-h-6 max-w-3xl flex-wrap items-center gap-x-2 px-4 pt-1 text-sm text-muted";
+const LINE = "mx-auto flex min-h-6 max-w-3xl flex-wrap items-center gap-x-2 px-safe pt-1 text-sm text-muted";
 
 /**
  * The status as the line takes it: a status that couldn't be read is undefined, never a rejection, so the promise the layout hands on

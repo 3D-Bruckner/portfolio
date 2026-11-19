@@ -7,6 +7,7 @@ import { useCopy } from "@/components/CopyProvider";
 import { DownIcon, DragIcon, PhotoIcon, ShowcaseIcon, UnpinIcon, UpIcon } from "@/components/icons";
 import { Notice } from "@/components/Notice";
 import { useDragReorder } from "@/components/useDragReorder";
+import { useHydrated } from "@/components/useHydrated";
 import { ui } from "@/components/ui";
 import { moveAmongShowcases, moveInPortfolio, pin, type Result } from "../actions";
 
@@ -18,7 +19,10 @@ export function OrderList({ kind, prints }: { kind: "showcases" | "portfolio"; p
   const router = useRouter();
   const headingId = useId();
   const [result, setResult] = useState<Result | null>(null);
-  const [busy, start] = useTransition();
+  const [pending, start] = useTransition();
+  // Until the page is hydrated a button would do nothing: it stays disabled (and a test's click waits for it).
+  const hydrated = useHydrated();
+  const busy = pending || !hydrated;
   const byId = new Map(prints.map((p) => [p.id, p]));
   const move = kind === "showcases" ? moveAmongShowcases : moveInPortfolio;
 

@@ -17,7 +17,7 @@ export function NavLinks() {
   // The browser's path; should a rewritten one with its language come through, the language is dropped.
   const path = usePathname().replace(/^\/(?:en|de)(?=\/|$)/, "") || "/";
   return (
-    <nav aria-label={t.label} className="mx-auto mt-1 max-w-3xl px-2">
+    <nav aria-label={t.label} className="mx-auto mt-1 max-w-3xl pr-[max(0.5rem,env(safe-area-inset-right))] pl-[max(0.5rem,env(safe-area-inset-left))]">
       <ul className="grid grid-cols-4">
         {PARTS.map(({ href, key, Icon, matches }) => {
           const current = matches(path);
