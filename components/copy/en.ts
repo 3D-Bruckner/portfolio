@@ -103,6 +103,10 @@ export const en = {
     /** A tab's label with how many prints it holds. */
     tab: (label: string, n: number) => `${label} (${n})`,
     newPrint: "New print",
+    startWithPhotos: "Start with photos",
+    starting: "Making the draft…",
+    startHint: "Straight from the camera roll: a draft with these photos; name it afterwards.",
+    draftTitle: (when: string) => `New print ${when}`,
     emptyPublished: "No print is published yet. Open a draft and publish it.",
     emptyDrafts: "No drafts. Start one with “New print”.",
     showcase: "Showcase",
@@ -127,6 +131,8 @@ export const en = {
       sources: { label: "Sources", hint: "Where the model comes from." },
       slug: { label: "Address on the site", hint: "Follows the title until you change it yourself; fixed once the print is published." },
     },
+    suggestedPrice: (euros: number) => `Price formula (PLA): ${euros} €`,
+    takeSuggestion: "Use it",
     readiness: {
       heading: "For the website",
       ready: "Everything the website shows is there.",

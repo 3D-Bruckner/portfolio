@@ -7,6 +7,7 @@ export {
   ArrowLeft as EarlierIcon,
   ArrowUp as UpIcon,
   ArrowUpRight as ExternalIcon,
+  Camera as CameraIcon,
   Check as SavedIcon,
   ChevronRight as ChevronIcon,
   CircleCheck as ReadyIcon,

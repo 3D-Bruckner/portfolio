@@ -4,10 +4,11 @@
 // JPEG instead of HEIC. A connection that goes dead without failing (mobile data in a dead spot) would leave a photo "sending" for
 // ever: an upload that hasn't moved for a minute is stopped and offered again, and no request lasts longer than a quarter of an hour.
 import { useRouter } from "next/navigation";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useCopy } from "@/components/CopyProvider";
 import { AddPhotoIcon, BusyIcon, CloseIcon, ProblemIcon, RetryIcon } from "@/components/icons";
 import { ui } from "@/components/ui";
+import { takeOver } from "./handoff";
 
 type Item = { key: number; file: File; state: "waiting" | "sending" | "processing" | "failed"; percent: number; error?: string };
 
@@ -108,6 +109,20 @@ export function PhotoUploader({ printId }: { printId: string }) {
     void pump();
   }
 
+  function add(files: File[]) {
+    const added = files.map((file) => ({ key: nextKey.current++, file }));
+    setItems((list) => [...list, ...added.map((a) => ({ ...a, state: "waiting" as const, percent: 0 }))]);
+    enqueue(added);
+  }
+
+  // Photos the prints list's "Start with photos" picked for this new draft.
+  useEffect(() => {
+    const handed = takeOver(printId);
+    if (handed.length > 0) add(handed);
+    // Once per print: add only reads refs and setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [printId]);
+
   return (
     <div className="mt-3">
       <label htmlFor={inputId} className={`${ui.button} w-full cursor-pointer has-[+input:focus-visible]:outline-3 has-[+input:focus-visible]:outline-accent`}>
@@ -122,10 +137,9 @@ export function PhotoUploader({ printId }: { printId: string }) {
         aria-describedby={`${inputId}-hint`}
         className="peer sr-only"
         onChange={(e) => {
-          const added = [...(e.currentTarget.files ?? [])].map((file) => ({ key: nextKey.current++, file }));
+          const files = [...(e.currentTarget.files ?? [])];
           e.currentTarget.value = "";
-          setItems((list) => [...list, ...added.map((a) => ({ ...a, state: "waiting" as const, percent: 0 }))]);
-          enqueue(added);
+          add(files);
         }}
       />
       <span id={`${inputId}-hint`} className={ui.hint}>

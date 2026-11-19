@@ -4,7 +4,7 @@
 // save keeps what was typed.
 import Link from "next/link";
 import { startTransition, useActionState, useRef, useState, type FormEvent } from "react";
-import type { ThreeMfReading } from "@/backend/client";
+import { suggestedPrice, type ThreeMfReading } from "@/backend/client";
 import { useCopy } from "@/components/CopyProvider";
 import { AddIcon, CloseIcon } from "@/components/icons";
 import { Notice } from "@/components/Notice";
@@ -59,7 +59,12 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
       filled.push(name);
     };
     put("printTimeMinutes", r.printTimeMinutes);
-    if (r.printTimeMinutes !== undefined) setMinutes(r.printTimeMinutes);
+    setNums((n) => ({
+      price: r.price ?? n.price ?? null,
+      weightGrams: r.weightGrams ?? n.weightGrams ?? null,
+      printTimeMinutes: r.printTimeMinutes ?? n.printTimeMinutes ?? null,
+      colors: r.colors ?? n.colors ?? null,
+    }));
     put("weightGrams", r.weightGrams);
     put("colors", r.colors);
     put("price", r.price);
@@ -81,7 +86,25 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
 
   const groups = FORM_GROUPS.map((g) => ({ ...g, fields: g.fields.filter((n) => printId !== null || n !== "slug") })).filter((g) => g.fields.length > 0);
   // The print time as hours and minutes, under its field, as it is typed.
-  const [minutes, setMinutes] = useState<number | null>(values?.printTimeMinutes ?? null);
+  // The numbers as typed, for the print time in hours and the price the site's formula suggests from weight and time.
+  const [nums, setNums] = useState<Record<string, number | null>>({
+    price: values?.price ?? null,
+    weightGrams: values?.weightGrams ?? null,
+    printTimeMinutes: values?.printTimeMinutes ?? null,
+    colors: values?.colors ?? null,
+  });
+  const setNum = (name: string, value: string) => setNums((n) => ({ ...n, [name]: value === "" ? null : Number(value) }));
+  const minutes = nums.printTimeMinutes ?? null;
+  const suggestion =
+    nums.weightGrams && nums.printTimeMinutes
+      ? suggestedPrice({ weightGrams: nums.weightGrams, printTimeMinutes: nums.printTimeMinutes, multicolor: (nums.colors ?? 1) >= 2, material: "PLA" })
+      : null;
+  function takeSuggestion() {
+    const el = form.current?.elements.namedItem("price");
+    if (suggestion === null || !(el instanceof HTMLInputElement)) return;
+    el.value = String(suggestion);
+    setNum("price", el.value);
+  }
 
   function field(name: PrintFieldName) {
     const spec = specs[name];
@@ -135,13 +158,22 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
               max={spec.max}
               defaultValue={(values?.[name] as number | null | undefined) ?? ""}
               aria-describedby={name === "printTimeMinutes" ? `${id}-as-hours` : undefined}
-              onInput={name === "printTimeMinutes" ? (e) => setMinutes(e.currentTarget.value ? Number(e.currentTarget.value) : null) : undefined}
+              onInput={(e) => setNum(name, e.currentTarget.value)}
               className={`${ui.input} tabular`}
             />
             {/* The group says where these come from; the print time also says itself in hours. */}
             {name === "printTimeMinutes" && (
               <span id={`${id}-as-hours`} className={`${ui.hint} tabular`} aria-live="polite">
                 {minutes !== null && minutes > 0 ? `= ${formatMinutes(minutes)}` : ""}
+              </span>
+            )}
+            {/* From weight and time, the price the site's own formula gives (PLA): one tap takes it. */}
+            {name === "price" && suggestion !== null && suggestion !== nums.price && (
+              <span className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted" aria-live="polite">
+                <span className="tabular">{t.print.suggestedPrice(suggestion)}</span>
+                <button type="button" onClick={takeSuggestion} className="min-h-8 font-semibold text-ink underline underline-offset-2">
+                  {t.print.takeSuggestion}
+                </button>
               </span>
             )}
           </div>

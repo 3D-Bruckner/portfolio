@@ -81,6 +81,17 @@ export async function savePrint(id: string | null, _prev: Result | null, fd: For
   return { ok: true, message: t.common.saved };
 }
 
+/** "Start with photos": a draft named by the moment, for photos picked on the prints list; its page names it (its address follows). */
+export async function startWithPhotos(): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const t = await words();
+  if (!(await actionPerson())) return { ok: false, error: t.common.signedOut };
+  const rt = runtime();
+  const when = new Intl.DateTimeFormat("de-DE", { dateStyle: "short", timeStyle: "medium" }).format(rt.clock());
+  const made = createPrint(rt, { title: t.list.draftTitle(when), description: "" });
+  if (!made.ok) return { ok: false, error: printProblem(made, t) };
+  return { ok: true, id: made.value.id };
+}
+
 export async function publish(id: string): Promise<Result> {
   return act(
     () => publishPrint(runtime(), id),
