@@ -3,15 +3,20 @@ import { addPhoto, getPrint, PHOTO_TYPES, type Runtime } from "@/backend";
 import { copyFor, languageOf } from "@/components/copy";
 
 // One photo per request, from the web app's form, so a phone on mobile data that drops one upload loses only that photo and sends it
-// again. Cookie-authenticated (Better Auth's session cookie is SameSite=Lax, so a cross-site post acts for nobody). The photo waits in the
-// kit's temporary folder while it is processed (backend/photos.ts) and that folder is removed afterwards, whatever happened. A refusal
-// answers { error } in the page's language, picked here as proxy.ts picks it for the pages: the proxy never runs on this route, since Next
-// would cut a proxied body at 10 MB.
+// again. Cookie-authenticated (Better Auth's session cookie is SameSite=Lax, so a cross-site post acts for nobody), or by an API token that
+// may write (Authorization: Bearer), for scripts. The photo waits in the kit's temporary folder while it is processed (backend/photos.ts)
+// and that folder is removed afterwards, whatever happened. A refusal answers { error } in the page's language, picked here as proxy.ts
+// picks it for the pages: the proxy never runs on this route, since Next would cut a proxied body at 10 MB.
 
 export async function uploadPhoto(rt: Runtime, req: Request, printId: string): Promise<Response> {
   const t = copyFor(languageOf(req.headers)).photos;
   const refuse = (status: number, error: string) => Response.json({ error }, { status, headers: { "cache-control": "no-store" } });
-  if (!(await rt.person(req.headers))) return refuse(401, t.signedOut);
+  if (!(await rt.person(req.headers))) {
+    // A script (the import of the site's prints) sends photos with an API token, as for /api/v1; it must be one that may write.
+    const caller = await rt.apiCaller(req);
+    if (!caller) return refuse(401, t.signedOut);
+    if (caller.scope !== "read+write") return refuse(403, t.readOnly);
+  }
   if (!getPrint(rt, printId).ok) return refuse(404, t.noPrint);
   let upload: Multipart;
   try {
