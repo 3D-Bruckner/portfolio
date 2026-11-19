@@ -1,7 +1,9 @@
+import { requirePerson } from "@/app/_lib/signin";
 import { copyFor } from "@/components/copy";
 
-// The start page: the prints, once there are any (a later task).
+// The start page: the prints, once there are any (a later task). Signed in only.
 export default async function Home({ params }: PageProps<"/[lang]">) {
+  await requirePerson("/");
   const t = copyFor((await params).lang).home;
   return (
     <>

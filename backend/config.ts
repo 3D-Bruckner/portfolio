@@ -50,7 +50,7 @@ const schema = z.object({
 });
 
 /** The settings from `env`; throws naming every variable that is wrong. */
-export function loadConfig(env: NodeJS.ProcessEnv): Config {
+export function loadConfig(env: Record<string, string | undefined>): Config {
   const parsed = schema.safeParse(env);
   if (!parsed.success) throw new Error(parsed.error.issues.map((i) => i.message).join("; "));
   const e = parsed.data;

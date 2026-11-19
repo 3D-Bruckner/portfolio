@@ -1,4 +1,4 @@
-import { runtime } from "@/backend";
+import { runtime } from "@/app/_lib/runtime";
 import { uploadPhoto } from "./upload";
 
 // POST: one photo for the print, as multipart form data (upload.ts).

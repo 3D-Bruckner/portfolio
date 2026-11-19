@@ -7,9 +7,6 @@ import { copyFor, LANG_HEADER } from "@/components/copy";
 // kit's temporary folder while it is processed (backend/photos.ts) and that folder is removed afterwards, whatever happened. A refusal
 // answers { error } in the page's language, which proxy.ts passes on in a request header.
 
-// The kit's MultipartError carries the status only; a file of a kind not in `types` is told apart by its message.
-const NOT_ACCEPTED = /is not one of the accepted kinds/;
-
 export async function uploadPhoto(rt: Runtime, req: Request, printId: string): Promise<Response> {
   const t = copyFor(req.headers.get(LANG_HEADER) ?? "").photos;
   const refuse = (status: number, error: string) => Response.json({ error }, { status, headers: { "cache-control": "no-store" } });
@@ -20,8 +17,8 @@ export async function uploadPhoto(rt: Runtime, req: Request, printId: string): P
     upload = await readMultipart(req, { maxFileBytes: rt.config.maxPhotoMb * 1024 * 1024, maxFiles: 1, types: PHOTO_TYPES });
   } catch (e) {
     if (!(e instanceof MultipartError)) throw e;
-    rt.log.info({ printId, status: e.status }, "photo upload refused");
-    return refuse(e.status, e.status === 413 ? t.tooLarge : NOT_ACCEPTED.test(e.message) ? t.notAccepted : t.incomplete);
+    rt.log.info({ printId, status: e.status, code: e.code }, "photo upload refused");
+    return refuse(e.status, e.code === "too_large" ? t.tooLarge : e.code === "wrong_type" ? t.notAccepted : t.incomplete);
   }
   try {
     const file = upload.files[0];

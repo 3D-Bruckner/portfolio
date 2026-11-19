@@ -1,21 +1,29 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { signInSettings } from "./accounts";
 import { loadConfig } from "./config";
+import { log } from "./log";
 import { openRuntime } from "./runtime";
+import { TEST_MAIL } from "./testing/runtime";
 
 describe("openRuntime", () => {
-  it("opens DATA_DIR/upload.sqlite, creating the directory, and runs the migrations; nobody is signed in until sign-in is wired", async () => {
+  it("opens DATA_DIR/upload.sqlite, creating the directory, and runs the migrations; sign-in opens auth.sqlite beside it at first use", async () => {
     const dataDir = join(process.env.DATA_DIR!, "nested", "data");
-    const rt = openRuntime(loadConfig({ NODE_ENV: "test", PUBLIC_URL: "https://upload.example.com", UPLOAD_SECRET: "s".repeat(32), DATA_DIR: dataDir }));
+    const env = { NODE_ENV: "test", PUBLIC_URL: "https://upload.example.com", UPLOAD_SECRET: "s".repeat(32), DATA_DIR: dataDir, UPLOAD_SMTP_URL: "smtp://x" };
+    const rt = openRuntime(loadConfig(env), signInSettings(env, dataDir, log), TEST_MAIL);
     try {
       expect(existsSync(join(dataDir, "upload.sqlite"))).toBe(true);
+      expect(existsSync(join(dataDir, "auth.sqlite"))).toBe(false);
       expect(rt.store.answers()).toBe(true);
       expect(rt.clock()).toBeInstanceOf(Date);
       expect(rt.fetch).toBe(globalThis.fetch);
       expect(() => rt.onSiteChange()).not.toThrow();
-      expect(await rt.person(new Headers({ cookie: "x=y" }))).toBeNull();
+      // A cookie or a token Better Auth didn't make is nobody.
+      expect(await rt.person(new Headers({ cookie: "better-auth.session_token=x.y" }))).toBeNull();
       expect(await rt.apiCaller(new Request("http://localhost/", { headers: { authorization: "Bearer upl_x" } }))).toBeNull();
+      expect(existsSync(join(dataDir, "auth.sqlite"))).toBe(true);
+      expect(await rt.auth()).toBe(await rt.auth());
     } finally {
       rt.store.close();
     }

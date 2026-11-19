@@ -1,16 +1,44 @@
-// A runtime for a test: a fresh upload.sqlite in a directory of its own under the test's DATA_DIR, and onSiteChange counted instead of
-// starting a build. close() it at the end (afterEach).
+// A runtime for a test: a fresh upload.sqlite and auth.sqlite in a directory of its own under the test's DATA_DIR, onSiteChange counted
+// instead of starting a build, and the sign-in mail caught in `mail` instead of sent. `env` adds to or overrides the settings (an empty
+// value unsets one). Close the store at the end (afterEach).
 import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
+import type { SignInMail } from "next-app-kit/signin";
+import { signInSettings, type MailWording } from "../accounts";
 import { loadConfig } from "../config";
+import { log } from "../log";
 import { openRuntime, type Runtime } from "../runtime";
 
-export type TestRuntime = Runtime & { siteChanges: number };
+export type TestRuntime = Runtime & { siteChanges: number; mail: Map<string, SignInMail> };
 
-export function testRuntime(): TestRuntime {
+/** The sign-in mail in tests: the language is the request's `x-test-lang` header, else English. */
+export const TEST_MAIL: MailWording = {
+  texts: {
+    en: { subject: (code) => `code ${code}`, body: (code, link) => `code ${code}${link ? ` link ${link}` : ""}` },
+    de: { subject: (code) => `Code ${code}`, body: (code, link) => `Code ${code}${link ? ` Link ${link}` : ""}` },
+  },
+  languageOf: (h) => h.get("x-test-lang") ?? "en",
+};
+
+export const MARCEL = "marcel@example.com";
+
+export function testRuntime(env: Record<string, string> = {}, mail: MailWording = TEST_MAIL): TestRuntime {
   const dataDir = mkdtempSync(join(process.env.DATA_DIR!, "rt-"));
-  const rt = openRuntime(loadConfig({ NODE_ENV: "test", PUBLIC_URL: "https://upload.example.com", UPLOAD_SECRET: "s".repeat(32), DATA_DIR: dataDir }));
-  const t: TestRuntime = { ...rt, siteChanges: 0, onSiteChange: () => void t.siteChanges++ };
+  const all: Record<string, string | undefined> = {
+    NODE_ENV: "test",
+    PUBLIC_URL: "https://upload.example.com",
+    UPLOAD_SECRET: "s".repeat(32),
+    UPLOAD_ALLOWED_EMAILS: MARCEL,
+    UPLOAD_SMTP_URL: "smtp://127.0.0.1:2525",
+    DATA_DIR: dataDir,
+    ...env,
+  };
+  for (const [k, v] of Object.entries(all)) if (v === "") delete all[k];
+  const config = loadConfig(all);
+  const caught = new Map<string, SignInMail>();
+  const signIn = { ...signInSettings(all, config.dataDir, log), mailer: async (m: SignInMail) => void caught.set(m.to, m) };
+  const rt = openRuntime(config, signIn, mail);
+  const t: TestRuntime = { ...rt, siteChanges: 0, mail: caught, onSiteChange: () => void t.siteChanges++ };
   return t;
 }
 

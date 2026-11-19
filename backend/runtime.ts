@@ -1,9 +1,11 @@
-// What every surface works with: the settings, the store (backend/db, the only way to the database), the clock, fetch, the log and the
-// hook for changes the site shows, opened once per process. Tests open their own with openRuntime and a config of their own (or
-// testing/runtime.ts); the process's is runtime() in backend/index.ts.
-import type { Person } from "next-app-kit/signin";
-import type { RestCaller } from "next-app-kit/tokens";
+// What every surface works with: the settings, the store (backend/db, the only way to the database), the clock, fetch, the log, the
+// hook for changes the site shows and sign-in (the kit's, backend/accounts.ts), opened once per process. Tests open their own with
+// openRuntime and a config of their own (or testing/runtime.ts); the process's is runtime() in backend/index.ts, which the frontend calls
+// with the sign-in mail's words (app/_lib/runtime.ts).
+import { personOf, type Auth, type Person, type SignInSettings } from "next-app-kit/signin";
+import { restCaller, type RestCaller } from "next-app-kit/tokens";
 import type { Logger } from "pino";
+import { openUploadAuth, type MailWording } from "./accounts";
 import type { Config } from "./config";
 import { openStore, type Store } from "./db";
 import { log } from "./log";
@@ -20,16 +22,31 @@ export type Runtime = {
    * The site build's trigger replaces it; until then it does nothing.
    */
   onSiteChange: () => void;
+  /** The kit's sign-in settings (UPLOAD_*, from signInFromEnv). */
+  signIn: SignInSettings;
+  /** Better Auth, opened at the first call (auth.sqlite migrated then); a failed start is tried again at the next. */
+  auth: () => Promise<Auth>;
   /**
-   * Who a page's or the app's own route's request is, by its session cookie: the kit's personOf (with UPLOAD_DEV_USER). Sign-in fills it
-   * in when it is wired; until then nobody is signed in. Tests set a person of their own.
+   * Who a page's or the app's own route's request is, by its session cookie: the kit's personOf, with UPLOAD_DEV_USER when it is set
+   * (never in production). Tests may set a person of their own.
    */
   person: (h: Headers) => Promise<Person | null>;
-  /** Who a request with an API or OAuth token is: the kit's restCaller. Filled in with sign-in, as `person`; until then nobody. */
+  /** Who a request with an API token or an OAuth access token for /api/v1 is: the kit's restCaller. */
   apiCaller: (req: Request) => Promise<RestCaller | null>;
 };
 
-export function openRuntime(config: Config): Runtime {
+export function openRuntime(config: Config, signIn: SignInSettings, mail: MailWording): Runtime {
+  let opened: Promise<Auth> | null = null;
+  const auth = (): Promise<Auth> => {
+    if (!opened) {
+      const p = openUploadAuth(signIn, mail);
+      opened = p;
+      p.catch(() => {
+        if (opened === p) opened = null;
+      });
+    }
+    return opened;
+  };
   return {
     config,
     store: openStore(config.dataDir),
@@ -37,8 +54,10 @@ export function openRuntime(config: Config): Runtime {
     fetch: globalThis.fetch,
     log,
     onSiteChange: () => {},
-    person: async () => null,
-    apiCaller: async () => null,
+    signIn,
+    auth,
+    person: async (h) => personOf(h, await auth(), signIn.devUser),
+    apiCaller: async (req) => restCaller(req, await auth(), signIn),
   };
 }
 

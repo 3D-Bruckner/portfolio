@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { LANG_COOKIE, LANG_HEADER, negotiate } from "@/components/copy";
+import { LANG_HEADER, languageOf } from "@/components/copy";
 
 // The UI's language (conventions: code/language, Next's internationalization guide): every page lives under app/[lang], and the proxy
 // rewrites a page's path to /<lang>/<path>, so no URL carries the language and every link and bookmark stays as it is. The language is
@@ -11,7 +11,7 @@ const NOT_A_PAGE = /^\/(?:api\/|_next\/|\.well-known\/|photos\/|(?:mcp|health|fa
 
 export function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
-  const lang = negotiate(req.cookies.get(LANG_COOKIE)?.value, req.headers.get("accept-language"));
+  const lang = languageOf(req.headers);
   const headers = new Headers(req.headers);
   headers.set(LANG_HEADER, lang);
   if (NOT_A_PAGE.test(pathname)) return NextResponse.next({ request: { headers } });

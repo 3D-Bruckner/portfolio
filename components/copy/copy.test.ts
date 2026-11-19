@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { copyFor, LOCALES, negotiate } from ".";
+import { copyFor, languageOf, LOCALES, negotiate } from ".";
 import { de } from "./de";
 import { en } from "./en";
 
@@ -30,5 +30,22 @@ describe("the copy modules", () => {
     expect(LOCALES).toEqual(["en", "de"]);
     expect(copyFor("de")).toBe(de);
     expect(copyFor("xx")).toBe(en);
+  });
+});
+
+describe("languageOf", () => {
+  it("is negotiate over a request's headers: the switch's cookie, then Accept-Language", () => {
+    expect(languageOf(new Headers({ cookie: "a=b; upload_lang=en", "accept-language": "de" }))).toBe("en");
+    expect(languageOf(new Headers({ cookie: "upload_lang=fr", "accept-language": "de-AT" }))).toBe("de");
+    expect(languageOf(new Headers())).toBe("en");
+  });
+
+  it("each language has its sign-in mail, with the link only when there is one", () => {
+    for (const lang of LOCALES) {
+      const mail = copyFor(lang).mail;
+      expect(mail.subject("123456")).toContain("123456");
+      expect(mail.body("123456", "https://upload.example.com/l")).toContain("https://upload.example.com/l");
+      expect(mail.body("123456", undefined)).not.toContain("http");
+    }
   });
 });
