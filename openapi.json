@@ -2618,7 +2618,14 @@
         "security": [{ "bearer": [] }],
         "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The photo's id", "schema": { "type": "string" } }],
         "responses": {
-          "200": { "description": "The JPEG", "content": { "application/octet-stream": { "schema": { "type": "string", "format": "binary" } } } },
+          "200": {
+            "description": "The JPEG",
+            "headers": {
+              "ETag": { "description": "The entity tag; send it back as If-None-Match to get 304 when nothing changed", "schema": { "type": "string" } }
+            },
+            "content": { "application/octet-stream": { "schema": { "type": "string", "format": "binary" } } }
+          },
+          "304": { "description": "Not modified: If-None-Match named the current ETag; no body" },
           "401": {
             "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }

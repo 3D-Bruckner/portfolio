@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { refusedSignIn, safeNext, signInMethods, type RefusedSignIn } from "next-app-kit/signin";
+import { MAIL_NOT_SENT, refusedSignIn, safeNext, signInMethods, type RefusedSignIn } from "next-app-kit/signin";
 import { runtime } from "@/app/_lib/runtime";
 import { SIGN_IN_PAGE } from "@/backend";
 import { copyFor, type Copy } from "@/components/copy";
@@ -8,7 +8,8 @@ import { SignInForm } from "./SignInForm";
 
 // The sign-in page, at /signin (openAuth's pages.signIn), keeping next-app-kit's contract (its README, "The sign-in page"): it carries
 // `?next=` as each method's callbackURL, offers what signInMethods says (a code by mail, which also brings a link; a passkey; a button
-// per provider) and shows a refused sign-in's `?error=` in the page's words, never the provider's free text.
+// per provider) and shows a refused sign-in's `?error=` in the page's words, never the provider's free text. A code the mail server would
+// not take is said as such (the kit answers MAIL_NOT_SENT), not asked for.
 export async function generateMetadata({ params }: PageProps<"/[lang]/signin">): Promise<Metadata> {
   return { title: copyFor((await params).lang).signIn.title };
 }
@@ -35,7 +36,7 @@ export default async function SignInPage({ params, searchParams }: PageProps<"/[
           {refusal(refused, t.refused)}
         </p>
       )}
-      <SignInForm next={safeNext(query.next)} methods={signInMethods(signIn)} signInPage={SIGN_IN_PAGE} />
+      <SignInForm next={safeNext(query.next)} methods={signInMethods(signIn)} signInPage={SIGN_IN_PAGE} mailNotSent={MAIL_NOT_SENT.code} />
     </div>
   );
 }

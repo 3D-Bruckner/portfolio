@@ -204,23 +204,32 @@ describe("prints", () => {
     expect(rt.siteChanges).toBe(1);
   });
 
-  it("a refused publish says what is missing and where to add it", async () => {
+  it("a refused publish says what is missing, and its guidance where to add it", async () => {
     const d = draft("Lampe", { description: "" });
+    const r = await callTool(ctx, who, "publish_print", { id: d.id });
+    expect(r.isError).toBe(true);
+    const { error, guidance } = r.structuredContent as { error: string; guidance: string[] };
+    expect(error).toBe("Publishing needs a description and at least one photo.");
+    expect(guidance).toEqual([
+      `Photos are added in the web form at ${urlOf(d.id)}: give Marcel that link (he adds them from his phone).`,
+      "update_print sets the description (German, as the site shows it).",
+      "Then publish_print again.",
+    ]);
+    // A client that reads only the text finds both.
     const text = await refusal("publish_print", { id: d.id });
-    expect(text).toMatch(/a description/);
-    expect(text).toMatch(/at least one photo/);
     expect(text).toContain(urlOf(d.id));
     expect(text).toMatch(/update_print/);
   });
 
-  it("a publish refused for a reserved slug names it and says how to go on", async () => {
+  it("a publish refused for a reserved slug names it, and its guidance says how to go on", async () => {
     const old = published("Beyblade – Dragoon");
     await tool("delete_print", { id: old.id });
     const again = draft("Beyblade – Dragoon");
     seedPhoto(rt, again.id);
-    const text = await refusal("publish_print", { id: again.id });
-    expect(text).toMatch(/The slug "beyblade-dragoon" is reserved/);
-    expect(text).toMatch(/update_print's slug field takes another one; then publish_print again/);
+    const r = await callTool(ctx, who, "publish_print", { id: again.id });
+    const { error, guidance } = r.structuredContent as { error: string; guidance: string[] };
+    expect(error).toMatch(/The slug "beyblade-dragoon" is reserved/);
+    expect(guidance).toEqual(["update_print's slug field takes another one; then publish_print again."]);
   });
 
   it("unpublish_print: back to a draft, off the site with the next build", async () => {

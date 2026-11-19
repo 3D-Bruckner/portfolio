@@ -18,8 +18,12 @@ function go(data: unknown, next: string) {
   window.location.assign(url);
 }
 
-/** `signInPage` is where a provider's refusal comes back to: openAuth's pages.signIn, handed down by the page (backend's SIGN_IN_PAGE). */
-export function SignInForm({ next, methods, signInPage }: { next: string; methods: Methods; signInPage: string }) {
+/**
+ * `signInPage` is where a provider's refusal comes back to: openAuth's pages.signIn, handed down by the page (backend's SIGN_IN_PAGE).
+ * `mailNotSent` is the error code the kit answers a code with that its mail server would not take (the kit's MAIL_NOT_SENT, handed down
+ * because the kit's sign-in module is for the server).
+ */
+export function SignInForm({ next, methods, signInPage, mailNotSent }: { next: string; methods: Methods; signInPage: string; mailNotSent: string }) {
   const t = useCopy().signIn;
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -33,7 +37,7 @@ export function SignInForm({ next, methods, signInPage }: { next: string; method
     setProblem(null);
     const { error } = await authClient.emailOtp.sendVerificationOtp({ email: email.trim(), type: "sign-in" });
     setBusy(false);
-    if (error) return setProblem(t.failedSend);
+    if (error) return setProblem(error.code === mailNotSent ? t.mailNotSent : t.failedSend);
     setSentTo(email.trim());
   }
 

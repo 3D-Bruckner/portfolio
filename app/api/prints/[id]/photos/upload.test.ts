@@ -74,6 +74,29 @@ describe("POST /api/prints/[id]/photos", () => {
     expect(await answer(await uploadPhoto(rt, await post(big), print.id))).toEqual({ status: 413, body: { error: "Dieses Foto ist zu groß." } });
   });
 
+  it("answers 413 for a chunked post larger than a photo may be, not „incomplete“", async () => {
+    // A phone that streams the photo sends no content-length; the kit's cap on the whole post stops it, and that is "too large".
+    rt.config.maxPhotoMb = 1;
+    const fd = new FormData();
+    fd.append("photo", new File([new Uint8Array(3 * 1024 * 1024)], "big.jpg", { type: "image/jpeg" }));
+    const encoded = new Response(fd);
+    const whole = new Uint8Array(await encoded.arrayBuffer());
+    const body = new ReadableStream<Uint8Array>({
+      start(c) {
+        c.enqueue(whole);
+        c.close();
+      },
+    });
+    const chunked = new Request("http://localhost/x", {
+      method: "POST",
+      body,
+      headers: { "content-type": encoded.headers.get("content-type")!, "x-upload-lang": "de" },
+      duplex: "half",
+    } as RequestInit);
+    expect(await answer(await uploadPhoto(rt, chunked, print.id))).toEqual({ status: 413, body: { error: "Dieses Foto ist zu groß." } });
+    expect(storedFiles()).toEqual([]);
+  });
+
   it("refuses a post with no photo, or with two", async () => {
     expect((await uploadPhoto(rt, await post(null), print.id)).status).toBe(400);
     const fd = new FormData();

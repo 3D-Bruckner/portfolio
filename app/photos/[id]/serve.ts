@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
-import { etagMatches, getPhoto, photoPath, type Runtime } from "@/backend";
+import { etagMatches } from "next-app-kit/rest";
+import { getPhoto, photoPath, type Runtime } from "@/backend";
 
 // A photo's cutout (the JPEG the site gets), for the web app's pages (the session cookie) and for scripts (an API or OAuth token; reading
 // is all it needs). A new crop changes the cutout under the same id, so the browser keeps it privately but asks again each time: its

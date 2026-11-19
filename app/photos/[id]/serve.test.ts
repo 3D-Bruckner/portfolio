@@ -49,7 +49,7 @@ describe("GET /photos/[id]", () => {
 
   it("serves it to an API token (a read one is enough)", async () => {
     rt.apiCaller = async (req) =>
-      req.headers.get("authorization") === "Bearer upl_read" ? { person: "u1", actor: "marcel@example.com", scope: "read" } : null;
+      req.headers.get("authorization") === "Bearer upl_read" ? { person: "u1", actor: "marcel@example.com", scope: "read", kind: "token" } : null;
     expect((await servePhoto(rt, get({ authorization: "Bearer upl_read" }), photo.id)).status).toBe(200);
     expect((await servePhoto(rt, get({ authorization: "Bearer upl_wrong" }), photo.id)).status).toBe(401);
   });

@@ -36,6 +36,7 @@ export const en = {
     viaProvider: (label: string) => `Sign in with ${label}`,
     or: "or",
     failedSend: "The code couldn't be sent. Please try again in a moment.",
+    mailNotSent: "The mail with the code couldn't be sent. Please try again later.",
     wrongCode: "That code is wrong or has expired. Request a new one.",
     passkeyFailed: "Signing in with a passkey didn't work. Use a code instead, or try again.",
     providerFailed: (label: string) => `Signing in with ${label} didn't start. Please try again.`,

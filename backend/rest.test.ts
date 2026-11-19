@@ -8,7 +8,6 @@ import { createApiToken, type RestCaller } from "next-app-kit/tokens";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createCategory } from "./categories";
-import { notModified } from "./conditional";
 import { mcpContext } from "./mcp";
 import type { Outcome } from "./outcome";
 import { addPhoto, photoPath, type Photo } from "./photos";
@@ -24,7 +23,7 @@ beforeEach(() => {
 afterEach(() => rt.store.close());
 
 const BASE = "https://upload.example.com";
-const WRITER: RestCaller = { person: "u1", actor: MARCEL, scope: "read+write" };
+const WRITER: RestCaller = { person: "u1", actor: MARCEL, scope: "read+write", kind: "token" };
 
 function value<T>(o: Outcome<T>): T {
   if (!o.ok) throw new Error(`expected ok, got ${o.reason}: ${o.message}`);
@@ -113,7 +112,7 @@ describe("GET /api/v1/photos/{id}", () => {
     const read = await token("read");
     const get = async (ifNoneMatch: string) => {
       const req = new Request(`${BASE}/api/v1/photos/${photo.id}`, { headers: { authorization: `Bearer ${read}`, "if-none-match": ifNoneMatch } });
-      return notModified(req, await restRoute(req, REST_OPS, rt, await rt.apiCaller(req), { base: BASE, log: () => {} }));
+      return restRoute(req, REST_OPS, rt, await rt.apiCaller(req), { base: BASE, log: () => {} });
     };
     const same = await get(`W/"other", "${photo.sha256}"`);
     expect(same.status).toBe(304);
@@ -218,7 +217,7 @@ describe("the operations", () => {
   it("makes, lists and revokes the caller's own API tokens (signed in through OAuth)", async () => {
     const auth = await rt.auth();
     const person = (await rt.person(new Headers({ cookie: await signedInCookie(auth, MARCEL) })))!.id;
-    const me: RestCaller = { person, actor: `${MARCEL} via Claude`, scope: "read+write" };
+    const me: RestCaller = { person, actor: `${MARCEL} via Claude`, scope: "read+write", kind: "oauth" };
     const made = await call("POST", "/tokens", { name: "site build", scope: "read", expiresInDays: null }, me);
     expect(made.status).toBe(201);
     const t = await json<{ id: string; token: string; scope: string; expires_at: string | null }>(made);
@@ -246,10 +245,19 @@ describe("the operations", () => {
     expect(await json(revoked)).toMatchObject({ code: "forbidden" });
     expect((await withToken("GET", "/tokens", writeToken)).status).toBe(200);
     const list = await json<{ tokens: { id: string }[] }>(
-      await call("GET", "/tokens", undefined, { person, actor: `${MARCEL} via Claude`, scope: "read+write" }),
+      await call("GET", "/tokens", undefined, { person, actor: `${MARCEL} via Claude`, scope: "read+write", kind: "oauth" }),
     );
     expect(list.tokens.map((x) => x.id)).toContain(kept.id);
     expect(list.tokens).toHaveLength(2);
+  });
+
+  it("tokenManagementGoesByKind: the caller's kind decides, never what its actor says", async () => {
+    const auth = await rt.auth();
+    const person = (await rt.person(new Headers({ cookie: await signedInCookie(auth, MARCEL) })))!.id;
+    const body = { name: "x", scope: "read", expiresInDays: 30 };
+    // An API token is refused even with an actor that reads like a client's, and an OAuth caller allowed whatever its actor says.
+    expect((await call("POST", "/tokens", body, { person, actor: `${MARCEL} via Claude`, scope: "read+write", kind: "token" })).status).toBe(403);
+    expect((await call("POST", "/tokens", body, { person, actor: MARCEL, scope: "read+write", kind: "oauth" })).status).toBe(201);
   });
 
   it("tells the site build's status: pending after a change the site shows", async () => {

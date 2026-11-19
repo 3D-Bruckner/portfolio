@@ -7,7 +7,6 @@ import { startSiteTimer } from "./site";
 
 export { API_TOKEN_PREFIX, APP_NAME, CONSENT_PAGE, ENV_PREFIX, SIGN_IN_PAGE, type MailWording } from "./accounts";
 export { createCategory, deleteCategory, listCategories, renameCategory, type Category } from "./categories";
-export { etagMatches, notModified } from "./conditional";
 export type { Config } from "./config";
 export { siteExport, type SiteExport } from "./export";
 export { healthResponse } from "./health";

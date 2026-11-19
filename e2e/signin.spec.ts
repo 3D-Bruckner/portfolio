@@ -25,8 +25,21 @@ test.describe("a browser that asks for German", () => {
     await expect(page.getByRole("main").getByRole("alert")).toContainText("Anmeldelink ist abgelaufen");
   });
 
+  test("says when the mail with the code could not be sent, instead of asking for a code", async ({ page }) => {
+    // The e2e server's SMTP server doesn't exist: the kit answers the send with MAIL_NOT_SENT.
+    await page.goto("/signin");
+    await page.waitForLoadState("networkidle");
+    await page.getByLabel("E-Mail-Adresse").fill(MARCEL);
+    await page.getByRole("button", { name: "Code zuschicken" }).click();
+    await expect(page.getByRole("main").getByRole("alert")).toHaveText(
+      "Die E-Mail mit dem Code ließ sich nicht verschicken. Bitte später noch einmal versuchen.",
+    );
+    await expect(page.getByLabel("Code", { exact: true })).toHaveCount(0);
+  });
+
   test("asks for the code once it is sent, saying where to", async ({ page }) => {
-    // The e2e server's SMTP server doesn't exist; Better Auth sends in the background, so the page can't tell and the log says so.
+    // No mail goes out here (no SMTP server): the send is answered as a working one would, and the code checked is the server's.
+    await page.route("**/api/auth/email-otp/send-verification-otp", (route) => route.fulfill({ json: { success: true } }));
     await page.goto("/signin");
     await page.waitForLoadState("networkidle");
     await page.getByLabel("E-Mail-Adresse").fill(MARCEL);

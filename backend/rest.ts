@@ -70,11 +70,10 @@ const thenPrint = (base: string, ctx: Runtime, o: Outcome<void>, id: string): Re
   o.ok ? answer(getPrint(ctx, id), 200, (p) => printJson(base, p)) : answer(o, 200);
 
 /**
- * Whether the caller came with an API token: the kit's restCaller makes an API token's actor the bare address and an OAuth token's
- * "<email> via <client>" (an address has no spaces). An API token may not make or revoke tokens, so a leaked one can't mint more or
- * lock its owner's other tokens out; a person signed in through OAuth (Claude) still may.
+ * Whether the caller came with an API token (the kit's `kind`). An API token may not make or revoke tokens, so a leaked one can't mint
+ * more or lock its owner's other tokens out; a person signed in through OAuth (Claude) still may.
  */
-const byApiToken = (caller: RestCaller): boolean => !caller.actor.includes(" via ");
+const byApiToken = (caller: RestCaller): boolean => caller.kind === "token";
 const NO_TOKENS_BY_TOKEN = "An API token can't make or revoke API tokens; use the web app or a client signed in through OAuth.";
 
 // ---- the parameters (the schemas are shapes.ts's, shared with MCP)
@@ -278,7 +277,7 @@ export const REST_OPS: Op<Runtime>[] = [
     summary: "A photo's cutout, the JPEG the site shows (ETag: its sha256; If-None-Match with it answers 304)",
     tag: "Site",
     params: PHOTO_ID,
-    ok: { status: 200, description: "The JPEG", binary: true },
+    ok: { status: 200, description: "The JPEG", binary: true, etag: true },
     errors: [401, 404],
     handle: async ({ ctx, params }) => {
       const photo = getPhoto(ctx, params.id!);
@@ -290,13 +289,10 @@ export const REST_OPS: Op<Runtime>[] = [
         ctx.log.error({ photoId: photo.value.id }, "photo file missing");
         return fail(404, `No photo ${params.id}.`);
       }
-      const headers = {
-        "content-type": "image/jpeg",
-        "content-length": String(bytes.length),
-        etag: `"${photo.value.sha256}"`,
-        "cache-control": "private, no-cache",
-      };
-      return { status: 200, raw: new Response(new Uint8Array(bytes), { headers }) };
+      // The cutouts are served `private, no-cache` (a new crop changes one under the same id), so the site build asks again each time; the
+      // kit answers 304 when its If-None-Match names this ETag, and the bytes don't move.
+      const headers = { "content-type": "image/jpeg", "content-length": String(bytes.length), "cache-control": "private, no-cache" };
+      return { status: 200, etag: `"${photo.value.sha256}"`, raw: new Response(new Uint8Array(bytes), { headers }) };
     },
   },
   // Categories

@@ -37,6 +37,7 @@ export const de: Copy = {
     viaProvider: (label: string) => `Mit ${label} anmelden`,
     or: "oder",
     failedSend: "Der Code ließ sich nicht verschicken. Bitte gleich noch einmal versuchen.",
+    mailNotSent: "Die E-Mail mit dem Code ließ sich nicht verschicken. Bitte später noch einmal versuchen.",
     wrongCode: "Dieser Code stimmt nicht oder ist abgelaufen. Bitte einen neuen anfordern.",
     passkeyFailed: "Die Anmeldung mit Passkey hat nicht geklappt. Nimm einen Code oder versuche es noch einmal.",
     providerFailed: (label: string) => `Die Anmeldung mit ${label} ließ sich nicht starten. Bitte noch einmal versuchen.`,

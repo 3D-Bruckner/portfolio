@@ -20,7 +20,8 @@ beforeEach(async () => {
   if (!added.ok) throw new Error(added.message);
   photo = added.value;
   // An API token that would be good for the cutout.
-  rt.apiCaller = async (req) => (req.headers.get("authorization") === "Bearer upl_read" ? { person: "u1", actor: "marcel@example.com", scope: "read" } : null);
+  rt.apiCaller = async (req) =>
+    req.headers.get("authorization") === "Bearer upl_read" ? { person: "u1", actor: "marcel@example.com", scope: "read", kind: "token" } : null;
 });
 afterEach(() => rt.store.close());
 

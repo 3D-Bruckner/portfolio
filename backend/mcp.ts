@@ -57,11 +57,17 @@ function onTheSite(p: Pick<Print, "status">): string {
 function toPublish(p: Print, url: string): string | null {
   const missing = missingToPublish({ title: p.title, description: p.description, photos: p.photos });
   if (missing.length === 0) return null;
-  const where = [
-    missing.includes("at least one photo") && `photos are added in the web form at ${url}`,
-    missing.includes("a description") && "update_print sets the description (German, as the site shows it)",
-  ].filter(Boolean);
+  const where = whereToAdd(missing, url).map((w) => w.replace(/\.$/, "").replace(/^./, (c) => c.toLowerCase()));
   return `Publishing it needs ${missing.join(" and ")}${where.length > 0 ? `: ${where.join("; ")}` : ""}.`;
+}
+
+/** Where each missing part of a print is added, one line each: a refused publish's guidance. */
+function whereToAdd(missing: ReturnType<typeof missingToPublish>, url: string): string[] {
+  return [
+    missing.includes("a title") && "update_print sets the title.",
+    missing.includes("at least one photo") && `Photos are added in the web form at ${url}: give Marcel that link (he adds them from his phone).`,
+    missing.includes("a description") && "update_print sets the description (German, as the site shows it).",
+  ].filter((line): line is string => typeof line === "string");
 }
 
 /** A domain refusal as the tool's refusal. */
@@ -169,9 +175,9 @@ export function mcpTools(rt: Runtime): Tool[] {
         if (!before.ok) return refused(before);
         const p = publishPrint(rt, id);
         if (!p.ok) {
-          const url = printUrl(who.base, id);
-          if (p.reason === "conflict") return refuse(`${p.message} update_print's slug field takes another one; then publish_print again.`);
-          return refuse(`${toPublish(before.value, url) ?? p.message} Then publish_print again.`);
+          if (p.reason === "conflict") return refuse(p.message, { guidance: ["update_print's slug field takes another one; then publish_print again."] });
+          const missing = missingToPublish({ title: before.value.title, description: before.value.description, photos: before.value.photos });
+          return refuse(p.message, { guidance: [...whereToAdd(missing, printUrl(who.base, id)), "Then publish_print again."] });
         }
         return {
           ...printJson(who.base, p.value),
