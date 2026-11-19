@@ -94,6 +94,9 @@ jobs:
           for i in $(seq 1 20); do [ "$(docker inspect --format '{{.State.Health.Status}}' smoke)" = healthy ] && break; sleep 3; done
           test "$(docker inspect --format '{{.State.Health.Status}}' smoke)" = healthy
           docker logs smoke
+      # products-1, which runs upload, is arm64.
+      - uses: docker/setup-qemu-action@v4
+        if: github.ref == 'refs/heads/main'
       - uses: docker/login-action@v4
         if: github.ref == 'refs/heads/main'
         with:
@@ -105,6 +108,7 @@ jobs:
         with:
           context: .
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: |
             ghcr.io/3d-bruckner/upload:main
             ghcr.io/3d-bruckner/upload:sha-${{ github.sha }}
