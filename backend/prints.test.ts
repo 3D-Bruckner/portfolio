@@ -262,6 +262,34 @@ describe("siteChangeHook", () => {
     expect(rt.siteChanges).toBe(5);
   });
 
+  it("unchangedSaveIsNoSiteChange: saving a published print's form unchanged writes nothing and starts no build", () => {
+    const a = value(createCategory(rt, "Geschenke"));
+    const b = value(createCategory(rt, "Deko"));
+    const p = published("Vase", { price: 7, categoryIds: [a.id, b.id], sources: [{ label: "MakerWorld", url: "https://makerworld.com/x" }] });
+    const before = rt.siteChanges;
+    // What the web form sends back: every field as shown, an empty short title as "", the categories in another order.
+    const same = value(
+      updatePrint(rt, p.id, {
+        title: p.title,
+        shortTitle: "",
+        description: p.description,
+        price: 7,
+        selfDesigned: p.selfDesigned,
+        weightGrams: p.weightGrams,
+        printTimeMinutes: p.printTimeMinutes,
+        colors: p.colors,
+        categoryIds: [b.id, a.id],
+        sources: [{ label: "MakerWorld", url: "https://makerworld.com/x" }],
+        slug: p.slug,
+      }),
+    );
+    expect(rt.siteChanges).toBe(before);
+    expect(same.updatedAt).toBe(p.updatedAt);
+    // One field that differs is a change again.
+    value(updatePrint(rt, p.id, { title: p.title, price: 8 }));
+    expect(rt.siteChanges).toBe(before + 1);
+  });
+
   it("deleting a published print is a site change", () => {
     const p = published("Vase");
     value(deletePrint(rt, p.id));

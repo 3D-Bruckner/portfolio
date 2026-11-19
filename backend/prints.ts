@@ -64,6 +64,17 @@ function columns(v: Partial<PrintValues>): PrintRowPatch {
   return c;
 }
 
+/** Whether `fields` would store what `current` already holds: compared as stored (an empty short title is none; categories are a set). */
+function unchanged(current: PrintValues, fields: Partial<PrintValues>): boolean {
+  const asked = columns(fields);
+  const held = columns(current) as Record<string, unknown>;
+  const sameColumns = Object.entries(asked).every(([k, v]) => held[k] === v);
+  const sorted = (ids: string[]) => [...ids].sort();
+  const sameCategories = !fields.categoryIds || JSON.stringify(sorted(fields.categoryIds)) === JSON.stringify(sorted(current.categoryIds));
+  const sameSources = !fields.sources || JSON.stringify(fields.sources) === JSON.stringify(current.sources);
+  return sameColumns && sameCategories && sameSources;
+}
+
 /** The prints of these rows, in the rows' order, with their categories, sources and photos. */
 function assemble(rt: Runtime, rows: PrintRow[]): Print[] {
   const ids = rows.map((r) => r.id);
@@ -205,7 +216,8 @@ export function updatePrint(rt: Runtime, id: string, patch: PrintPatch): Outcome
     const merged: PrintValues = { ...current, ...fields } as PrintValues;
     const checked = checkWrite(rt, id, { ...merged, slug: slug ?? row.slug }, { published: row.status === "published", slugChosen });
     if (!checked.ok) return checked;
-    if (Object.keys(changes).length === 0) return ok(current);
+    // A form saved as it was ("Speichern" without an edit) changes nothing: nothing is written and no build is started.
+    if (!slugChosen && unchanged(current, fields)) return ok(current);
     rt.store.updatePrint(id, { ...columns(fields), ...(slugChosen ? { slug } : {}), updated_at: rt.clock().toISOString() });
     if (fields.categoryIds) rt.store.setPrintCategories(id, fields.categoryIds);
     if (fields.sources) rt.store.setPrintSources(id, fields.sources);
