@@ -7,6 +7,7 @@ import { openRuntime, type Runtime } from "./runtime";
 export { API_TOKEN_PREFIX, APP_NAME, CONSENT_PAGE, ENV_PREFIX, SIGN_IN_PAGE, type MailWording } from "./accounts";
 export { createCategory, deleteCategory, listCategories, renameCategory, type Category } from "./categories";
 export type { Config } from "./config";
+export { siteExport, type SiteExport } from "./export";
 export { healthResponse } from "./health";
 export { log } from "./log";
 export { movePrint, moveShowcase, setShowcase } from "./order";
@@ -16,6 +17,7 @@ export { PRINT_FIELDS, parsePrintInput, parsePrintPatch, printInputSchema, print
 export {
   createPrint,
   deletePrint,
+  findPrint,
   getPrint,
   listPrints,
   publishPrint,
@@ -26,6 +28,7 @@ export {
   type PrintInput,
   type PrintPatch,
 } from "./prints";
+export { OPEN_API, REST_OPS } from "./rest";
 export type { Runtime } from "./runtime";
 export { toSlug } from "./slug";
 

@@ -15,7 +15,8 @@
     "format:check": "prettier --check .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "generate": "node scripts/generate-openapi.mjs"
   },
   "dependencies": {
     "@better-auth/api-key": "1.7.21",
@@ -50,6 +51,7 @@
     "prettier": "^3.10.1",
     "tailwindcss": "^4",
     "typescript": "^6",
+    "vite": "8.3.8",
     "vitest": "^5.1.1"
   },
   "allowScripts": {

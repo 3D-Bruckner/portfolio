@@ -128,6 +128,12 @@ export function getPrint(rt: Runtime, id: string): Outcome<Print> {
   return row ? ok(assemble(rt, [row])[0]!) : notFound(`No print ${id}.`);
 }
 
+/** A print by its id or, failing that, its slug (what a person or an assistant may name it by). */
+export function findPrint(rt: Runtime, idOrSlug: string): Outcome<Print> {
+  const row = rt.store.print(idOrSlug) ?? rt.store.printBySlug(idOrSlug);
+  return row ? ok(assemble(rt, [row])[0]!) : notFound(`No print with the id or slug ${idOrSlug}.`);
+}
+
 /** Drafts newest first, then the published prints in the site's order; or only one of them. */
 export function listPrints(rt: Runtime, filter: { status?: "draft" | "published" } = {}): Print[] {
   const rows = rt.store.prints(filter.status);
