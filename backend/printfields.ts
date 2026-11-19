@@ -34,11 +34,11 @@ export const PRINT_FIELDS = {
   title: field({
     kind: "text",
     limit: 200,
-    rule: "Not empty; the slug is made from it at creation.",
+    rule: "Not empty; the slug is made from it.",
     description: "The print's title as the site shows it, e.g. 'Beyblade – Dragoon'.",
     onCreate: "Required.",
     required: true,
-    onEdit: "Left out: unchanged. Can't be emptied. Changing it doesn't change the slug.",
+    onEdit: "Left out: unchanged. Can't be emptied. On a print never published, the slug follows it unless the slug was set by hand.",
     nullable: false,
     value: z.string().trim().min(1).max(200),
   }),

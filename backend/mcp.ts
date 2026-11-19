@@ -12,6 +12,7 @@ import { movePrint, moveShowcase, setShowcase } from "./order";
 import type { Outcome } from "./outcome";
 import { deletePhoto, getPhoto, reorderPhotos, setCover, setCrop } from "./photos";
 import { printInputSchema, printPatchSchema } from "./printfields";
+import { readiness } from "./readiness";
 import { createPrint, deletePrint, findPrint, getPrint, listPrints, missingToPublish, publishPrint, unpublishPrint, updatePrint, type Print } from "./prints";
 import type { Runtime } from "./runtime";
 import {
@@ -70,6 +71,12 @@ function whereToAdd(missing: ReturnType<typeof missingToPublish>, url: string): 
   ].filter((line): line is string => typeof line === "string");
 }
 
+/** What would make the print look better on the site (readiness.ts), each as one line of guidance. */
+const tips = (p: Print): string[] =>
+  readiness(p)
+    .filter((h) => h.level === "tip")
+    .map((h) => h.text);
+
 /** A domain refusal as the tool's refusal. */
 const refused = (o: Extract<Outcome<unknown>, { ok: false }>): Refused => refuse(o.message);
 
@@ -124,8 +131,8 @@ export function mcpTools(rt: Runtime): Tool[] {
         const url = printUrl(who.base, p.value.id);
         const guidance =
           p.value.status === "published"
-            ? [`It is on the site at /portfolio/${p.value.slug}${p.value.showcase ? ", as a showcase" : ""}.`]
-            : ["It is a draft, not on the site.", toPublish(p.value, url) ?? "It can be published (publish_print)."];
+            ? [`It is on the site at /portfolio/${p.value.slug}${p.value.showcase ? ", as a showcase" : ""}.`, ...tips(p.value)]
+            : ["It is a draft, not on the site.", toPublish(p.value, url) ?? "It can be published (publish_print).", ...tips(p.value)];
         return { ...printJson(who.base, p.value), guidance };
       },
     }),
@@ -160,7 +167,7 @@ export function mcpTools(rt: Runtime): Tool[] {
       handle: async ({ id, ...patch }, who) => {
         const p = updatePrint(rt, id, patch);
         if (!p.ok) return refused(p);
-        return { ...printJson(who.base, p.value), guidance: [onTheSite(p.value)] };
+        return { ...printJson(who.base, p.value), guidance: [onTheSite(p.value), ...tips(p.value)] };
       },
     }),
     defineTool({

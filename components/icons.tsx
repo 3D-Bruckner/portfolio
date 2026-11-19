@@ -9,6 +9,8 @@ export {
   ArrowUpRight as ExternalIcon,
   Check as SavedIcon,
   ChevronRight as ChevronIcon,
+  CircleCheck as ReadyIcon,
+  Lightbulb as TipIcon,
   CircleAlert as ProblemIcon,
   Crop as CropIcon,
   FileBox as FileIcon,

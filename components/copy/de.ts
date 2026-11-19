@@ -124,7 +124,7 @@ export const de: Copy = {
       colors: { label: "Farben", hint: "Wie viele Filamentfarben." },
       categoryIds: { label: "Kategorien", hint: "" },
       sources: { label: "Quellen", hint: "Woher das Modell stammt." },
-      slug: { label: "Adresse auf der Website", hint: "Liegt fest, sobald der Druck veröffentlicht ist." },
+      slug: { label: "Adresse auf der Website", hint: "Folgt dem Titel, bis du sie selbst änderst; liegt fest, sobald der Druck veröffentlicht ist." },
     },
     threeMf: {
       button: "Aus 3MF-Datei ausfüllen",
@@ -144,6 +144,19 @@ export const de: Copy = {
         description: "Beschreibung",
         sources: "MakerWorld-Link",
       },
+    },
+    readiness: {
+      heading: "Für die Website",
+      ready: "Alles da, was die Website zeigt.",
+      tips: (n: number) => (n === 1 ? "1 Tipp" : `${n} Tipps`),
+      go: "Zum Feld",
+      price: "Kein Preis: die Karte zeigt kein „ca. … €“.",
+      category: "Keine Kategorie: die Website zeigt ihn unter „Sonstiges“.",
+      slicer: "Keine Slicer-Werte (Gewicht, Druckzeit): unten aus einer 3MF-Datei ausfüllen.",
+      cardTitle: (title: string) => `„${title}“ ist lang für eine Karte: ein Kurztitel passt besser.`,
+      morePhotos: (n: number) => `Erst ${n === 1 ? "1 Foto" : `${n} Fotos`}: ab 3 sieht man den Druck von mehreren Seiten.`,
+      longerDescription: "Die Beschreibung ist sehr kurz: ein Satz dazu, was es ist und wofür, hilft.",
+      origin: "Weder eine Quelle noch „Selbst entworfen“.",
     },
     groups: {
       text: "Text",

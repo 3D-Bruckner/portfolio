@@ -129,13 +129,32 @@ describe("updatePrint", () => {
   it("changes only what the patch names; null clears an optional field", () => {
     const p = value(createPrint(rt, input("Vase", { price: 5, colors: 2 })));
     const u = value(updatePrint(rt, p.id, { price: null, title: "Große Vase" }));
-    expect(u).toMatchObject({ title: "Große Vase", price: null, colors: 2, slug: "vase" });
+    // A draft's address follows its new title (slugFollowsTitle below).
+    expect(u).toMatchObject({ title: "Große Vase", price: null, colors: 2, slug: "grosse-vase" });
   });
 
   it("lets a draft's slug change", () => {
     const p = value(createPrint(rt, input("Vase")));
     expect(value(updatePrint(rt, p.id, { slug: "blumenvase" })).slug).toBe("blumenvase");
     expect(updatePrint(rt, p.id, { slug: "Not A Slug" })).toMatchObject({ ok: false, reason: "invalid" });
+  });
+
+  it("slugFollowsTitle: a draft's address follows its title until it is published, unless it was set by hand or is taken", () => {
+    const p = value(createPrint(rt, input("Entwurf 20.11. 14:05")));
+    expect(p.slug).toBe("entwurf-20-11-14-05");
+    // Renamed (the form sends the slug it shows): the address follows.
+    expect(value(updatePrint(rt, p.id, { title: "Drachenei", slug: p.slug })).slug).toBe("drachenei");
+    // Set by hand: from then on it stays when the title changes.
+    value(updatePrint(rt, p.id, { slug: "ei" }));
+    expect(value(updatePrint(rt, p.id, { title: "Drachenei – groß" })).slug).toBe("ei");
+    // Taken by another print: the title is saved, the address stays.
+    const q = value(createPrint(rt, input("Vase")));
+    value(createPrint(rt, input("Krug")));
+    const renamed = value(updatePrint(rt, q.id, { title: "Krug" }));
+    expect(renamed).toMatchObject({ title: "Krug", slug: "vase" });
+    // Published once: the address is fixed.
+    const r = published("Schale");
+    expect(value(updatePrint(rt, r.id, { title: "Obstschale" })).slug).toBe("schale");
   });
 
   it("slugFixedAfterPublish: refuses a slug change once the print was published, even after unpublishing", () => {

@@ -195,7 +195,10 @@ export function createPrint(rt: Runtime, input: PrintInput): Outcome<Print> {
   });
 }
 
-/** Changes the fields `patch` names. The slug only until the print was first published. A site change when the print is published. */
+/**
+ * Changes the fields `patch` names. The slug only until the print was first published; until then it also follows a new title, unless it
+ * was set by hand. A site change when the print is published.
+ */
 export function updatePrint(rt: Runtime, id: string, patch: PrintPatch): Outcome<Print> {
   const parsed = parsePrintPatch(patch);
   if (!parsed.ok) return parsed;
@@ -210,11 +213,20 @@ export function updatePrint(rt: Runtime, id: string, patch: PrintPatch): Outcome
       return conflict(`The slug "${row.slug}" is fixed: the print was published (${row.first_published_at}), and its address stays.`);
     const current = assemble(rt, [row])[0]!;
     const merged: PrintValues = { ...current, ...fields } as PrintValues;
-    const checked = checkWrite(rt, id, { ...merged, slug: slug ?? row.slug }, { published: row.status === "published", slugChosen });
+    // Until it is first published, a draft's address follows its title, unless it was set by hand (it isn't the old title's any
+    // more) or the new title's is taken or reserved: then the title changes and the address stays.
+    let nextSlug = slugChosen ? slug! : row.slug;
+    if (!slugChosen && !row.first_published_at && fields.title !== undefined && row.slug === toSlug(row.title)) {
+      const followed = toSlug(fields.title);
+      const other = followed ? rt.store.printBySlug(followed) : undefined;
+      if (followed && (!other || other.id === id) && !rt.store.reservedSlug(followed)) nextSlug = followed;
+    }
+    const slugChanges = nextSlug !== row.slug;
+    const checked = checkWrite(rt, id, { ...merged, slug: nextSlug }, { published: row.status === "published", slugChosen });
     if (!checked.ok) return checked;
     // A form saved as it was ("Speichern" without an edit) changes nothing: nothing is written and no build is started.
-    if (!slugChosen && unchanged(current, fields)) return ok(current);
-    rt.store.updatePrint(id, { ...columns(fields), ...(slugChosen ? { slug } : {}), updated_at: rt.clock().toISOString() });
+    if (!slugChanges && unchanged(current, fields)) return ok(current);
+    rt.store.updatePrint(id, { ...columns(fields), ...(slugChanges ? { slug: nextSlug } : {}), updated_at: rt.clock().toISOString() });
     if (fields.categoryIds) rt.store.setPrintCategories(id, fields.categoryIds);
     if (fields.sources) rt.store.setPrintSources(id, fields.sources);
     if (row.status === "published") siteChange();
