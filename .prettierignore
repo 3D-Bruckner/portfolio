@@ -6,3 +6,5 @@ AGENTS.md
 docs/superpowers/
 # Agent workflow scratch.
 .superpowers/
+# Open Design's files (the design and its style), written by its tools.
+.open-design/
