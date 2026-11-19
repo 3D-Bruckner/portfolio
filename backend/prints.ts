@@ -3,12 +3,11 @@
 // after a delete (reserved_slugs). Every write goes through one check (checkWrite) after the field table's parse (printfields.ts).
 import { randomUUID } from "node:crypto";
 import { rmSync } from "node:fs";
-import { join } from "node:path";
 import type { Category } from "./categories";
 import type { PrintRow, PrintRowPatch } from "./db";
 import { siteSort } from "./order";
 import { conflict, done, invalid, notFound, ok, type Outcome } from "./outcome";
-import { photoOf, type Photo } from "./photos";
+import { photoOf, photosDir, type Photo } from "./photos";
 import { parsePrintInput, parsePrintPatch, type PrintInput, type PrintPatch } from "./printfields";
 import { mutation, type Runtime } from "./runtime";
 import { toSlug } from "./slug";
@@ -288,6 +287,6 @@ export function deletePrint(rt: Runtime, id: string): Outcome<void> {
     if (row.status === "published") siteChange();
     return done;
   });
-  if (out.ok) rmSync(join(rt.config.dataDir, "photos", id), { recursive: true, force: true });
+  if (out.ok) rmSync(photosDir(rt, id), { recursive: true, force: true });
   return out;
 }

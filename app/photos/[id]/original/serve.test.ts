@@ -48,7 +48,8 @@ describe("GET /photos/[id]/original", () => {
   it("answers 404 for a photo that doesn't exist, or one without an original", async () => {
     rt.person = async () => ({ id: "u1", email: "marcel@example.com" });
     expect((await serveOriginal(rt, get(), "nope")).status).toBe(404);
-    rt.store.insertPhoto({ id: "old", print_id: photo.printId, position: 9, width: 1, height: 1, bytes: 1, sha256: "0", created_at: "" });
-    expect((await serveOriginal(rt, get(), "old")).status).toBe(404);
+    const old = "00000000-0000-4000-8000-000000000001";
+    rt.store.insertPhoto({ id: old, print_id: photo.printId, position: 9, width: 1, height: 1, bytes: 1, sha256: "0", created_at: "" });
+    expect((await serveOriginal(rt, get(), old)).status).toBe(404);
   });
 });
