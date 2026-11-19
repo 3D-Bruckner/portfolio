@@ -55,6 +55,8 @@ export interface PhotosTable {
   original_width: number | null;
   original_height: number | null;
   original_bytes: number | null;
+  /** The original's Exif orientation (1–8), which turns the stored size into the shown one; null for a photo stored before it was kept. */
+  original_orientation: number | null;
   /** The cutout's rectangle in the original as shown (orientation applied); all null = the whole photo. */
   crop_left: number | null;
   crop_top: number | null;

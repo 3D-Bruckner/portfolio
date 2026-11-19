@@ -5,7 +5,7 @@ import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Outcome } from "./outcome";
 import { addPhoto, deletePhoto, getPhoto, originalPath, photoPath, reorderPhotos, setCover, setCrop, type Photo } from "./photos";
-import { createPrint, getPrint, publishPrint, type Print } from "./prints";
+import { createPrint, deletePrint, getPrint, publishPrint, type Print } from "./prints";
 import { seedPhoto, testRuntime, type TestRuntime } from "./testing/runtime";
 
 const FIXTURE = join(import.meta.dirname, "fixtures", "gps-rotated.jpg");
@@ -64,7 +64,8 @@ describe("addPhoto", () => {
 
     const p = draft();
     const photo = value(await addPhoto(rt, p.id, { path: FIXTURE, type: "image/jpeg" }));
-    expect(photo).toMatchObject({ printId: p.id, width: 1800, height: 2400, position: 1, original: { width: 4000, height: 3000 }, crop: null });
+    // The original's size as shown (its orientation applied), the space a crop is chosen in; it is stored 4000×3000.
+    expect(photo).toMatchObject({ printId: p.id, width: 1800, height: 2400, position: 1, original: { width: 3000, height: 4000 }, crop: null });
 
     const stored = photoPath(rt, photo);
     expect(stored).toBe(join(rt.config.dataDir, "photos", p.id, `${photo.id}.jpg`));
@@ -257,7 +258,7 @@ describe("addPhoto", () => {
 
   it("cutoutDefaultsToWholePhoto: the cutout is the whole photo, turned upright, until a crop is chosen", async () => {
     const photo = value(await addPhoto(rt, draft().id, { path: FIXTURE, type: "image/jpeg" }));
-    expect(photo).toMatchObject({ crop: null, original: { width: 4000, height: 3000 }, width: 1800, height: 2400 });
+    expect(photo).toMatchObject({ crop: null, original: { width: 3000, height: 4000 }, width: 1800, height: 2400 });
     expect(value(getPhoto(rt, photo.id))).toEqual(photo);
   });
 
@@ -501,6 +502,29 @@ describe("setCrop", () => {
     expect(rt.siteChanges).toBe(before + 1);
     value(await setCrop(rt, photo.id, null));
     expect(rt.siteChanges).toBe(before + 2);
+  });
+
+  it("originalIsShownSize: Photo.original is the size crops are measured in; its whole is the whole photo", async () => {
+    const photo = await fixture();
+    expect(photo.original).toEqual({ width: 3000, height: 4000 });
+    const whole = value(await setCrop(rt, photo.id, { left: 0, top: 0, ...photo.original! }));
+    expect(whole).toMatchObject({ crop: null, width: 1800, height: 2400 });
+  });
+
+  it("returns notFound when the photo, or its print, is deleted while its cutout is rendered", async () => {
+    for (const remove of ["photo", "print"] as const) {
+      const p = draft(`Vase ${remove}`);
+      const photo = await fixture(p.id);
+      // setCrop runs up to its first await; the delete happens there, before the original is read.
+      const pending = setCrop(rt, photo.id, { left: 0, top: 0, width: 100, height: 100 });
+      if (remove === "photo") value(deletePhoto(rt, photo.id));
+      else value(deletePrint(rt, p.id));
+      expect(await pending, remove).toMatchObject({ ok: false, reason: "not_found" });
+      expect(
+        photoFiles().filter((f) => f.startsWith(photo.id) || f.startsWith(`.${photo.id}`)),
+        remove,
+      ).toEqual([]);
+    }
   });
 
   it("leaves no temporary file behind, and refuses a photo whose original isn't kept", async () => {

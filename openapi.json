@@ -149,7 +149,7 @@
                                     },
                                     { "type": "null" }
                                   ],
-                                  "description": "The original's size; null for a photo stored before originals were kept."
+                                  "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
                                 },
                                 "crop": {
                                   "anyOf": [
@@ -407,7 +407,7 @@
                               },
                               { "type": "null" }
                             ],
-                            "description": "The original's size; null for a photo stored before originals were kept."
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
                           },
                           "crop": {
                             "anyOf": [
@@ -613,7 +613,7 @@
                               },
                               { "type": "null" }
                             ],
-                            "description": "The original's size; null for a photo stored before originals were kept."
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
                           },
                           "crop": {
                             "anyOf": [
@@ -869,7 +869,7 @@
                               },
                               { "type": "null" }
                             ],
-                            "description": "The original's size; null for a photo stored before originals were kept."
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
                           },
                           "crop": {
                             "anyOf": [
@@ -1096,7 +1096,7 @@
                               },
                               { "type": "null" }
                             ],
-                            "description": "The original's size; null for a photo stored before originals were kept."
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
                           },
                           "crop": {
                             "anyOf": [
@@ -1299,7 +1299,7 @@
                               },
                               { "type": "null" }
                             ],
-                            "description": "The original's size; null for a photo stored before originals were kept."
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
                           },
                           "crop": {
                             "anyOf": [
@@ -1511,7 +1511,7 @@
                               },
                               { "type": "null" }
                             ],
-                            "description": "The original's size; null for a photo stored before originals were kept."
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
                           },
                           "crop": {
                             "anyOf": [
@@ -1722,7 +1722,7 @@
                               },
                               { "type": "null" }
                             ],
-                            "description": "The original's size; null for a photo stored before originals were kept."
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
                           },
                           "crop": {
                             "anyOf": [
@@ -1942,7 +1942,7 @@
                               },
                               { "type": "null" }
                             ],
-                            "description": "The original's size; null for a photo stored before originals were kept."
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
                           },
                           "crop": {
                             "anyOf": [
@@ -2164,7 +2164,7 @@
                               },
                               { "type": "null" }
                             ],
-                            "description": "The original's size; null for a photo stored before originals were kept."
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
                           },
                           "crop": {
                             "anyOf": [
@@ -2373,7 +2373,7 @@
                               },
                               { "type": "null" }
                             ],
-                            "description": "The original's size; null for a photo stored before originals were kept."
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
                           },
                           "crop": {
                             "anyOf": [
@@ -2528,7 +2528,7 @@
                         },
                         { "type": "null" }
                       ],
-                      "description": "The original's size; null for a photo stored before originals were kept."
+                      "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
                     },
                     "crop": {
                       "anyOf": [

@@ -73,7 +73,7 @@ const photoSchema = z.object({
   original: z
     .object({ width: z.number().int(), height: z.number().int() })
     .nullable()
-    .describe("The original's size; null for a photo stored before originals were kept."),
+    .describe("The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."),
   crop: cropSchema.nullable().describe("The cutout's rectangle in the original as shown; null: the whole photo."),
 }) satisfies z.ZodType<Photo>;
 

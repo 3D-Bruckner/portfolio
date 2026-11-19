@@ -1,23 +1,38 @@
-// A JPEG's metadata taken out without touching its image: a walk over the file's marker segments (no decoding), keeping what a decoder
-// needs and dropping the rest. Kept: the frame, the tables, the restart interval, every scan's entropy-coded data byte for byte, the
-// colour profile (APP2 ICC_PROFILE, however many chunks) and Adobe's APP14 (it says how the colour components are coded, nothing about
-// the photo). Dropped: every other APPn (Exif with its GPS position, camera and date, XMP, JFIF and its thumbnail, IPTC, MPF, makers'
-// own), every comment, and whatever follows EOI (an iPhone puts further images there). The orientation, read from the Exif, is written
-// back as a minimal Exif of its own: IFD0 with the one Orientation entry. A file that isn't one whole JPEG is refused as invalid.
+// A JPEG's metadata taken out without touching its image: a walk over the file's marker segments (no decoding) that keeps only what a
+// decoder needs, by a whitelist. Kept: SOI; the frame (SOF0–3, 5–7, 9–11, 13–15; one); the tables (DHT, DAC, DQT); the restart interval
+// (DRI); DNL at its 4 bytes only; every scan's entropy-coded data byte for byte; EOI; the colour profile (APP2 ICC_PROFILE chunks, their
+// sequence checked and their data exactly the profile its header announces); Adobe's APP14 at exactly its 12 bytes (it says how the colour
+// components are coded, nothing about the photo). Dropped: every other APPn (Exif with its GPS position, camera and date, XMP, JFIF and
+// its thumbnail, IPTC, MPF, makers' own), every comment, and whatever follows EOI (an iPhone puts further images there). Any other marker
+// (DHP, EXP, JPG, JPGn, TEM, a second frame), a longer DNL and a colour profile with a tail are refused: nothing rides along in a segment
+// that is kept. The orientation, read from the Exif, is written back as a minimal Exif of its own: IFD0 with the one Orientation entry. A
+// file that isn't one whole JPEG is refused as invalid.
 import { invalid, ok, type Outcome } from "./outcome";
 
 const SOI = 0xd8;
 const EOI = 0xd9;
 const SOS = 0xda;
 const COM = 0xfe;
-const TEM = 0x01;
+const DHT = 0xc4;
+const DAC = 0xcc;
+const DQT = 0xdb;
+const DNL = 0xdc;
+const DRI = 0xdd;
+const APP1 = 0xe1;
+const APP2 = 0xe2;
+const APP14 = 0xee;
 const isApp = (m: number) => m >= 0xe0 && m <= 0xef;
 const isRst = (m: number) => m >= 0xd0 && m <= 0xd7;
 /** SOF0–SOF15, less DHT (C4), JPG (C8) and DAC (CC), which share the range. */
-const isFrame = (m: number) => m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc;
+const isFrame = (m: number) => m >= 0xc0 && m <= 0xcf && m !== DHT && m !== 0xc8 && m !== DAC;
+/** The tables and settings a decoder reads, before or between scans. */
+const isTable = (m: number) => m === DHT || m === DAC || m === DQT || m === DRI || m === DNL;
+const hex = (m: number) => `FF${m.toString(16).toUpperCase().padStart(2, "0")}`;
 
 const ICC = Buffer.from("ICC_PROFILE\0", "latin1");
 const ADOBE = Buffer.from("Adobe", "latin1");
+/** Adobe's APP14: "Adobe", version, flags0, flags1, transform. */
+const ADOBE_LENGTH = 12;
 const EXIF = Buffer.from("Exif\0\0", "latin1");
 const ORIENTATION = 0x0112;
 
@@ -33,9 +48,37 @@ export function stripJpegMetadata(input: Buffer): Outcome<Buffer> {
   }
 }
 
+/** A segment as written: FF, the marker, the length (which counts itself) and the payload. */
+const segmentOf = (code: number, payload: Buffer): Buffer => {
+  const head = Buffer.from([0xff, code, 0, 0]);
+  head.writeUInt16BE(payload.length + 2, 2);
+  return Buffer.concat([head, payload]);
+};
+
+/** The colour profile's chunks in their order, checked: one of each sequence number 1..count, and together exactly the profile. */
+function iccSegments(chunks: Buffer[]): Buffer[] {
+  if (chunks.length === 0) return [];
+  const count = chunks[0]!.readUInt8(ICC.length + 1);
+  const bySeq = new Map<number, Buffer>();
+  for (const c of chunks) {
+    const seq = c.readUInt8(ICC.length);
+    if (c.readUInt8(ICC.length + 1) !== count) throw new Malformed("colour profile chunks that disagree on their count");
+    if (seq < 1 || seq > count || bySeq.has(seq)) throw new Malformed(`a colour profile chunk numbered ${seq} of ${count}`);
+    bySeq.set(seq, c);
+  }
+  if (bySeq.size !== count) throw new Malformed(`${bySeq.size} of ${count} colour profile chunks`);
+  const ordered = [...bySeq.keys()].sort((a, b) => a - b).map((seq) => bySeq.get(seq)!);
+  const profile = Buffer.concat(ordered.map((c) => c.subarray(ICC.length + 2)));
+  if (profile.length < 4 || profile.readUInt32BE(0) !== profile.length)
+    throw new Malformed("a colour profile whose data isn't the size its header says (something after it?)");
+  return ordered.map((c) => segmentOf(APP2, c));
+}
+
 function strip(b: Buffer): Buffer {
   if (b.length < 4 || b[0] !== 0xff || b[1] !== SOI) throw new Malformed("it doesn't start with SOI");
   const out: Buffer[] = [];
+  const icc: Buffer[] = [];
+  let iccAt = -1;
   let orientation: number | null = null;
   let frame = false;
   let pos = 2;
@@ -56,8 +99,10 @@ function strip(b: Buffer): Buffer {
     if (at + length > b.length) throw new Malformed("a segment runs past the end of the file");
     return at + length;
   };
-  const kept = (code: number, payload: Buffer): boolean =>
-    code === COM ? false : !isApp(code) || (code === 0xe2 && startsWith(payload, ICC)) || (code === 0xee && startsWith(payload, ADOBE));
+  /** A table or setting a decoder reads, checked; DNL is its 2-byte line count and nothing else. */
+  const table = (code: number, payload: Buffer) => {
+    if (code === DNL && payload.length !== 2) throw new Malformed(`a DNL of ${payload.length + 2} bytes, not 4`);
+  };
 
   // The header: everything up to the first SOS, segment by segment.
   let sos = -1;
@@ -66,23 +111,34 @@ function strip(b: Buffer): Buffer {
     const { code, next } = marker(pos);
     if (code === SOI) throw new Malformed("a second SOI");
     if (code === EOI) throw new Malformed("EOI before any image data");
-    if (code === TEM) {
-      pos = next;
-      continue;
-    }
     if (isRst(code)) throw new Malformed("a restart marker before any image data");
+    if (code !== SOS && code !== COM && !isApp(code) && !isFrame(code) && !isTable(code)) throw new Malformed(`a marker JPEG photos don't carry, ${hex(code)}`);
     const end = segmentEnd(next);
     const payload = b.subarray(next + 2, end);
+    pos = end;
     if (code === SOS) {
       if (!frame) throw new Malformed("image data before the frame header");
       sos = start;
-      break;
+    } else if (isFrame(code)) {
+      if (frame) throw new Malformed("a second frame header");
+      frame = true;
+      out.push(segmentOf(code, payload));
+    } else if (isTable(code)) {
+      table(code, payload);
+      out.push(segmentOf(code, payload));
+    } else if (code === APP1 && orientation === null && startsWith(payload, EXIF)) {
+      orientation = readOrientation(payload.subarray(EXIF.length));
+    } else if (code === APP2 && startsWith(payload, ICC)) {
+      if (payload.length < ICC.length + 2) throw new Malformed("a colour profile chunk without its sequence number");
+      if (iccAt < 0) iccAt = out.length;
+      icc.push(payload);
+    } else if (code === APP14 && startsWith(payload, ADOBE)) {
+      if (payload.length < ADOBE_LENGTH) throw new Malformed("an Adobe segment shorter than its 12 bytes");
+      out.push(segmentOf(code, payload.subarray(0, ADOBE_LENGTH)));
     }
-    if (isFrame(code)) frame = true;
-    if (code === 0xe1 && orientation === null && startsWith(payload, EXIF)) orientation = readOrientation(payload.subarray(EXIF.length));
-    if (kept(code, payload)) out.push(Buffer.from([0xff, code]), b.subarray(next, end));
-    pos = end;
+    // Any other APPn and every comment: dropped.
   }
+  if (iccAt >= 0) out.splice(iccAt, 0, ...iccSegments(icc));
 
   // The scans: from the first SOS to EOI, copied as they are, less any APPn or comment found between them.
   const scans: Buffer[] = [];
@@ -95,12 +151,10 @@ function strip(b: Buffer): Buffer {
       break;
     }
     if (code === SOI) throw new Malformed("a second SOI");
-    if (code === TEM || isRst(code)) {
-      pos = next;
-      continue;
-    }
+    if (code !== SOS && code !== COM && !isApp(code) && !isTable(code)) throw new Malformed(`a marker JPEG photos don't carry between scans, ${hex(code)}`);
     const end = segmentEnd(next);
-    if (!kept(code, b.subarray(next + 2, end))) {
+    if (isTable(code)) table(code, b.subarray(next + 2, end));
+    if (code === COM || isApp(code)) {
       scans.push(b.subarray(from, pos));
       from = end;
     }

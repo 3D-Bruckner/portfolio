@@ -201,6 +201,66 @@ describe("stripJpegMetadata", () => {
     }
   });
 
+  it("keeps Adobe's APP14 at exactly its 12 bytes: a tail after them is gone", async () => {
+    const adobe = Buffer.from("Adobe\0\x64\0\0\0\0\x01", "latin1");
+    const input = await jpegWith({ afterSoi: [segment(0xee, Buffer.concat([adobe, Buffer.from("GPSLatitude 48.137 N", "latin1")]))] });
+    const out = value(stripJpegMetadata(input));
+    expect(out.includes("GPSLatitude")).toBe(false);
+    expect(header(out).segments.filter(([m]) => m === 0xee)).toEqual([[0xee, adobe]]);
+    expect(scans(out).equals(scans(input))).toBe(true);
+    // Shorter than Adobe's 12 bytes is no Adobe segment a decoder can read.
+    expect(stripJpegMetadata(await jpegWith({ afterSoi: [segment(0xee, "Adobe\0\x64")] }))).toMatchObject({ ok: false, reason: "invalid" });
+  });
+
+  it("refuses a colour profile with something after it, or chunks whose sequence doesn't add up", async () => {
+    const icc = (await sharp(FIXTURE).metadata()).icc!;
+    const chunk = (seq: number, count: number, part: Buffer) =>
+      segment(0xe2, Buffer.concat([Buffer.from("ICC_PROFILE\0", "latin1"), Buffer.from([seq, count]), part]));
+    const half = Math.floor(icc.length / 2);
+    const [a, b] = [icc.subarray(0, half), icc.subarray(half)];
+    const tail = Buffer.from("GPSLatitude 48.137 N", "latin1");
+    const cases: [string, Buffer[]][] = [
+      ["a tail after the profile", [chunk(1, 1, Buffer.concat([icc, tail]))]],
+      ["a tail in the last chunk", [chunk(1, 2, a), chunk(2, 2, Buffer.concat([b, tail]))]],
+      ["a chunk missing", [chunk(1, 2, a)]],
+      ["a chunk twice", [chunk(1, 2, a), chunk(1, 2, a), chunk(2, 2, b)]],
+      ["sequence 0", [chunk(0, 1, icc)]],
+      ["a sequence beyond the count", [chunk(1, 2, a), chunk(3, 2, b)]],
+      ["counts that differ", [chunk(1, 2, a), chunk(2, 3, b)]],
+      ["a profile shorter than its own header says", [chunk(1, 1, icc.subarray(0, icc.length - 10))]],
+    ];
+    for (const [name, chunks] of cases) {
+      const o = stripJpegMetadata(await jpegWith({ afterSoi: chunks }));
+      expect(o, name).toMatchObject({ ok: false, reason: "invalid" });
+    }
+    // The same chunks in order, out of order in the file, are fine.
+    const ok = value(stripJpegMetadata(await jpegWith({ afterSoi: [chunk(2, 2, b), chunk(1, 2, a)] })));
+    expect((await sharp(ok).metadata()).icc?.equals(icc)).toBe(true);
+  });
+
+  it("refuses a DNL longer than its 4 bytes, and any marker that isn't a JPEG's (no tail rides along)", async () => {
+    const sof = segment(0xc0, Buffer.from([8, 0, 1, 0, 1, 1, 1, 0x11, 0]));
+    const sos = segment(0xda, Buffer.from([1, 1, 0, 0, 0x3f, 0]));
+    const soi = Buffer.from([0xff, 0xd8]);
+    const data = Buffer.from([0x12, 0x34]);
+    const eoi = Buffer.from([0xff, 0xd9]);
+    const file = (...parts: Buffer[]) => Buffer.concat([soi, ...parts]);
+    // A DNL of 4 bytes (its line count) after the first scan is kept.
+    const dnl = segment(0xdc, Buffer.from([0, 1]));
+    expect(value(stripJpegMetadata(file(sof, sos, data, dnl, eoi))).equals(file(sof, sos, data, dnl, eoi))).toBe(true);
+    const cases: [string, Buffer][] = [
+      ["a DNL with a tail", file(sof, sos, data, segment(0xdc, Buffer.from("\0\x01GPSLatitude 48.137 N", "latin1")), eoi)],
+      ["DHP", file(segment(0xde, "GPSLatitude"), sof, sos, data, eoi)],
+      ["EXP", file(sof, segment(0xdf, Buffer.from([0x11])), sos, data, eoi)],
+      ["JPG", file(segment(0xc8, "GPSLatitude"), sof, sos, data, eoi)],
+      ["JPGn", file(segment(0xf3, "GPSLatitude"), sof, sos, data, eoi)],
+      ["TEM", file(Buffer.from([0xff, 0x01]), sof, sos, data, eoi)],
+      ["a second frame", file(sof, sof, sos, data, eoi)],
+      ["an unknown marker after the scan", file(sof, sos, data, segment(0xf0, "GPSLatitude"), eoi)],
+    ];
+    for (const [name, input] of cases) expect(stripJpegMetadata(input), name).toMatchObject({ ok: false, reason: "invalid" });
+  });
+
   it("refuses what isn't a whole JPEG", async () => {
     const whole = readFileSync(FIXTURE);
     const sof = segment(0xc0, Buffer.from([8, 0, 1, 0, 1, 1, 1, 0x11, 0]));

@@ -85,4 +85,10 @@ export const MIGRATIONS: Migration[] = [
       alter table photos add column crop_height integer;
     `,
   },
+  {
+    // The original's Exif orientation (1–8; 1 for a PNG or WebP, kept upright): with original_width/height, the stored pixel size, it
+    // gives the size the original is shown at, which crops are measured in (5–8 swap width and height). Null for a photo stored before.
+    name: "original_orientation",
+    sql: `alter table photos add column original_orientation integer;`,
+  },
 ];

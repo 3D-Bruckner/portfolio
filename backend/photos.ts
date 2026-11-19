@@ -2,8 +2,8 @@
 // DATA_DIR/photos/<printId>/:
 // - <photoId>.orig.<jpg|png|webp>, the original: a JPEG's image data byte for byte (no rotation, no re-encode), with every metadata
 //   segment taken out but its orientation and colour profile (jpegmeta.ts); a PNG or WebP re-encoded losslessly by sharp, turned upright,
-//   with its colour profile and nothing else. So no GPS position, camera or date is ever stored. original_width/height are its stored
-//   pixel size (before the orientation is applied).
+//   with its colour profile and nothing else. So no GPS position, camera or date is ever stored. Its row keeps its stored pixel
+//   size and its orientation; Photo.original is its size as shown (orientation applied), the space crops are measured in.
 // - <photoId>.jpg, the cutout: the crop chosen from the original as shown (orientation applied; the whole photo until one is chosen),
 //   its long edge capped at 2400 px (never enlarged), a JPEG of quality 85 with no metadata at all. width, height, bytes and sha256 are
 //   the cutout's, so the site build sees a changed cutout.
@@ -34,7 +34,7 @@ export type Photo = {
   height: number;
   bytes: number;
   sha256: string;
-  /** The original's stored pixel size (before its orientation is applied); null for a photo stored before originals were kept. */
+  /** The original's size as shown (its orientation applied): the space a crop is chosen in. Null for a photo stored before originals were kept. */
   original: { width: number; height: number } | null;
   /** The cutout's rectangle in the original as shown; null = the whole photo. */
   crop: Crop | null;
@@ -55,6 +55,10 @@ const isOriginalFormat = (f: string | undefined): f is OriginalFormat => f !== u
 export const PHOTO_LONG_EDGE = 2400;
 export const PHOTO_QUALITY = 85;
 
+/** A stored size as shown: orientations 5–8 turn the picture a quarter, swapping width and height. */
+const shownSize = (width: number, height: number, orientation: number | null) =>
+  orientation !== null && orientation >= 5 && orientation <= 8 ? { width: height, height: width } : { width, height };
+
 export const photoOf = (r: PhotoRow): Photo => ({
   id: r.id,
   printId: r.print_id,
@@ -63,7 +67,7 @@ export const photoOf = (r: PhotoRow): Photo => ({
   height: r.height,
   bytes: r.bytes,
   sha256: r.sha256,
-  original: r.original_width !== null && r.original_height !== null ? { width: r.original_width, height: r.original_height } : null,
+  original: r.original_width !== null && r.original_height !== null ? shownSize(r.original_width, r.original_height, r.original_orientation) : null,
   crop:
     r.crop_left !== null && r.crop_top !== null && r.crop_width !== null && r.crop_height !== null
       ? { left: r.crop_left, top: r.crop_top, width: r.crop_width, height: r.crop_height }
@@ -138,7 +142,7 @@ export async function addPhoto(rt: Runtime, printId: string, file: { path: strin
   let stored = false;
   try {
     let cut: OutputInfo;
-    let original: { width: number; height: number; bytes: number };
+    let original: { width: number; height: number; orientation: number; bytes: number };
     try {
       const format = (await sharp(file.path).metadata()).format;
       if (!isOriginalFormat(format)) {
@@ -151,7 +155,7 @@ export async function addPhoto(rt: Runtime, printId: string, file: { path: strin
         return invalid("file: not a photo that can be read, or it arrived incomplete; send it again as a JPEG");
       }
       const m = await sharp(kept.value).metadata();
-      original = { width: m.width, height: m.height, bytes: kept.value.length };
+      original = { width: m.width, height: m.height, orientation: m.orientation ?? 1, bytes: kept.value.length };
       // Made right before the files are written, and never removed: another upload to the same print may be writing into it too.
       mkdirSync(dir, { recursive: true });
       writeFileSync(originalTmp, kept.value);
@@ -181,6 +185,7 @@ export async function addPhoto(rt: Runtime, printId: string, file: { path: strin
         original_width: original.width,
         original_height: original.height,
         original_bytes: original.bytes,
+        original_orientation: original.orientation,
       });
       rt.store.updatePrint(printId, { ...(print.cover_photo_id ? {} : { cover_photo_id: id }), updated_at: now });
       if (print.status === "published") siteChange();
@@ -221,7 +226,17 @@ export async function setCrop(rt: Runtime, photoId: string, crop: Crop | null): 
   const photo = photoOf(row);
   const source = photo.original ? originalPath(rt, photo) : null;
   if (!source) return conflict(`Photo ${photoId} was stored before originals were kept: its cutout is all there is and can't be changed.`);
-  const shown = (await sharp(source).metadata()).autoOrient;
+  // The photo, or its print, may be deleted while this awaits sharp: its files then go, and the answer is that it is gone.
+  const gone = (e: unknown): Outcome<never> => {
+    if (rt.store.photo(photoId)) throw e;
+    return notFound(`No photo ${photoId}.`);
+  };
+  let shown: { width: number; height: number };
+  try {
+    shown = (await sharp(source).metadata()).autoOrient;
+  } catch (e) {
+    return gone(e);
+  }
   if (crop) {
     const problem = cropProblem(crop, shown);
     if (problem) return invalid(problem);
@@ -232,8 +247,14 @@ export async function setCrop(rt: Runtime, photoId: string, crop: Crop | null): 
   const chosen = crop && { left: crop.left, top: crop.top, width: crop.width, height: crop.height };
   const tmp = join(photosDir(rt, photo.printId), `.${photoId}.${randomUUID()}.tmp`);
   try {
-    const cut = await renderCutout(source, chosen, tmp);
-    const bytes = readFileSync(tmp);
+    let cut: OutputInfo;
+    let bytes: Buffer;
+    try {
+      cut = await renderCutout(source, chosen, tmp);
+      bytes = readFileSync(tmp);
+    } catch (e) {
+      return gone(e);
+    }
     return mutation(rt, (siteChange): Outcome<Photo> => {
       if (!rt.store.photo(photoId)) return notFound(`No photo ${photoId}.`);
       const print = rt.store.print(photo.printId)!;
