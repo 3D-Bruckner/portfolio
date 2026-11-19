@@ -1,14 +1,15 @@
 import { MultipartError, readMultipart, type Multipart } from "next-app-kit/multipart";
 import { addPhoto, getPrint, PHOTO_TYPES, type Runtime } from "@/backend";
-import { copyFor, LANG_HEADER } from "@/components/copy";
+import { copyFor, languageOf } from "@/components/copy";
 
 // One photo per request, from the web app's form, so a phone on mobile data that drops one upload loses only that photo and sends it
 // again. Cookie-authenticated (Better Auth's session cookie is SameSite=Lax, so a cross-site post acts for nobody). The photo waits in the
 // kit's temporary folder while it is processed (backend/photos.ts) and that folder is removed afterwards, whatever happened. A refusal
-// answers { error } in the page's language, which proxy.ts passes on in a request header.
+// answers { error } in the page's language, picked here as proxy.ts picks it for the pages: the proxy never runs on this route, since Next
+// would cut a proxied body at 10 MB.
 
 export async function uploadPhoto(rt: Runtime, req: Request, printId: string): Promise<Response> {
-  const t = copyFor(req.headers.get(LANG_HEADER) ?? "").photos;
+  const t = copyFor(languageOf(req.headers)).photos;
   const refuse = (status: number, error: string) => Response.json({ error }, { status, headers: { "cache-control": "no-store" } });
   if (!(await rt.person(req.headers))) return refuse(401, t.signedOut);
   if (!getPrint(rt, printId).ok) return refuse(404, t.noPrint);

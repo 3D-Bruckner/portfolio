@@ -1,6 +1,8 @@
 // The phone's main path: a new print, its text, a category, a photo from the camera roll, published; and what can go wrong on the way
 // (a dropped upload, a HEIC the picker must not offer, the last photo of a published print).
+import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
+import sharp from "sharp";
 import { addPhoto, FIXTURE, newPrint, PHONE, publish, publishedPrint, siteExport, unique } from "./app";
 import { signIn } from "./signin";
 
@@ -41,6 +43,23 @@ test("uploadRetryAfterFailure: a dropped upload fails alone and is sent again", 
   await expect(page.getByRole("region", { name: "Fotos" }).getByRole("alert")).toContainText("nicht hochgeladen");
   await page.getByRole("button", { name: /Erneut versuchen/ }).click();
   await expect(page.getByRole("list", { name: "Fotos" }).getByRole("listitem")).toHaveCount(1, { timeout: 20_000 });
+});
+
+test("largePhotoArrivesWhole: a photo over 10 MB is stored, not cut off on the way to the route", async ({ page }) => {
+  // Next 16 passes only the first 10 MB of a body on when its proxy runs on the route; the upload route is outside the proxy.
+  const w = 2400;
+  const h = 1800;
+  const jpeg = await sharp(randomBytes(w * h * 3), { raw: { width: w, height: h, channels: 3 } })
+    .jpeg({ quality: 100, chromaSubsampling: "4:4:4" })
+    .toBuffer();
+  expect(jpeg.length).toBeGreaterThan(11 * 1024 * 1024);
+  const id = await newPrint(page, { title: unique("Großes Foto") });
+  const r = await page.request.post(`/api/prints/${id}/photos`, {
+    headers: { "accept-language": "de" },
+    multipart: { photo: { name: "IMG_0002.jpg", mimeType: "image/jpeg", buffer: jpeg } },
+  });
+  expect(r.status(), await r.text()).toBe(201);
+  expect(await r.json()).toMatchObject({ printId: id, width: w, height: h });
 });
 
 test("fileInputAccept: the picker asks for JPEG, PNG or WebP, so an iPhone converts HEIC", async ({ page }) => {

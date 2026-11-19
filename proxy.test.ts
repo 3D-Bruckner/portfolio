@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { describe, expect, it } from "vitest";
-import { proxy } from "./proxy";
+import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
+import { config, proxy } from "./proxy";
 
 const get = (path: string, headers: Record<string, string> = {}) => proxy(new NextRequest(new URL(path, "http://localhost"), { headers }));
 const rewrite = (r: Response) => r.headers.get("x-middleware-rewrite");
@@ -20,31 +21,33 @@ describe("proxy", () => {
     expect(get("/", { "accept-language": "de" }).headers.get("x-middleware-request-x-upload-lang")).toBe("de");
   });
 
-  it("passes the language on to the route handlers too, whose refusals speak it (a photo upload's)", () => {
-    const r = get("/api/prints/abc/photos", { "accept-language": "de", "x-upload-lang": "en" });
-    expect(r.headers.get("x-middleware-request-x-upload-lang")).toBe("de");
-    expect(rewrite(r)).toBeNull();
-  });
-
-  it("leaves the route handlers outside app/[lang] alone", () => {
+  it("bodiesBypassProxy: never runs on a route handler, so no post is cut at Next's 10 MB proxied-body limit (a photo upload)", () => {
+    const runs = (url: string) => unstable_doesMiddlewareMatch({ config, url });
     for (const path of [
-      "/health",
-      "/mcp",
+      "/api/prints/abc/photos",
       "/api/v1/prints",
-      "/api/auth/jwks",
+      "/api/v1/prints/abc/photos",
+      "/api/auth/email-otp/send-verification-otp",
       "/api/language",
-      "/photos/abc.jpg",
+      "/api/test/sign-in",
+      "/mcp",
+      "/photos/abc",
+      "/photos/abc?size=thumb",
+      "/health",
       "/.well-known/oauth-protected-resource/mcp",
-    ]) {
-      const r = get(path, { "accept-language": "de" });
-      expect(rewrite(r), path).toBeNull();
-      expect(r.headers.get("x-middleware-next"), path).toBe("1");
-    }
+      "/_next/static/chunks/x.js",
+      "/manifest.webmanifest",
+      "/icons/icon-192.png",
+      "/favicon.ico",
+    ])
+      expect(runs(path), path).toBe(false);
+    for (const path of ["/", "/prints", "/prints/abc", "/prints/abc/edit", "/signin?next=%2F", "/consent", "/settings", "/mcpx", "/healthy"])
+      expect(runs(path), path).toBe(true);
   });
 });
 
 describe("proxy and the Home Screen's files", () => {
-  it("staticAssetsNotRewritten: leaves the manifest, the icons and anything with a file extension alone", () => {
+  it("staticAssetsNotRewritten: never runs on the manifest, the icons or anything with a file extension", () => {
     for (const path of [
       "/manifest.webmanifest",
       "/apple-icon.png",
@@ -53,10 +56,8 @@ describe("proxy and the Home Screen's files", () => {
       "/icons/icon-192.png",
       "/icons/maskable-512.png",
       "/robots.txt",
-    ]) {
-      const r = proxy(new NextRequest(new URL(path, "http://localhost"), { headers: { "accept-language": "de" } }));
-      expect(r.headers.get("x-middleware-rewrite"), path).toBeNull();
-      expect(r.headers.get("x-middleware-next"), path).toBe("1");
-    }
+      "/photos/abc.jpg",
+    ])
+      expect(unstable_doesMiddlewareMatch({ config, url: path }), path).toBe(false);
   });
 });

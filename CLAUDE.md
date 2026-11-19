@@ -25,7 +25,7 @@ The whole picture is [`docs/architecture.md`](docs/architecture.md); the tools [
 ## Rules
 
 - Follows Marceltov/engineering-conventions; the rules here win where they differ.
-- Code, logs, MCP descriptions and `guidance` are English. The UI's words live in `components/copy/en.ts` (the reference, `type Copy`) and `components/copy/de.ts` (`const de: Copy`); `react/jsx-no-literals` keeps text out of JSX. `proxy.ts` picks the language (the switch's cookie `upload_lang`, then `Accept-Language`, then English); no URL carries the language.
+- Code, logs, MCP descriptions and `guidance` are English. The UI's words live in `components/copy/en.ts` (the reference, `type Copy`) and `components/copy/de.ts` (`const de: Copy`); `react/jsx-no-literals` keeps text out of JSX. `proxy.ts` picks the language (the switch's cookie `upload_lang`, then `Accept-Language`, then English); no URL carries the language. The proxy runs on pages only: Next cuts a proxied body at 10 MB, so route handlers stay out of its matcher and call `languageOf(req.headers)` themselves (`proxy.test.ts`, `bodiesBypassProxy`).
 - Settings: `UPLOAD_*`, plus `PUBLIC_URL`, `DATA_DIR`, `PORT`, `TZ` (and the image's `PUID`, `PGID`, `NODE_EXTRA_CA_CERTS`). `backend/config.ts` (`VARIABLES`), `.env.example` and `docs/configuration.md` change together (`envExampleListsEveryVariable`). `PORT` must be the port the app listens on.
 - Nothing next-app-kit provides is copied here; what upload needs that another app would need too goes into the kit, as a release. The kit's peers stay at its exact versions (`backend/peers.test.ts`); no `legacy-peer-deps`.
 - A migration that has shipped is never edited: a schema change is a new migration at the end of `backend/db/migrations.ts`.

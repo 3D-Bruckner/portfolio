@@ -19,7 +19,7 @@ beforeEach(() => {
 });
 afterEach(() => rt.store.close());
 
-/** The multipart post a browser's form sends, with one file and German or English asked for (as proxy.ts passes it on). */
+/** The multipart post a browser's form sends, with one file and German or English asked for by the browser (Accept-Language). */
 async function post(file: File | null, lang = "de", init: RequestInit = {}): Promise<Request> {
   const fd = new FormData();
   if (file) fd.append("photo", file);
@@ -27,7 +27,7 @@ async function post(file: File | null, lang = "de", init: RequestInit = {}): Pro
   return new Request("http://localhost/api/prints/x/photos", {
     method: "POST",
     body: await encoded.arrayBuffer(),
-    headers: { "content-type": encoded.headers.get("content-type")!, "x-upload-lang": lang },
+    headers: { "content-type": encoded.headers.get("content-type")!, "accept-language": lang },
     ...init,
   });
 }
@@ -61,6 +61,13 @@ describe("POST /api/prints/[id]/photos", () => {
     expect(storedFiles()).toEqual([]);
   });
 
+  it("picks the language itself, as the pages do: the switch's cookie over the browser's (proxy.ts doesn't run on this route)", async () => {
+    const heic = photoFile("image/heic", "IMG_0001.HEIC");
+    const r = await post(heic, "de", {});
+    const withCookie = new Request(r, { headers: { ...Object.fromEntries(r.headers), cookie: "upload_lang=en" } });
+    expect((await answer(await uploadPhoto(rt, withCookie, print.id))).body).toEqual({ error: "Please upload it as a JPEG" });
+  });
+
   it("refuses text declared as a JPEG, in German", async () => {
     const r = await answer(await uploadPhoto(rt, await post(new File(["not a photo"], "a.jpg", { type: "image/jpeg" })), print.id));
     expect(r.status).toBe(400);
@@ -90,7 +97,7 @@ describe("POST /api/prints/[id]/photos", () => {
     const chunked = new Request("http://localhost/x", {
       method: "POST",
       body,
-      headers: { "content-type": encoded.headers.get("content-type")!, "x-upload-lang": "de" },
+      headers: { "content-type": encoded.headers.get("content-type")!, "accept-language": "de" },
       duplex: "half",
     } as RequestInit);
     expect(await answer(await uploadPhoto(rt, chunked, print.id))).toEqual({ status: 413, body: { error: "Dieses Foto ist zu groß." } });
@@ -141,7 +148,7 @@ describe("POST /api/prints/[id]/photos", () => {
     const broken = new Request("http://localhost/x", {
       method: "POST",
       body,
-      headers: { "content-type": ct, "x-upload-lang": "de" },
+      headers: { "content-type": ct, "accept-language": "de" },
       duplex: "half",
     } as RequestInit);
     expect(await answer(await uploadPhoto(rt, broken, print.id))).toEqual({
