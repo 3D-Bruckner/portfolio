@@ -192,15 +192,6 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
                 {minutes !== null && minutes > 0 ? `= ${formatMinutes(minutes)}` : ""}
               </span>
             )}
-            {/* From weight and time, the price the site's own formula gives (PLA): one tap takes it. */}
-            {name === "price" && suggestion !== null && suggestion !== nums.price && (
-              <span className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted" aria-live="polite">
-                <span className="tabular">{t.print.suggestedPrice(suggestion)}</span>
-                <button type="button" onClick={takeSuggestion} className="min-h-8 font-semibold text-ink underline underline-offset-2">
-                  {t.print.takeSuggestion}
-                </button>
-              </span>
-            )}
           </div>
         );
       case "boolean":
@@ -325,6 +316,18 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
             </h3>
             <p className={`${ui.hint} mt-0.5`}>{t.print.groups.numbersHint}</p>
             <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-4">{fields.map(field)}</div>
+            {/* From weight and time, the price the site's own formula gives (PLA): one tap takes it. */}
+            {suggestion !== null && suggestion !== nums.price && (
+              <p
+                className="mt-3 flex min-h-11 flex-wrap items-center justify-between gap-x-3 rounded-lg border border-border bg-paper px-3 text-sm"
+                aria-live="polite"
+              >
+                <span className="tabular text-muted">{t.print.suggestedPrice(suggestion)}</span>
+                <button type="button" onClick={takeSuggestion} className="min-h-11 font-semibold text-ink underline underline-offset-2">
+                  {t.print.takeSuggestion}
+                </button>
+              </p>
+            )}
           </section>
         ) : (
           <section key={group} aria-labelledby={`group-${group}`} className={`${ui.card} space-y-4`}>
