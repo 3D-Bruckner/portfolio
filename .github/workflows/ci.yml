@@ -17,7 +17,8 @@ jobs:
       - id: version
         run: echo "version=$(node -p 'require("./package-lock.json").packages["node_modules/@playwright/test"].version')" >> "$GITHUB_OUTPUT"
   # Microsoft's Playwright image has the browsers and their system libraries built in: the check needs no apt, so an outage of the Ubuntu
-  # mirrors can't fail it. setup-node still pins .nvmrc's Node, whatever the image ships. Keep the job's name: main's ruleset requires it.
+  # mirrors can't fail it. setup-node still pins .nvmrc's Node, whatever the image ships. Keep the job's name: main's ruleset will
+  # require it once the repository gets rulesets.
   check:
     needs: playwright
     runs-on: ubuntu-latest

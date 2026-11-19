@@ -31,6 +31,7 @@ Every setting is an environment variable; `.env.example` lists each one with wha
 | `PORT`                                     | The port the server listens on; must be the real one (the kit checks tokens against it).      |
 | `TZ`                                       | The time zone.                                                                                |
 | `UPLOAD_DEV_USER`                          | Development only: a fixed person instead of signing in. Refused under `NODE_ENV=production`.  |
+| `UPLOAD_LOG_LEVEL`                         | The log's level: `debug`, `info`, `warn`, `error` or `silent`. Default `info`.                |
 
 ## Development
 
