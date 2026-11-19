@@ -52,3 +52,7 @@ Four plans, in this order:
 | 4   | Deployment on products-1 and moving the 25 prints over                                                                                                                                                  | `3D-Bruckner/stacks`, `MarcelBruckner-Business/ansible` | next, after 3  |
 
 What was decided along the way, and why, is in [ADR 0001](docs/adr/0001-own-app-for-the-portfolio.md).
+
+## Licence
+
+AGPL-3.0-only ([`LICENSE`](LICENSE)). Contributions from outside need the [contributor licence agreement](CLA.md) ([`CONTRIBUTING.md`](CONTRIBUTING.md)); vulnerabilities are reported as [`SECURITY.md`](SECURITY.md) says.

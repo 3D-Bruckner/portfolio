@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "description": "Where 3dbruckner.de's prints are put in: their photos and details, from the phone or through Claude.",
   "private": true,
+  "license": "AGPL-3.0-only",
   "engines": {
     "node": ">=26"
   },
