@@ -28,7 +28,7 @@ export const en = {
     email: "Email address",
     sendCode: "Send me a code",
     sending: "Sending…",
-    sent: (email: string) => `We sent a code and a link to ${email}. Open the link, or enter the code here.`,
+    sent: (email: string) => `We sent a sign-in code to ${email}. Enter it here.`,
     code: "Code",
     checkCode: "Sign in with the code",
     otherAddress: "Use another address",
@@ -38,6 +38,7 @@ export const en = {
     failedSend: "The code couldn't be sent. Please try again in a moment.",
     wrongCode: "That code is wrong or has expired. Request a new one.",
     passkeyFailed: "Signing in with a passkey didn't work. Use a code instead, or try again.",
+    providerFailed: (label: string) => `Signing in with ${label} didn't start. Please try again.`,
     refused: {
       email_not_allowed: "This address may not sign in here.",
       email_not_verified: "The provider didn't confirm this address, so it can't be used to sign in.",

@@ -31,7 +31,7 @@ test.describe("a browser that asks for German", () => {
     await page.waitForLoadState("networkidle");
     await page.getByLabel("E-Mail-Adresse").fill(MARCEL);
     await page.getByRole("button", { name: "Code zuschicken" }).click();
-    await expect(page.getByRole("status")).toHaveText(`Wir haben einen Code und einen Link an ${MARCEL} geschickt. Öffne den Link oder gib den Code hier ein.`);
+    await expect(page.getByRole("status")).toHaveText(`Wir haben einen Anmeldecode an ${MARCEL} geschickt. Gib ihn hier ein.`);
     await page.getByLabel("Code", { exact: true }).fill("000000");
     await page.getByRole("button", { name: "Mit dem Code anmelden" }).click();
     await expect(page.getByRole("main").getByRole("alert")).toHaveText("Dieser Code stimmt nicht oder ist abgelaufen. Bitte einen neuen anfordern.");

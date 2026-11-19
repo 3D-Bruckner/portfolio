@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { refusedSignIn, safeNext, signInMethods, type RefusedSignIn } from "next-app-kit/signin";
 import { runtime } from "@/app/_lib/runtime";
+import { SIGN_IN_PAGE } from "@/backend";
 import { copyFor, type Copy } from "@/components/copy";
 import { SignInForm } from "./SignInForm";
 
@@ -34,7 +35,7 @@ export default async function SignInPage({ params, searchParams }: PageProps<"/[
           {refusal(refused, t.refused)}
         </p>
       )}
-      <SignInForm next={safeNext(query.next)} methods={signInMethods(signIn)} />
+      <SignInForm next={safeNext(query.next)} methods={signInMethods(signIn)} signInPage={SIGN_IN_PAGE} />
     </div>
   );
 }

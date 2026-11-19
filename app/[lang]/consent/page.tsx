@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { clientNameFor } from "next-app-kit/signin";
+import { clientNameFor, personOf } from "next-app-kit/signin";
 import { runtime } from "@/app/_lib/runtime";
 import { SIGN_IN_PAGE } from "@/backend";
 import { copyFor } from "@/components/copy";
@@ -20,7 +20,9 @@ export default async function ConsentPage({ params, searchParams }: PageProps<"/
   const t = copyFor((await params).lang).consent;
   const query = await searchParams;
   const rt = runtime();
-  const person = await rt.person(h);
+  const auth = await rt.auth();
+  // The kit's personOf without UPLOAD_DEV_USER, as the kit's example does: a consent is given by someone really signed in.
+  const person = await personOf(h, auth);
   // Not signed in: to the sign-in page, carrying this page and its signed query as `?next=`, so the person comes back here.
   if (!person) {
     const back = new URLSearchParams();
@@ -28,7 +30,7 @@ export default async function ConsentPage({ params, searchParams }: PageProps<"/
     redirect(`${SIGN_IN_PAGE}?${new URLSearchParams({ next: `/consent?${back}` })}`);
   }
   const clientId = typeof query.client_id === "string" ? query.client_id : "";
-  const name = (clientId && (await clientNameFor(h, clientId, await rt.auth()))) || t.unknownClient;
+  const name = (clientId && (await clientNameFor(h, clientId, auth))) || t.unknownClient;
   return (
     <div className="mx-auto max-w-sm">
       <h1 className="text-xl font-semibold">{t.title}</h1>

@@ -29,7 +29,7 @@ export const de: Copy = {
     email: "E-Mail-Adresse",
     sendCode: "Code zuschicken",
     sending: "Wird gesendet…",
-    sent: (email: string) => `Wir haben einen Code und einen Link an ${email} geschickt. Öffne den Link oder gib den Code hier ein.`,
+    sent: (email: string) => `Wir haben einen Anmeldecode an ${email} geschickt. Gib ihn hier ein.`,
     code: "Code",
     checkCode: "Mit dem Code anmelden",
     otherAddress: "Andere Adresse verwenden",
@@ -39,6 +39,7 @@ export const de: Copy = {
     failedSend: "Der Code ließ sich nicht verschicken. Bitte gleich noch einmal versuchen.",
     wrongCode: "Dieser Code stimmt nicht oder ist abgelaufen. Bitte einen neuen anfordern.",
     passkeyFailed: "Die Anmeldung mit Passkey hat nicht geklappt. Nimm einen Code oder versuche es noch einmal.",
+    providerFailed: (label: string) => `Die Anmeldung mit ${label} ließ sich nicht starten. Bitte noch einmal versuchen.`,
     refused: {
       email_not_allowed: "Mit dieser Adresse kann man sich hier nicht anmelden.",
       email_not_verified: "Der Anbieter hat diese Adresse nicht bestätigt, deshalb kann sie nicht zum Anmelden dienen.",

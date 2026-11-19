@@ -1,7 +1,7 @@
 "use client";
-// The ways in that signInMethods offers: a code by mail (the mail also holds a link, except during an MCP client's sign-in), a passkey,
-// and a button per provider. Each lands on `next`; during an MCP client's or a script's sign-in, Better Auth's answer names where to go
-// instead (the consent page), and the auth client carries the signed query along.
+// The ways in that signInMethods offers: a code by mail (the mail also holds a link, except during an MCP client's sign-in, so the page
+// speaks of the code only), a passkey, and a button per provider. Each lands on `next`; during an MCP client's or a script's sign-in,
+// Better Auth's answer names where to go instead (the consent page), and the auth client carries the signed query along.
 import { useState, type FormEvent } from "react";
 import { authClient } from "@/app/_lib/auth-client";
 import { useCopy } from "@/components/CopyProvider";
@@ -18,7 +18,8 @@ function go(data: unknown, next: string) {
   window.location.assign(url);
 }
 
-export function SignInForm({ next, methods }: { next: string; methods: Methods }) {
+/** `signInPage` is where a provider's refusal comes back to: openAuth's pages.signIn, handed down by the page (backend's SIGN_IN_PAGE). */
+export function SignInForm({ next, methods, signInPage }: { next: string; methods: Methods; signInPage: string }) {
   const t = useCopy().signIn;
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -59,13 +60,19 @@ export function SignInForm({ next, methods }: { next: string; methods: Methods }
     go(result.data, next);
   }
 
-  async function provider(id: string) {
+  async function provider(id: string, label: string) {
     setBusy(true);
-    await authClient.signIn.social({
+    setProblem(null);
+    // On success the browser is on its way to the provider; an error (the provider's start refused, the network) stays on this page.
+    const { error } = await authClient.signIn.social({
       provider: id,
       callbackURL: next,
-      errorCallbackURL: `/signin?${new URLSearchParams({ provider: id, next })}`,
+      errorCallbackURL: `${signInPage}?${new URLSearchParams({ provider: id, next })}`,
     });
+    if (error) {
+      setBusy(false);
+      setProblem(t.providerFailed(label));
+    }
   }
 
   return (
@@ -118,7 +125,7 @@ export function SignInForm({ next, methods }: { next: string; methods: Methods }
             </button>
           )}
           {methods.providers.map((p) => (
-            <button key={p.id} type="button" disabled={busy} onClick={() => provider(p.id)} className={secondary}>
+            <button key={p.id} type="button" disabled={busy} onClick={() => provider(p.id, p.label)} className={secondary}>
               {t.viaProvider(p.label)}
             </button>
           ))}
