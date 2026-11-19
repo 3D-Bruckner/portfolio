@@ -12,7 +12,7 @@ import { PhotoGrid } from "../PhotoGrid";
 import { PhotoUploader } from "../PhotoUploader";
 import { fieldSpecs } from "../printform";
 import { PrintForm, type FormValues } from "../PrintForm";
-import { PublishBar } from "../PublishBar";
+import { DeletePrint, PublishBar } from "../PublishBar";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/prints/[id]">): Promise<Metadata> {
   const { lang, id } = await params;
@@ -37,14 +37,14 @@ export default async function PrintPage({ params }: PageProps<"/[lang]/prints/[i
   ];
   return (
     <>
-      <Link href={`/?tab=${p.status === "published" ? "published" : "drafts"}`} className="inline-flex min-h-11 items-center gap-1 text-sm underline">
+      <Link href={`/?tab=${p.status === "published" ? "published" : "drafts"}`} className="-ml-1 inline-flex min-h-11 items-center gap-1 font-semibold">
         <BackIcon aria-hidden="true" className={ui.iconSize} />
         {t.common.back}
       </Link>
-      <h1 className={`${ui.h1} mt-2 break-words`}>{p.title}</h1>
-      <PublishBar printId={p.id} title={p.title} status={p.status} missing={missing} />
+      <h1 className={`${ui.h1} break-words`}>{p.title}</h1>
+      <PublishBar printId={p.id} status={p.status} missing={missing} />
 
-      <section aria-labelledby="photos-heading" className="mt-8">
+      <section aria-labelledby="photos-heading" className={`${ui.card} mt-6`}>
         <h2 id="photos-heading" className={ui.h2}>
           {t.photoGrid.label}
         </h2>
@@ -69,6 +69,8 @@ export default async function PrintPage({ params }: PageProps<"/[lang]/prints/[i
           slugFixed={p.firstPublishedAt !== null}
         />
       </section>
+
+      <DeletePrint printId={p.id} title={p.title} published={p.status === "published"} />
     </>
   );
 }

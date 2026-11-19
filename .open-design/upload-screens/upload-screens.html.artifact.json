@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "upload – Drucke und ein Druck",
+  "entry": ".open-design/upload-screens/upload-screens.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "standalone",
+    "site",
+    "png",
+    "jpeg",
+    "pdf"
+  ],
+  "createdAt": "2026-11-19T22:04:42.655Z",
+  "updatedAt": "2026-11-19T22:04:42.655Z",
+  "sourceSkillId": "od:prototype:mobile-app",
+  "designSystemId": "user:3d-bruckner"
+}

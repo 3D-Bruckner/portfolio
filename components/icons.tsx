@@ -8,6 +8,7 @@ export {
   ArrowUp as UpIcon,
   ArrowUpRight as ExternalIcon,
   Check as SavedIcon,
+  ChevronRight as ChevronIcon,
   CircleAlert as ProblemIcon,
   Crop as CropIcon,
   FileBox as FileIcon,

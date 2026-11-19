@@ -1,7 +1,7 @@
 // The few class lists every page shares: one look for a button, a field and a notice, so the screens stay alike.
 export const ui = {
   button:
-    "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 font-medium text-on-accent hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50",
+    "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 font-semibold text-on-accent hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50",
   secondary:
     "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-line bg-paper px-4 py-2 font-medium text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50",
   danger:
@@ -12,7 +12,9 @@ export const ui = {
   input: "mt-1 block w-full rounded-lg border border-line bg-paper px-3 py-2 text-base text-ink",
   problem: "flex items-start gap-2 rounded-lg border border-danger p-3 text-danger",
   status: "flex items-center gap-2 text-sm text-muted",
-  h1: "text-2xl font-semibold tracking-tight",
-  h2: "text-lg font-semibold",
+  h1: "font-display text-[1.75rem] leading-tight font-bold tracking-tight",
+  h2: "font-display text-[1.0625rem] font-bold tracking-tight",
+  /** A group of a page: a card on the surface colour. */
+  card: "rounded-xl border border-border bg-surface p-4",
   iconSize: "size-4 shrink-0",
 } as const;

@@ -13,3 +13,6 @@ playwright-report/
 AGENTS.md
 # Scratch of the agent workflows.
 .superpowers/
+
+# Open Design: the check runs' screenshots (the designs themselves are kept).
+.open-design/.checks/

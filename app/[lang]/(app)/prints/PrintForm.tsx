@@ -10,7 +10,7 @@ import { AddIcon, CloseIcon } from "@/components/icons";
 import { Notice } from "@/components/Notice";
 import { ui } from "@/components/ui";
 import { savePrint } from "../actions";
-import { FORM_ORDER, type FieldSpec, type PrintFieldName } from "./fieldorder";
+import { FORM_GROUPS, type FieldSpec, type PrintFieldName } from "./fieldorder";
 import { ThreeMfFill, type FillPart } from "./ThreeMfFill";
 
 export type FormValues = {
@@ -35,6 +35,9 @@ type Props = {
   slugFixed: boolean;
 };
 
+/** 135 → "2 h 15 min". */
+const formatMinutes = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}` : `${m} min`);
+
 export function PrintForm({ printId, specs, categories, values, slugFixed }: Props) {
   const held = values?.categoryIds ?? [];
   const rank = (id: string) => (held.includes(id) ? held.indexOf(id) : held.length);
@@ -56,6 +59,7 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
       filled.push(name);
     };
     put("printTimeMinutes", r.printTimeMinutes);
+    if (r.printTimeMinutes !== undefined) setMinutes(r.printTimeMinutes);
     put("weightGrams", r.weightGrams);
     put("colors", r.colors);
     put("price", r.price);
@@ -75,7 +79,9 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
     startTransition(() => dispatch(fd));
   }
 
-  const fields = FORM_ORDER.filter((n) => printId !== null || n !== "slug");
+  const groups = FORM_GROUPS.map((g) => ({ ...g, fields: g.fields.filter((n) => printId !== null || n !== "slug") })).filter((g) => g.fields.length > 0);
+  // The print time as hours and minutes, under its field, as it is typed.
+  const [minutes, setMinutes] = useState<number | null>(values?.printTimeMinutes ?? null);
 
   function field(name: PrintFieldName) {
     const spec = specs[name];
@@ -128,10 +134,16 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
               min={spec.min}
               max={spec.max}
               defaultValue={(values?.[name] as number | null | undefined) ?? ""}
-              aria-describedby={hint}
-              className={`${ui.input} max-w-40`}
+              aria-describedby={name === "printTimeMinutes" ? `${id}-as-hours` : undefined}
+              onInput={name === "printTimeMinutes" ? (e) => setMinutes(e.currentTarget.value ? Number(e.currentTarget.value) : null) : undefined}
+              className={`${ui.input} tabular`}
             />
-            {hintEl}
+            {/* The group says where these come from; the print time also says itself in hours. */}
+            {name === "printTimeMinutes" && (
+              <span id={`${id}-as-hours`} className={`${ui.hint} tabular`} aria-live="polite">
+                {minutes !== null && minutes > 0 ? `= ${formatMinutes(minutes)}` : ""}
+              </span>
+            )}
           </div>
         );
       case "boolean":
@@ -144,7 +156,8 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
       case "ids":
         return (
           <fieldset key={name}>
-            <legend className={ui.label}>{words.label}</legend>
+            {/* The card's heading says it; the legend still names the group of checkboxes. */}
+            <legend className="sr-only">{words.label}</legend>
             {categories.length === 0 ? (
               <p className={ui.hint}>
                 {t.print.noCategories}{" "}
@@ -245,11 +258,25 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
   return (
     <form ref={form} onSubmit={submit} className="mt-4 space-y-5">
       <ThreeMfFill onRead={fill} />
-      {fields.map(field)}
-      <div
-        data-sticky-bottom
-        className="sticky bottom-0 -mx-safe space-y-2 border-t border-border bg-paper px-safe pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
-      >
+      {groups.map(({ group, fields }) =>
+        group === "numbers" ? (
+          <section key={group} aria-labelledby={`group-${group}`} className={ui.card}>
+            <h3 id={`group-${group}`} className={ui.h2}>
+              {t.print.groups[group]}
+            </h3>
+            <p className={`${ui.hint} mt-0.5`}>{t.print.groups.numbersHint}</p>
+            <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-4">{fields.map(field)}</div>
+          </section>
+        ) : (
+          <section key={group} aria-labelledby={`group-${group}`} className={`${ui.card} space-y-4`}>
+            <h3 id={`group-${group}`} className={ui.h2}>
+              {t.print.groups[group]}
+            </h3>
+            {fields.map(field)}
+          </section>
+        ),
+      )}
+      <div data-sticky-bottom className="sticky bottom-[var(--tabbar)] z-10 -mx-safe space-y-2 border-t border-border bg-paper px-safe py-3">
         <Notice result={result} />
         <button type="submit" disabled={pending} className={`${ui.button} w-full`}>
           {pending ? t.common.saving : t.common.save}

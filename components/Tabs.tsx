@@ -1,6 +1,6 @@
 "use client";
 // Tabs (the ARIA tab pattern, conventions: code/accessibility): a tablist whose arrows, Home and End move between tabs and stop there,
-// the open tab marked by aria-selected, in bold and with a thicker underline, not by colour alone. The panels come rendered from the
+// the open tab marked by aria-selected, in bold on a raised segment, not by colour alone. The panels come rendered from the
 // server; the open one is kept in the URL's ?tab=, so a reload or the back button returns to it.
 import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
@@ -26,7 +26,7 @@ export function Tabs({ label, tabs, initial }: { label: string; tabs: { id: stri
 
   return (
     <div>
-      <div role="tablist" aria-label={label} className="flex border-b border-border">
+      <div role="tablist" aria-label={label} className="grid auto-cols-fr grid-flow-col gap-1 rounded-xl bg-surface p-1">
         {tabs.map((t, i) => {
           const selected = t.id === open;
           return (
@@ -43,7 +43,7 @@ export function Tabs({ label, tabs, initial }: { label: string; tabs: { id: stri
               tabIndex={selected ? 0 : -1}
               onClick={() => choose(t.id)}
               onKeyDown={(e) => onKey(e, i)}
-              className={`-mb-px min-h-11 flex-1 px-3 ${selected ? "border-b-4 border-accent font-semibold text-ink" : "border-b-2 border-transparent text-muted"}`}
+              className={`tabular min-h-10 rounded-lg px-3 text-[0.9375rem] ${selected ? "bg-paper font-bold text-ink shadow-sm ring-1 ring-border" : "font-medium text-muted hover:text-ink"}`}
             >
               {t.label}
             </button>
@@ -51,7 +51,7 @@ export function Tabs({ label, tabs, initial }: { label: string; tabs: { id: stri
         })}
       </div>
       {tabs.map((t) => (
-        <div key={t.id} role="tabpanel" id={`panel-${t.id}`} aria-labelledby={`tab-${t.id}`} hidden={t.id !== open} className="pt-4">
+        <div key={t.id} role="tabpanel" id={`panel-${t.id}`} aria-labelledby={`tab-${t.id}`} hidden={t.id !== open} className="pt-2">
           {t.panel}
         </div>
       ))}
