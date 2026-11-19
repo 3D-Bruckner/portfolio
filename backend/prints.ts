@@ -3,12 +3,11 @@
 // after a delete (reserved_slugs). Every write goes through one check (checkWrite) after the field table's parse (printfields.ts).
 import { randomUUID } from "node:crypto";
 import { rmSync } from "node:fs";
-import { join } from "node:path";
 import type { Category } from "./categories";
 import type { PrintRow, PrintRowPatch } from "./db";
 import { siteSort } from "./order";
 import { conflict, done, invalid, notFound, ok, type Outcome } from "./outcome";
-import { photoOf, type Photo } from "./photos";
+import { photoOf, photosDir, type Photo } from "./photos";
 import { parsePrintInput, parsePrintPatch, type PrintInput, type PrintPatch } from "./printfields";
 import { mutation, type Runtime } from "./runtime";
 import { toSlug } from "./slug";
@@ -279,15 +278,18 @@ export function unpublishPrint(rt: Runtime, id: string): Outcome<Print> {
 
 /** Deletes a print and its photos (rows and files). A slug that was ever published is reserved, so no later print takes the address. */
 export function deletePrint(rt: Runtime, id: string): Outcome<void> {
+  // The folder to remove is named by the stored id, never by the one asked for.
+  let folder: string | null = null;
   const out = mutation(rt, (siteChange) => {
     const row = rt.store.print(id);
     if (!row) return notFound(`No print ${id}.`);
+    folder = photosDir(rt, row.id);
     if (row.first_published_at)
       rt.store.reserveSlug({ slug: row.slug, reason: `it was the address of the deleted print "${row.title}"`, created_at: rt.clock().toISOString() });
     rt.store.deletePrint(id);
     if (row.status === "published") siteChange();
     return done;
   });
-  if (out.ok) rmSync(join(rt.config.dataDir, "photos", id), { recursive: true, force: true });
+  if (out.ok && folder) rmSync(folder, { recursive: true, force: true });
   return out;
 }

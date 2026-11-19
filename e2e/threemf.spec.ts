@@ -47,6 +47,6 @@ test("refusesOtherFiles: a photo picked by mistake is named as not a 3MF, and no
   await page.getByRole("link", { name: "Neuer Druck" }).click();
   await expect(page.getByRole("button", { name: "Speichern" })).toBeEnabled();
   await page.getByLabel("Aus 3MF-Datei ausfüllen").setInputFiles({ name: "IMG_1.jpg", mimeType: "image/jpeg", buffer: Buffer.from([0xff, 0xd8, 0xff, 0xe0]) });
-  await expect(page.getByRole("alert")).toHaveText("Das ist keine 3MF-Datei.");
+  await expect(page.getByRole("alert").filter({ hasText: "3MF" })).toHaveText("Das ist keine 3MF-Datei.");
   await expect(page.getByLabel("Druckzeit (Minuten)")).toHaveValue("");
 });
