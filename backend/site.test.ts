@@ -6,7 +6,7 @@ import type { Outcome } from "./outcome";
 import { addPhoto, setCrop } from "./photos";
 import { createPrint, publishPrint, updatePrint } from "./prints";
 import { buildStatus, markSiteChanged, startSiteTimer, tick } from "./site";
-import { testRuntime, type TestRuntime } from "./testing/runtime";
+import { seedPhoto, testRuntime, type TestRuntime } from "./testing/runtime";
 
 const TOKEN = "github_pat_test";
 const DISPATCH = "https://api.github.com/repos/3D-Bruckner/3dbruckner/actions/workflows/pages.yml/dispatches";
@@ -109,6 +109,8 @@ describe("the site build's trigger", () => {
     // Two ticks at once dispatch once.
     await Promise.all([tick(rt), tick(rt)]);
     expect(dispatches()).toHaveLength(1);
+    // What waits now is the change made during the dispatch, not the one the dispatch built.
+    expect(rt.store.siteState()).toMatchObject({ pending_since: new Date(T0 + 61_000).toISOString(), last_change: new Date(T0 + 61_000).toISOString() });
     rt.fetch = slow;
     at(120);
     await tick(rt);
@@ -218,7 +220,37 @@ describe("the site build's trigger", () => {
     // No run yet, or GitHub not answering: no run, and the rest still answered.
     const none = fake({ UPLOAD_GITHUB_TOKEN: TOKEN }, [() => Response.json({ total_count: 0, workflow_runs: [] }), () => new Response("", { status: 502 })]);
     expect(await buildStatus(none.rt)).toEqual({ pending: false });
+    none.at(21);
     expect(await buildStatus(none.rt)).toEqual({ pending: false });
+    expect(none.calls).toHaveLength(2);
+  });
+
+  it("asks GitHub for the latest run at most every 20 s (REST and the MCP tool both poll it)", async () => {
+    const run = { status: "in_progress", conclusion: null, html_url: "https://github.com/x/y/actions/runs/1", created_at: "2026-11-19T09:59:00Z" };
+    const answer = () => Response.json({ total_count: 1, workflow_runs: [run] });
+    const { rt, calls, at } = fake({ UPLOAD_GITHUB_TOKEN: TOKEN }, [answer, () => new Response("", { status: 502 }), answer]);
+    expect((await buildStatus(rt)).run?.status).toBe("in_progress");
+    at(19);
+    expect((await buildStatus(rt)).run?.status).toBe("in_progress");
+    expect(calls).toHaveLength(1);
+    // After 20 s it asks again; a failed answer isn't kept, so the next status asks once more.
+    at(20);
+    expect((await buildStatus(rt)).run).toBeUndefined();
+    expect((await buildStatus(rt)).run?.status).toBe("in_progress");
+    expect(calls).toHaveLength(3);
+  });
+
+  it("a change that can't be marked pending is logged; the save it came from still succeeds", () => {
+    const { rt } = fake();
+    const p = value(createPrint(rt, { title: "Vase", description: "A vase." }));
+    seedPhoto(rt, p.id);
+    value(publishPrint(rt, p.id));
+    rt.store.writeSiteState = () => {
+      throw new Error("disk full");
+    };
+    const logged = vi.spyOn(rt.log, "error").mockImplementation(() => {});
+    expect(updatePrint(rt, p.id, { title: "Vase 2" })).toMatchObject({ ok: true, value: { title: "Vase 2" } });
+    expect(logged).toHaveBeenCalledWith({ error: "disk full" }, "site change not marked: the site build may wait for the next change");
   });
 
   it("the timer ticks every 10 s and stops", async () => {

@@ -19,7 +19,7 @@ const GITHUB_API_VERSION = "2022-11-28";
 
 /** site_state's keys: what is pending, since when, and how the last dispatch went. */
 const KEY = {
-  /** The first change not yet built. */
+  /** The first change not yet built (after a dispatch during which changes came in: the latest of those). */
   pendingSince: "pending_since",
   /** The last change not yet built: the quiet minute counts from it. */
   lastChange: "last_change",
@@ -42,9 +42,27 @@ export function markSiteChanged(rt: Runtime): void {
   });
 }
 
-// Per store (one per runtime): whether a dispatch is under way, and whether the missing token was logged.
+/**
+ * rt.onSiteChange: markSiteChanged, called after a save was stored. A failure to mark is logged, never thrown, so a stored save doesn't
+ * answer as an error; the build then waits for the next change the site shows.
+ */
+export function noteSiteChange(rt: Runtime): void {
+  try {
+    markSiteChanged(rt);
+  } catch (e) {
+    rt.log.error({ error: e instanceof Error ? e.message : String(e) }, "site change not marked: the site build may wait for the next change");
+  }
+}
+
+// Per store (one per runtime): whether a dispatch is under way, whether the missing token was logged, and GitHub's latest run as last
+// asked. Module state is enough: only the process's one timer ticks (startSiteTimer, from instrumentation.ts) and tests tick by hand; the
+// store is the key, so each runtime (each test's) has its own.
 const busy = new WeakSet<object>();
 const toldNoToken = new WeakSet<object>();
+const runAsked = new WeakMap<object, { at: number; run: BuildRun | undefined }>();
+
+/** How long GitHub's answer about the latest run is kept: the REST status and the MCP tool may both poll it. */
+const RUN_KEPT_MS = 20_000;
 
 /** Dispatches the site build when one is pending, the quiet minute has passed and no retry is waiting; otherwise does nothing. */
 export async function tick(rt: Runtime): Promise<void> {
@@ -70,14 +88,16 @@ export async function tick(rt: Runtime): Promise<void> {
     const at = new Date(now).toISOString();
     if (error === null) {
       rt.store.transaction(() => {
-        // A change made while the dispatch was under way stays pending: it gets a build of its own after its quiet minute.
-        const changedSince = rt.store.siteState()[KEY.lastChange] !== lastChange;
+        // A change made while the dispatch was under way stays pending: it gets a build of its own after its quiet minute, and what
+        // waits since then is that change (the latest made during the dispatch; markSiteChanged doesn't keep the first of them apart).
+        const latest = rt.store.siteState()[KEY.lastChange] ?? null;
+        const changedSince = latest !== lastChange;
         rt.store.writeSiteState({
           [KEY.lastDispatch]: at,
           [KEY.lastError]: null,
           [KEY.failures]: null,
           [KEY.retryAt]: null,
-          ...(changedSince ? {} : { [KEY.pendingSince]: null, [KEY.lastChange]: null }),
+          ...(changedSince ? { [KEY.pendingSince]: latest } : { [KEY.pendingSince]: null, [KEY.lastChange]: null }),
         });
       });
       rt.log.info({ repo: rt.config.siteRepo, workflow: rt.config.siteWorkflow }, "site build dispatched");
@@ -104,7 +124,7 @@ export async function buildStatus(rt: Runtime): Promise<BuildStatus> {
   if (state[KEY.lastError]) status.lastError = state[KEY.lastError];
   const token = rt.config.githubToken;
   if (token) {
-    const run = await latestRun(rt, token);
+    const run = await keptRun(rt, token);
     if (run) status.run = run;
   }
   return status;
@@ -172,8 +192,19 @@ const runsSchema = z.object({
   ),
 });
 
-/** The latest run of the site's workflow that a dispatch started; undefined when there is none or GitHub doesn't answer. */
-async function latestRun(rt: Runtime, token: string): Promise<BuildRun | undefined> {
+/** latestRun, asked at most every 20 s while GitHub answers; a failed ask isn't kept. */
+async function keptRun(rt: Runtime, token: string): Promise<BuildRun | undefined> {
+  const now = rt.clock().getTime();
+  const kept = runAsked.get(rt.store);
+  if (kept && now - kept.at < RUN_KEPT_MS) return kept.run;
+  const asked = await latestRun(rt, token);
+  if (asked.answered) runAsked.set(rt.store, { at: now, run: asked.run });
+  else runAsked.delete(rt.store);
+  return asked.run;
+}
+
+/** The latest run of the site's workflow that a dispatch started; no run when there is none or GitHub doesn't answer. */
+async function latestRun(rt: Runtime, token: string): Promise<{ answered: boolean; run?: BuildRun }> {
   try {
     const r = await rt.fetch(workflowUrl(rt, "/runs?event=workflow_dispatch&per_page=1"), {
       headers: githubHeaders(token),
@@ -181,13 +212,16 @@ async function latestRun(rt: Runtime, token: string): Promise<BuildRun | undefin
     });
     if (!r.ok) {
       rt.log.warn({ status: r.status }, "site build status: GitHub didn't answer");
-      return undefined;
+      return { answered: false };
     }
     const run = runsSchema.parse(await r.json()).workflow_runs[0];
-    if (!run) return undefined;
-    return { status: run.status ?? "unknown", conclusion: run.conclusion, url: run.html_url, startedAt: run.run_started_at ?? run.created_at };
+    if (!run) return { answered: true };
+    return {
+      answered: true,
+      run: { status: run.status ?? "unknown", conclusion: run.conclusion, url: run.html_url, startedAt: run.run_started_at ?? run.created_at },
+    };
   } catch (e) {
     rt.log.warn({ error: thrown(e) }, "site build status: GitHub didn't answer");
-    return undefined;
+    return { answered: false };
   }
 }

@@ -9,7 +9,7 @@ import { signInSettings, type MailWording } from "../accounts";
 import { loadConfig } from "../config";
 import { log } from "../log";
 import { openRuntime, type Runtime } from "../runtime";
-import { markSiteChanged } from "../site";
+import { noteSiteChange } from "../site";
 
 export type TestRuntime = Runtime & { siteChanges: number; mail: Map<string, SignInMail> };
 
@@ -46,7 +46,7 @@ export function testRuntime(env: Record<string, string> = {}, mail: MailWording 
     mail: caught,
     onSiteChange: () => {
       t.siteChanges++;
-      markSiteChanged(t);
+      noteSiteChange(t);
     },
   };
   return t;

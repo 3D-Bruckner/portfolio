@@ -10,7 +10,7 @@ import type { Config } from "./config";
 import { openStore, type Store } from "./db";
 import { log } from "./log";
 import type { Outcome } from "./outcome";
-import { markSiteChanged } from "./site";
+import { noteSiteChange } from "./site";
 
 export type Runtime = {
   config: Config;
@@ -20,7 +20,7 @@ export type Runtime = {
   log: Logger;
   /**
    * Called by every mutation the site shows (a published print, a category in use, the order, the showcases), after it is stored:
-   * markSiteChanged, so the site build is dispatched after a quiet minute (site.ts).
+   * markSiteChanged, so the site build is dispatched after a quiet minute (site.ts); a failure to mark is logged, not thrown (noteSiteChange).
    */
   onSiteChange: () => void;
   /** The kit's sign-in settings (UPLOAD_*, from signInFromEnv). */
@@ -54,7 +54,7 @@ export function openRuntime(config: Config, signIn: SignInSettings, mail: MailWo
     clock: () => new Date(),
     fetch: globalThis.fetch,
     log,
-    onSiteChange: () => markSiteChanged(rt),
+    onSiteChange: () => noteSiteChange(rt),
     signIn,
     auth,
     person: async (h) => personOf(h, await auth(), signIn.devUser),
