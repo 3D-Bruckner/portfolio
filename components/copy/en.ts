@@ -159,6 +159,7 @@ export const en = {
     processing: (name: string) => `${name}: processing…`,
     failed: (name: string, why: string) => `${name} was not uploaded. ${why}`,
     network: "The connection dropped.",
+    stalled: "It stopped moving for a minute.",
     retry: (name: string) => `Try again: ${name}`,
     dismiss: (name: string) => `Dismiss: ${name}`,
     cover: "Cover",

@@ -45,6 +45,27 @@ test("uploadRetryAfterFailure: a dropped upload fails alone and is sent again", 
   await expect(page.getByRole("list", { name: "Fotos" }).getByRole("listitem")).toHaveCount(1, { timeout: 20_000 });
 });
 
+test("stalledUploadGivesUp: an upload that hasn't moved for a minute is stopped and can be sent again", async ({ page }) => {
+  // The page's clock is the test's: a minute passes at once. The first post never gets an answer, as on a dead mobile connection.
+  await page.clock.install();
+  await newPrint(page, { title: unique("Funkloch") });
+  let stalled = false;
+  await page.route("**/api/prints/*/photos", async (route) => {
+    if (stalled) return route.continue();
+    stalled = true;
+    // Never answered.
+  });
+  await page.getByLabel("Fotos hinzufügen").setInputFiles(FIXTURE);
+  await expect(page.getByRole("progressbar")).toBeVisible();
+  await expect.poll(() => stalled).toBe(true);
+  await page.clock.fastForward(59_000);
+  await expect(page.getByRole("region", { name: "Fotos" }).getByRole("alert")).toHaveCount(0);
+  await page.clock.fastForward(2_000);
+  await expect(page.getByRole("region", { name: "Fotos" }).getByRole("alert")).toContainText("Es ging eine Minute lang nicht weiter.");
+  await page.getByRole("button", { name: /Erneut versuchen/ }).click();
+  await expect(page.getByRole("list", { name: "Fotos" }).getByRole("listitem")).toHaveCount(1, { timeout: 20_000 });
+});
+
 test("largePhotoArrivesWhole: a photo over 10 MB is stored, not cut off on the way to the route", async ({ page }) => {
   // Next 16 passes only the first 10 MB of a body on when its proxy runs on the route; the upload route is outside the proxy.
   const w = 2400;

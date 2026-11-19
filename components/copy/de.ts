@@ -159,6 +159,7 @@ export const de: Copy = {
     processing: (name: string) => `${name}: wird verarbeitet…`,
     failed: (name: string, why: string) => `${name} wurde nicht hochgeladen. ${why}`,
     network: "Die Verbindung ist abgebrochen.",
+    stalled: "Es ging eine Minute lang nicht weiter.",
     retry: (name: string) => `Erneut versuchen: ${name}`,
     dismiss: (name: string) => `Ausblenden: ${name}`,
     cover: "Titelbild",
