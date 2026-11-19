@@ -1,1 +1,64 @@
 @import "tailwindcss";
+
+/* 3dbruckner.de's colours (its src/styles/global.css), calmer: the accent marks the one thing to do on a screen and the focus ring. Light
+   values on :root, dark ones when the system asks for dark. --line is a control's edge and reaches 3:1 against --bg. */
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #f5f5f6;
+  --fg: #15171c;
+  --muted: #5a606c;
+  --border: #e2e4e9;
+  --line: #868c98;
+  --accent: #c2305e;
+  --accent-hover: #a3264d;
+  --on-accent: #ffffff;
+  --danger: #b42318;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0f1115;
+    --surface: #181b21;
+    --fg: #f0eee9;
+    --muted: #a6a9b1;
+    --border: #2b2f38;
+    --line: #727987;
+    --accent: #f27d9d;
+    --accent-hover: #f79bb3;
+    --on-accent: #1b0a11;
+    --danger: #ff8a7a;
+  }
+}
+
+@theme {
+  --color-paper: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--fg);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-on-accent: var(--on-accent);
+  --color-danger: var(--danger);
+}
+
+@layer base {
+  :focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+  dialog::backdrop {
+    background: rgb(0 0 0 / 0.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

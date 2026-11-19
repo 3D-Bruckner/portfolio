@@ -11,9 +11,9 @@ export const ENV_PREFIX = "UPLOAD";
 export const APP_NAME = "3D Bruckner Upload";
 /** API tokens start with this, so a bearer is told apart from an OAuth access token at a glance, and by a secret scanner. */
 export const API_TOKEN_PREFIX = "upl_";
-/** The sign-in page (app/[lang]/signin), where the kit and Better Auth send anyone not signed in. */
+/** The sign-in page (app/[lang]/(public)/signin), where the kit and Better Auth send anyone not signed in. */
 export const SIGN_IN_PAGE = "/signin";
-/** The consent page (app/[lang]/consent), where an MCP client's or a script's OAuth sign-in asks the person. */
+/** The consent page (app/[lang]/(public)/consent), where an MCP client's or a script's OAuth sign-in asks the person. */
 export const CONSENT_PAGE = "/consent";
 
 /** The sign-in mail's words per language (the first is the fallback) and the language of a request, by its headers. */

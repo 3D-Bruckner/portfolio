@@ -17,6 +17,8 @@ export default defineConfig({
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   // The dev server compiles each route on its first request, which on CI's runners can take longer than the default 5 seconds.
   expect: { timeout: process.env.CI ? 15_000 : 5_000 },
+  // A test that opens several pages waits for each to compile on its first request.
+  timeout: 60_000,
   use: { baseURL: `http://localhost:${PORT}`, trace: "retain-on-failure" },
   webServer: {
     command: `next dev -p ${PORT}`,

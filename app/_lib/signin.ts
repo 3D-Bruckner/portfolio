@@ -13,3 +13,8 @@ export async function requirePerson(path: string): Promise<Person> {
   if (!person) redirect(`${SIGN_IN_PAGE}?${new URLSearchParams({ next: path })}`);
   return person;
 }
+
+/** The signed-in person of a server action's request, or null: every action checks it itself (an action is reachable by a plain POST). */
+export async function actionPerson(): Promise<Person | null> {
+  return runtime().person(await headers());
+}
