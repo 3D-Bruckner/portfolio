@@ -26,7 +26,12 @@ export const cropSchema = z.strictObject({
 export const BEFORE_ID = z.string().min(1).nullable().describe("The print to stand before; null: to the end.");
 export const PHOTO_IDS = z.array(z.string().min(1)).max(200).describe("Each of the print's photos exactly once.");
 export const SHOWCASE_ON = z.boolean().describe("true pins it, false unpins it.");
-export const CATEGORY_NAME = z.string().max(CATEGORY_NAME_LIMIT);
+export const CATEGORY_NAME = z
+  .string()
+  .trim()
+  .min(1)
+  .max(CATEGORY_NAME_LIMIT)
+  .describe(`The category's name as the site shows it, e.g. 'Geschenkideen'; not empty, at most ${CATEGORY_NAME_LIMIT} characters.`);
 export const STATUS_FILTER = z.enum(["draft", "published"]).optional().describe("Only drafts or only published prints.");
 export const CROP = cropSchema.nullable();
 

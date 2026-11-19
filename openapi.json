@@ -2683,7 +2683,20 @@
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": { "schema": { "type": "object", "properties": { "name": { "type": "string", "maxLength": 60 } }, "required": ["name"] } }
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60,
+                    "description": "The category's name as the site shows it, e.g. 'Geschenkideen'; not empty, at most 60 characters."
+                  }
+                },
+                "required": ["name"]
+              }
+            }
           }
         },
         "responses": {
@@ -2738,7 +2751,20 @@
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": { "schema": { "type": "object", "properties": { "name": { "type": "string", "maxLength": 60 } }, "required": ["name"] } }
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60,
+                    "description": "The category's name as the site shows it, e.g. 'Geschenkideen'; not empty, at most 60 characters."
+                  }
+                },
+                "required": ["name"]
+              }
+            }
           }
         },
         "responses": {

@@ -2,7 +2,7 @@
 // tool's result with its guidance and the URL of each print it names, the print fields taken from the field table, and the tools acting
 // for their caller.
 import { join } from "node:path";
-import type { McpContext, Who } from "next-app-kit/mcp";
+import { mcpRoute, type McpContext, type Who } from "next-app-kit/mcp";
 import { callTool, signedInCookie } from "next-app-kit/testing";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -12,7 +12,7 @@ import { MCP_INSTRUCTIONS, mcpContext } from "./mcp";
 import type { Outcome } from "./outcome";
 import { addPhoto } from "./photos";
 import { PRINT_FIELDS } from "./printfields";
-import { createPrint, publishPrint, type Print } from "./prints";
+import { createPrint, publishPrint, updatePrint, type Print } from "./prints";
 import { MARCEL, seedPhoto, testRuntime, type TestRuntime } from "./testing/runtime";
 
 let rt: TestRuntime;
@@ -147,8 +147,8 @@ describe("prints", () => {
     expect(said(all)).toMatch(/1 draft.*1 published/);
     const drafts = await tool<{ prints: { id: string }[] }>("list_prints", { status: "draft" });
     expect(drafts.prints.map((x) => x.id)).toEqual([d.id]);
-    const none = await tool<{ prints: unknown[] }>("list_prints", { status: "published" }, who);
-    expect(none.prints).toHaveLength(1);
+    const onSite = await tool<{ prints: { id: string }[] }>("list_prints", { status: "published" }, who);
+    expect(onSite.prints.map((x) => x.id)).toEqual([p.id]);
   });
 
   it("list_prints with none yet says how to make one", async () => {
@@ -219,8 +219,8 @@ describe("prints", () => {
     const again = draft("Beyblade – Dragoon");
     seedPhoto(rt, again.id);
     const text = await refusal("publish_print", { id: again.id });
-    expect(text).toMatch(/beyblade-dragoon/);
-    expect(text).toMatch(/slug/);
+    expect(text).toMatch(/The slug "beyblade-dragoon" is reserved/);
+    expect(text).toMatch(/update_print's slug field takes another one; then publish_print again/);
   });
 
   it("unpublish_print: back to a draft, off the site with the next build", async () => {
@@ -257,7 +257,7 @@ describe("order", () => {
     expect(said(r)).toMatch(/next build/);
     const list = await tool<{ prints: { id: string }[] }>("list_prints", { status: "published" });
     expect(list.prints.map((x) => x.id)).toEqual([a.id, b.id]);
-    expect(await refusal("move_print", { id: draft("C").id, beforeId: null })).toBeTruthy();
+    expect(await refusal("move_print", { id: draft("C").id, beforeId: null })).toMatch(/"C" isn't in the portfolio order/);
   });
 
   it("set_showcase and move_showcase", async () => {
@@ -307,7 +307,9 @@ describe("photos", () => {
     expect(said(r)).toMatch(/original/);
     const whole = await tool<{ crop: unknown; width: number }>("set_photo_crop", { photoId: photo.id, crop: null });
     expect(whole).toMatchObject({ crop: null, width: 300 });
-    expect(await refusal("set_photo_crop", { photoId: photo.id, crop: { left: 250, top: 0, width: 100, height: 10 } })).not.toBe("internal error");
+    expect(await refusal("set_photo_crop", { photoId: photo.id, crop: { left: 250, top: 0, width: 100, height: 10 } })).toMatch(
+      /crop: whole pixels inside the photo as shown \(300×200\)/,
+    );
     const t = ctx.tools.find((x) => x.name === "set_photo_crop")!;
     expect(t.description).toMatch(/original/);
     expect(t.description).toMatch(/get_print/);
@@ -343,12 +345,36 @@ describe("categories", () => {
     expect(said(list)).toMatch(/categoryIds/);
     const renamed = await tool<{ name: string; slug: string }>("rename_category", { id: made.id, name: "Dekoration" });
     expect(renamed).toMatchObject({ name: "Dekoration", slug: "deko" });
-    expect(said(renamed)).toMatch(/slug.*stays|stays.*deko/);
+    expect(said(renamed)).toMatch(/slug "deko" stays/);
+    expect(said(renamed)).toMatch(/No published print uses it/);
+    expect(said(renamed)).not.toMatch(/next build/);
     const p = draft("Vase", { categoryIds: [made.id] });
     expect(await refusal("delete_category", { id: made.id })).toMatch(/Vase/);
     await tool("update_print", { id: p.id, categoryIds: [] });
     const gone = await tool<{ deleted: string }>("delete_category", { id: made.id });
     expect(gone.deleted).toBe(made.id);
+  });
+
+  it("rename_category of a category a published print uses: the site shows the new name with the next build", async () => {
+    const made = await tool<{ id: string }>("create_category", { name: "Deko" });
+    const p = published("Vase");
+    value(updatePrint(rt, p.id, { categoryIds: [made.id] }));
+    const renamed = await tool("rename_category", { id: made.id, name: "Dekoration" });
+    expect(said(renamed)).toMatch(/next build/);
+  });
+
+  it("a category's name is trimmed and may not be empty, as its description says", async () => {
+    expect(await refusal("create_category", { name: "   " })).toMatch(/name/);
+    const made = await tool<{ name: string }>("create_category", { name: "  Deko  " });
+    expect(made.name).toBe("Deko");
+    const t = ctx.tools.find((x) => x.name === "create_category")!;
+    const schema = z.toJSONSchema(t.inputSchema, { io: "input" }) as unknown as { properties: { name: { description?: string; minLength?: number } } };
+    expect(schema.properties.name).toMatchObject({ minLength: 1 });
+    expect(schema.properties.name.description).toMatch(/not empty/);
+  });
+
+  it("delete_print says to confirm with Marcel before deleting a published print", () => {
+    expect(ctx.tools.find((x) => x.name === "delete_print")!.description).toMatch(/confirm with Marcel/);
   });
 
   it("list_categories with none says how to make one", async () => {
@@ -383,7 +409,31 @@ describe("API tokens", () => {
     expect(JSON.stringify(list)).not.toContain(made.token);
     const revoked = await tool<{ revoked: string }>("revoke_api_token", { id: made.id }, me);
     expect(revoked.revoked).toBe(made.id);
-    expect(await refusal("revoke_api_token", { id: made.id }, me)).toBeTruthy();
+    expect(await refusal("revoke_api_token", { id: made.id }, me)).toMatch(/no such token/);
+  });
+
+  it("create_api_token over /mcp with an API token is refused (401): tokens are made by a person or an OAuth client, never by a token", async () => {
+    const me = await marcel();
+    const made = await tool<{ token: string }>("create_api_token", { name: "script", scope: "read+write", expiresInDays: 30 }, me);
+    const call = new Request(`${rt.config.publicUrl}/mcp`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${made.token}`,
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+        "mcp-protocol-version": "2026-07-28",
+        "mcp-method": "tools/call",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "create_api_token", arguments: { name: "x", scope: "read", expiresInDays: 30 } },
+      }),
+    });
+    const r = await mcpRoute(call, ctx);
+    expect(r.status).toBe(401);
+    expect((await tool<{ tokens: unknown[] }>("list_api_tokens", {}, me)).tokens).toHaveLength(1);
   });
 
   it("toolsActAsCaller: an MCP call acts for the person it came from: the tokens it makes are theirs", async () => {

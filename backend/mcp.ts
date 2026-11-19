@@ -207,7 +207,7 @@ export function mcpTools(rt: Runtime): Tool[] {
     defineTool({
       name: "delete_print",
       description:
-        "Delete a print with its photos, for good. A print that was ever published leaves its slug reserved: no print can have that address again. To take it off the site and keep it, use unpublish_print.",
+        "Delete a print with its photos, for good. Before deleting a published print, confirm with Marcel: it leaves the site, and a print that was ever published leaves its slug reserved, so no print can have that address again. To take it off the site and keep it, use unpublish_print.",
       input: z.object({ id: PRINT_ID }),
       output: z.object({
         deleted: z.object({
@@ -396,9 +396,14 @@ export function mcpTools(rt: Runtime): Tool[] {
       handle: async ({ id, name }) => {
         const c = renameCategory(rt, id, name);
         if (!c.ok) return refused(c);
+        const shown = listPrints(rt, { status: "published" }).some((p) => p.categoryIds.includes(id));
         return {
           ...c.value,
-          guidance: [`Renamed; the slug "${c.value.slug}" stays. Published prints in it show the new name with the next build.`],
+          guidance: [
+            shown
+              ? `Renamed; the slug "${c.value.slug}" stays. Published prints in it show the new name with the next build.`
+              : `Renamed; the slug "${c.value.slug}" stays. No published print uses it, so the site doesn't change.`,
+          ],
         };
       },
     }),
