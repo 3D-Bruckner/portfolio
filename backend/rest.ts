@@ -275,7 +275,7 @@ export const REST_OPS: Op<Runtime>[] = [
     path: "/photos/{id}",
     operationId: "getPhotoFile",
     noTool: "binary JPEG; photos come in and go out through the web app only",
-    summary: "A photo's cutout, the JPEG the site shows (ETag: its sha256)",
+    summary: "A photo's cutout, the JPEG the site shows (ETag: its sha256; If-None-Match with it answers 304)",
     tag: "Site",
     params: PHOTO_ID,
     ok: { status: 200, description: "The JPEG", binary: true },

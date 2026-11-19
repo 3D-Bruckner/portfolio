@@ -156,7 +156,7 @@ export function CropFrame({
                   onPointerDown={(e) => begin(c, e)}
                   onPointerMove={moveTo}
                   onPointerUp={end}
-                  className={`absolute flex size-8 items-center justify-center ${c.includes("n") ? "-top-4" : "-bottom-4"} ${c.includes("w") ? "-left-4" : "-right-4"} ${c === "nw" || c === "se" ? "cursor-nwse-resize" : "cursor-nesw-resize"}`}
+                  className={`absolute flex size-11 items-center justify-center ${c.includes("n") ? "-top-5.5" : "-bottom-5.5"} ${c.includes("w") ? "-left-5.5" : "-right-5.5"} ${c === "nw" || c === "se" ? "cursor-nwse-resize" : "cursor-nesw-resize"}`}
                 >
                   <span className="size-4 rounded-sm border-2 border-black bg-white" />
                 </span>

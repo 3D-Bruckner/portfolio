@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import sharp from "sharp";
+import sharp, { type Sharp } from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Outcome } from "./outcome";
 import { addPhoto, deletePhoto, getPhoto, originalPath, photoPath, reorderPhotos, setCover, setCrop, type Photo } from "./photos";
@@ -524,6 +524,32 @@ describe("setCrop", () => {
         photoFiles().filter((f) => f.startsWith(photo.id) || f.startsWith(`.${photo.id}`)),
         remove,
       ).toEqual([]);
+    }
+  });
+
+  it("returns notFound when the photo, or its print, is deleted while the new cutout is written (the second await)", async () => {
+    for (const remove of ["photo", "print"] as const) {
+      const p = draft(`Bowl ${remove}`);
+      const photo = await fixture(p.id);
+      const before = rt.siteChanges;
+      // The original's size is read; the cutout is rendered to its temporary file, and the delete lands before setCrop resumes.
+      const toFile = sharp.prototype.toFile;
+      const spy = vi.spyOn(sharp.prototype, "toFile").mockImplementationOnce(async function (this: Sharp, out: string) {
+        const info = await toFile.call(this, out);
+        if (remove === "photo") value(deletePhoto(rt, photo.id));
+        else value(deletePrint(rt, p.id));
+        return info;
+      } as typeof toFile);
+      expect(await setCrop(rt, photo.id, { left: 0, top: 0, width: 100, height: 100 }), remove).toMatchObject({ ok: false, reason: "not_found" });
+      expect(spy, remove).toHaveBeenCalledTimes(1);
+      spy.mockRestore();
+      expect(
+        photoFiles().filter((f) => f.startsWith(photo.id) || f.startsWith(`.${photo.id}`)),
+        remove,
+      ).toEqual([]);
+      expect(rt.store.photo(photo.id), remove).toBeUndefined();
+      // Only the delete's own change, if any; the crop added none.
+      expect(rt.siteChanges, remove).toBe(before);
     }
   });
 

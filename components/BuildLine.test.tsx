@@ -1,7 +1,7 @@
 import { renderToReadableStream } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { BuildStatus } from "@/backend";
-import { BuildLineSlot } from "./BuildLine";
+import { BuildLineSlot, lineStatus } from "./BuildLine";
 
 /** Everything the stream has sent so far, without waiting for what is still suspended. */
 async function firstChunk(reader: ReadableStreamDefaultReader<Uint8Array>): Promise<string> {
@@ -31,5 +31,12 @@ describe("the build line", () => {
     answer({ pending: true });
     const rest = await restOf(reader);
     expect(rest).toContain("Website wird in Kürze aktualisiert");
+  });
+
+  it("a status that fails to load can't reject: the line says it couldn't be read", async () => {
+    const status = lineStatus(Promise.reject(new Error("database is locked")));
+    await expect(status).resolves.toBeUndefined();
+    const stream = await renderToReadableStream(<BuildLineSlot lang="en" status={status} />);
+    expect(await restOf(stream.getReader())).toContain("The website&#x27;s state couldn&#x27;t be read");
   });
 });

@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { getPhoto, photoPath, type Runtime } from "@/backend";
+import { etagMatches, getPhoto, photoPath, type Runtime } from "@/backend";
 
 // A photo's cutout (the JPEG the site gets), for the web app's pages (the session cookie) and for scripts (an API or OAuth token; reading
 // is all it needs). A new crop changes the cutout under the same id, so the browser keeps it privately but asks again each time: its
@@ -11,13 +11,7 @@ export async function servePhoto(rt: Runtime, req: Request, id: string): Promise
   if (!photo.ok) return refuse(404, photo.message);
   const etag = `"${photo.value.sha256}"`;
   const cache = { "cache-control": "private, no-cache", etag };
-  if (
-    req.headers
-      .get("if-none-match")
-      ?.split(",")
-      .some((t) => t.trim().replace(/^W\//, "") === etag)
-  )
-    return new Response(null, { status: 304, headers: cache });
+  if (etagMatches(req.headers.get("if-none-match"), etag)) return new Response(null, { status: 304, headers: cache });
   let bytes: Buffer;
   try {
     bytes = await readFile(photoPath(rt, photo.value));

@@ -14,7 +14,6 @@ import {
   deleteCategory,
   deletePhoto,
   deletePrint,
-  getPrint,
   movePrint,
   moveShowcase,
   publishPrint,
@@ -85,13 +84,8 @@ export async function savePrint(id: string | null, _prev: Result | null, fd: For
 export async function publish(id: string): Promise<Result> {
   return act(
     () => publishPrint(runtime(), id),
-    (o, t) => {
-      if (o.reason === "not_found") return t.print.errors.notFound;
-      const print = getPrint(runtime(), id);
-      // A reserved slug names the clash (Review Focus 4); what is missing the page shows already.
-      if (o.reason === "conflict" && print.ok) return t.print.errors.slug(print.value.slug);
-      return printProblem(o, t);
-    },
+    // A reserved slug names the clash (Review Focus 4: the refusal names the slug); what is missing the page shows already.
+    printProblem,
     (t) => t.print.published,
   );
 }

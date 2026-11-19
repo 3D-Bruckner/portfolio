@@ -74,13 +74,13 @@ export function OrderList({ kind, prints }: { kind: "showcases" | "portfolio"; p
                 </span>
                 {p.cover ? (
                   // eslint-disable-next-line @next/next/no-img-element -- the app's own photo route, private and per-session
-                  <img src={p.cover} alt="" className="size-10 shrink-0 rounded-md bg-surface object-cover" />
+                  <img src={p.cover} alt="" className="size-12 shrink-0 rounded-md bg-surface object-cover" />
                 ) : (
                   <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-surface text-muted">
                     <PhotoIcon aria-hidden="true" className={ui.iconSize} />
                   </span>
                 )}
-                <span className="min-w-0 flex-1 truncate font-medium">{p.title}</span>
+                <span className="line-clamp-2 min-w-0 flex-1 font-medium break-words">{p.title}</span>
                 <span className="flex shrink-0 gap-1">
                   <button type="button" aria-label={t.up(p.title)} disabled={busy || i === 0} onClick={() => step(id, -1)} className={`${ui.icon} size-9`}>
                     <UpIcon aria-hidden="true" className={ui.iconSize} />

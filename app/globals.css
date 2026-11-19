@@ -52,6 +52,11 @@
   dialog::backdrop {
     background: rgb(0 0 0 / 0.5);
   }
+  /* A page with a sticky bar at the bottom (the print form's Save bar): a field brought into view (focus, the next field on a phone's
+     keyboard) stops above the bar, not under it. */
+  html:has([data-sticky-bottom]) {
+    scroll-padding-bottom: 9rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

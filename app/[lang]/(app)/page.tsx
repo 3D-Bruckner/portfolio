@@ -31,10 +31,10 @@ export default async function Home({ params, searchParams }: PageProps<"/[lang]"
           tabs={[
             {
               id: "published",
-              label: `${t.list.published} (${published.length})`,
+              label: t.list.tab(t.list.published, published.length),
               panel: <PrintList prints={published} empty={t.list.emptyPublished} t={t} />,
             },
-            { id: "drafts", label: `${t.list.drafts} (${drafts.length})`, panel: <PrintList prints={drafts} empty={t.list.emptyDrafts} t={t} /> },
+            { id: "drafts", label: t.list.tab(t.list.drafts, drafts.length), panel: <PrintList prints={drafts} empty={t.list.emptyDrafts} t={t} /> },
           ]}
         />
       </div>

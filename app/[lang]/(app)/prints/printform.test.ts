@@ -91,6 +91,7 @@ describe("formTakesEveryPrintField", () => {
     expect(specs.title).toMatchObject({ kind: "text", maxLength: 200, required: true });
     expect(specs.price).toMatchObject({ kind: "integer", min: 0, max: 100000 });
     expect(specs.colors).toMatchObject({ min: 1, max: 100 });
+    expect(specs.sources).toMatchObject({ kind: "sources", max: 10, labelMaxLength: 100, urlMaxLength: 2000 });
     expect(Object.keys(specs).sort()).toEqual(Object.keys(PRINT_FIELDS).sort());
   });
 });

@@ -45,6 +45,7 @@ export function formValues(fd: FormData, mode: "create" | "edit"): Record<string
 }
 
 type Limits = { minLength?: number | null; maxLength?: number | null; minValue?: number | null; maxValue?: number | null };
+type SourceList = { element: { shape: { label: Limits; url: Limits } } };
 
 /** What the form needs of each field: its kind, whether create needs it, and its limits, read from the table's schemas. */
 export function fieldSpecs(): Record<PrintFieldName, FieldSpec> {
@@ -58,6 +59,12 @@ export function fieldSpecs(): Record<PrintFieldName, FieldSpec> {
       if (f.kind === "integer") {
         spec.min = s.minValue ?? undefined;
         spec.max = s.maxValue ?? undefined;
+      }
+      if (f.kind === "sources") {
+        const entry = (f.value as unknown as SourceList).element.shape;
+        spec.max = s.maxLength ?? f.limit ?? undefined;
+        spec.labelMaxLength = entry.label.maxLength ?? undefined;
+        spec.urlMaxLength = entry.url.maxLength ?? undefined;
       }
       return [name, spec];
     }),

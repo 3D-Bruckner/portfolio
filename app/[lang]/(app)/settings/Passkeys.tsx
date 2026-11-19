@@ -18,7 +18,8 @@ export function Passkeys() {
   const lang = useLocale();
   const tp = t.settings.passkeys;
   const headingId = useId();
-  const [keys, setKeys] = useState<Passkey[] | null>(null);
+  // null while loading; "failed" when the list couldn't be read (shown as a problem, not as "no passkeys").
+  const [keys, setKeys] = useState<Passkey[] | "failed" | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [busy, setBusy] = useState(false);
   const [removing, setRemoving] = useState<Passkey | null>(null);
@@ -29,9 +30,14 @@ export function Passkeys() {
 
   useEffect(() => {
     let live = true;
-    void authClient.passkey.listUserPasskeys().then(({ data }) => {
-      if (live) setKeys((data as Passkey[] | null) ?? []);
-    });
+    authClient.passkey.listUserPasskeys().then(
+      ({ data, error }) => {
+        if (live) setKeys(error ? "failed" : ((data as Passkey[] | null) ?? []));
+      },
+      () => {
+        if (live) setKeys("failed");
+      },
+    );
     return () => {
       live = false;
     };
@@ -39,18 +45,28 @@ export function Passkeys() {
 
   async function add() {
     setBusy(true);
-    const r = await authClient.passkey.addPasskey();
-    setBusy(false);
-    setResult(!r || r.error ? { ok: false, error: tp.failed } : { ok: true, message: tp.added });
-    load();
+    try {
+      const r = await authClient.passkey.addPasskey();
+      setResult(!r || r.error ? { ok: false, error: tp.failed } : { ok: true, message: tp.added });
+    } catch {
+      setResult({ ok: false, error: tp.failed });
+    } finally {
+      setBusy(false);
+      load();
+    }
   }
 
   async function remove(id: string) {
     setBusy(true);
-    const { error } = await authClient.passkey.deletePasskey({ id });
-    setBusy(false);
-    setResult(error ? { ok: false, error: t.common.failed } : { ok: true, message: tp.removed });
-    load();
+    try {
+      const { error } = await authClient.passkey.deletePasskey({ id });
+      setResult(error ? { ok: false, error: t.common.failed } : { ok: true, message: tp.removed });
+    } catch {
+      setResult({ ok: false, error: t.common.failed });
+    } finally {
+      setBusy(false);
+      load();
+    }
   }
 
   return (
@@ -68,8 +84,13 @@ export function Passkeys() {
         <Notice result={result} />
       </div>
       <h3 className="mt-6 font-semibold">{tp.list}</h3>
-      {keys !== null && keys.length === 0 && <p className="mt-2 text-muted">{tp.none}</p>}
-      {keys !== null && keys.length > 0 && (
+      {keys === "failed" && (
+        <div className="mt-2">
+          <Notice result={{ ok: false, error: tp.listFailed }} />
+        </div>
+      )}
+      {Array.isArray(keys) && keys.length === 0 && <p className="mt-2 text-muted">{tp.none}</p>}
+      {Array.isArray(keys) && keys.length > 0 && (
         <ul className="mt-2 divide-y divide-border rounded-xl border border-border">
           {keys.map((k) => {
             const name = k.name || tp.unnamed;

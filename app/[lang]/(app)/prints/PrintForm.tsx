@@ -150,7 +150,7 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
                     <div className="flex items-end gap-2">
                       <label className="block flex-1">
                         <span className={ui.label}>{t.print.sourceLabel}</span>
-                        <input name={`${name}.label`} defaultValue={s.label} maxLength={100} className={ui.input} />
+                        <input name={`${name}.label`} defaultValue={s.label} maxLength={spec.labelMaxLength} className={ui.input} />
                       </label>
                       <button
                         type="button"
@@ -163,7 +163,7 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
                     </div>
                     <label className="mt-2 block">
                       <span className={ui.label}>{t.print.sourceUrl}</span>
-                      <input name={`${name}.url`} type="url" inputMode="url" defaultValue={s.url} maxLength={2000} className={ui.input} />
+                      <input name={`${name}.url`} type="url" inputMode="url" defaultValue={s.url} maxLength={spec.urlMaxLength} className={ui.input} />
                     </label>
                   </fieldset>
                 </li>
@@ -171,6 +171,7 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
             </ul>
             <button
               type="button"
+              disabled={spec.max !== undefined && sources.length >= spec.max}
               onClick={() => {
                 setSources((list) => [...list, { label: "", url: "", key: nextKey }]);
                 setNextKey((k) => k + 1);
@@ -210,7 +211,7 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
   return (
     <form onSubmit={submit} className="mt-4 space-y-5">
       {fields.map(field)}
-      <div className="sticky bottom-0 -mx-4 space-y-2 border-t border-border bg-paper px-4 py-3">
+      <div data-sticky-bottom className="sticky bottom-0 -mx-4 space-y-2 border-t border-border bg-paper px-4 py-3">
         <Notice result={result} />
         <button type="submit" disabled={pending} className={`${ui.button} w-full`}>
           {pending ? t.common.saving : t.common.save}

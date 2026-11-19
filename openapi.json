@@ -2613,7 +2613,7 @@
       },
       "get": {
         "operationId": "getPhotoFile",
-        "summary": "A photo's cutout, the JPEG the site shows (ETag: its sha256)",
+        "summary": "A photo's cutout, the JPEG the site shows (ETag: its sha256; If-None-Match with it answers 304)",
         "tags": ["Site"],
         "security": [{ "bearer": [] }],
         "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The photo's id", "schema": { "type": "string" } }],

@@ -205,7 +205,8 @@ function keptRun(rt: Runtime, token: string): Promise<BuildRun | undefined> {
   if (asking) return asking;
   const ask = latestRun(rt, token)
     .then((run) => {
-      runAsked.set(rt.store, { at: now, run });
+      // Kept from when the answer came, not when the ask started: a slow GitHub doesn't shorten how long it is kept.
+      runAsked.set(rt.store, { at: rt.clock().getTime(), run });
       return run;
     })
     .finally(() => runAsking.delete(rt.store));

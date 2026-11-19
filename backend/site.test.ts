@@ -269,6 +269,27 @@ describe("the site build's trigger", () => {
     expect(calls).toHaveLength(1);
   });
 
+  it("an answer is kept 20 s from when it came, not from when the ask started", async () => {
+    const { rt, calls, at } = fake({ UPLOAD_GITHUB_TOKEN: TOKEN });
+    let answer!: (r: Response) => void;
+    rt.fetch = ((url: string | URL | Request, init?: RequestInit) => {
+      calls.push({ url: String(url), init: init ?? {} });
+      return new Promise<Response>((resolve) => (answer = resolve));
+    }) as typeof fetch;
+    const asked = buildStatus(rt);
+    await vi.waitFor(() => expect(calls).toHaveLength(1));
+    at(8); // GitHub takes 8 s to answer
+    answer(Response.json({ total_count: 0, workflow_runs: [] }));
+    await asked;
+    at(27); // 19 s after the answer, 27 s after the ask: still kept
+    await buildStatus(rt);
+    expect(calls).toHaveLength(1);
+    at(28);
+    void buildStatus(rt);
+    await vi.waitFor(() => expect(calls).toHaveLength(2));
+    answer(Response.json({ total_count: 0, workflow_runs: [] }));
+  });
+
   it("a change that can't be marked pending is logged; the save it came from still succeeds", () => {
     const { rt } = fake();
     const p = value(createPrint(rt, { title: "Vase", description: "A vase." }));

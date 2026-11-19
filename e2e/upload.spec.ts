@@ -94,3 +94,31 @@ test("publishing without a photo says what is missing", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Veröffentlichen" })).toBeDisabled();
   await expect(page.getByText("Zum Veröffentlichen fehlt: mindestens ein Foto")).toBeVisible();
 });
+
+test("saveBarNeverCovers: on a phone, the sticky Save bar covers no field as the form is tabbed through or scrolled", async ({ page }) => {
+  await newPrint(page, { title: unique("Lange Form"), description: "Text." });
+  const bar = page.getByRole("button", { name: "Speichern" });
+  /** Whether the focused field is on screen and the point at its centre is the field itself, not the Save bar over it. */
+  const focusedIsVisible = () =>
+    page.evaluate(() => {
+      const el = document.activeElement as HTMLElement;
+      const r = el.getBoundingClientRect();
+      const x = r.left + r.width / 2;
+      const y = r.top + Math.min(r.height / 2, 20);
+      return { name: el.getAttribute("name") ?? el.tagName, ok: y > 0 && y < window.innerHeight && el.contains(document.elementFromPoint(x, y)) };
+    });
+  // From the bottom of the page, the title (the first field) comes back into view uncovered.
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.getByLabel("Titel", { exact: true }).focus();
+  expect(await focusedIsVisible()).toEqual({ name: "title", ok: true });
+  // Tabbing down through every field: the one that has focus is never under the bar.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.getByLabel("Titel", { exact: true }).focus();
+  for (let i = 0; i < 40; i++) {
+    await page.keyboard.press("Tab");
+    if (await bar.evaluate((b) => b === document.activeElement || b.contains(document.activeElement))) break;
+    const tag = await page.evaluate(() => document.activeElement?.tagName);
+    if (tag !== "INPUT" && tag !== "TEXTAREA" && tag !== "SELECT") continue;
+    expect(await focusedIsVisible()).toEqual({ name: expect.any(String), ok: true });
+  }
+});

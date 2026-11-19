@@ -8,6 +8,7 @@ import { createApiToken, type RestCaller } from "next-app-kit/tokens";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createCategory } from "./categories";
+import { notModified } from "./conditional";
 import { mcpContext } from "./mcp";
 import type { Outcome } from "./outcome";
 import { addPhoto, photoPath, type Photo } from "./photos";
@@ -105,6 +106,21 @@ describe("GET /api/v1/photos/{id}", () => {
     expect(Buffer.from(await r.arrayBuffer()).equals(readFileSync(photoPath(rt, photo)))).toBe(true);
     expect((await withToken("GET", `/photos/${photo.id}`)).status).toBe(401);
     expect((await withToken("GET", "/photos/nope", read)).status).toBe(404);
+  });
+
+  it("answers 304 without the bytes when the caller holds the cutout's ETag, and 200 once the cutout changed", async () => {
+    const { photo } = await publishedWithPhoto("Vase");
+    const read = await token("read");
+    const get = async (ifNoneMatch: string) => {
+      const req = new Request(`${BASE}/api/v1/photos/${photo.id}`, { headers: { authorization: `Bearer ${read}`, "if-none-match": ifNoneMatch } });
+      return notModified(req, await restRoute(req, REST_OPS, rt, await rt.apiCaller(req), { base: BASE, log: () => {} }));
+    };
+    const same = await get(`W/"other", "${photo.sha256}"`);
+    expect(same.status).toBe(304);
+    expect(same.headers.get("etag")).toBe(`"${photo.sha256}"`);
+    expect(same.headers.get("cache-control")).toBe("private, no-cache");
+    expect((await same.arrayBuffer()).byteLength).toBe(0);
+    expect((await get('"an-older-cutout"')).status).toBe(200);
   });
 
   it("a read token may not change anything", async () => {

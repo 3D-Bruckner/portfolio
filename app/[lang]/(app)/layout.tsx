@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { runtime } from "@/app/_lib/runtime";
 import { buildStatus } from "@/backend";
-import { BuildLineSlot } from "@/components/BuildLine";
+import { BuildLineSlot, lineStatus } from "@/components/BuildLine";
 import { copyFor, isLocale } from "@/components/copy";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { NavLinks } from "./NavLinks";
@@ -24,7 +24,7 @@ export default async function AppLayout({ children, params }: LayoutProps<"/[lan
         {person && (
           <>
             {/* Not awaited here: the line streams in behind a placeholder (components/BuildLine.tsx). */}
-            <BuildLineSlot lang={lang} status={buildStatus(rt)} />
+            <BuildLineSlot lang={lang} status={lineStatus(buildStatus(rt))} />
             <NavLinks />
           </>
         )}

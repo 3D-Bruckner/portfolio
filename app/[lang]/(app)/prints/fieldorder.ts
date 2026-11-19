@@ -23,5 +23,9 @@ export type FieldSpec = {
   required: boolean;
   maxLength?: number;
   min?: number;
+  /** An integer's highest value; for sources, the most entries. */
   max?: number;
+  /** A source's label and URL limits. */
+  labelMaxLength?: number;
+  urlMaxLength?: number;
 };
