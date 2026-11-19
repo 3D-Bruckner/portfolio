@@ -218,6 +218,6 @@ tokens per conventions (hashed, shown once, scoped, expiring); the site build's 
 
 ## Change 2026-11-19: originals and cutouts (Marcel)
 
-- **Originals are kept** at full resolution, turned upright, with **all metadata removed** (GPS, camera, date). The anti-goal "original photos with location data stored anywhere" still holds; "the original is never written to disk" is replaced by "the original is written only without metadata".
+- **Originals are kept as taken**: the image data untouched (no rotation, no re-encode). Every metadata block is removed (GPS, camera, date, XMP, comments) except the orientation flag and the colour profile, which only say how to show the picture. The anti-goal "original photos with location data stored anywhere" still holds; "the original is never written to disk" is replaced by "the original is written only without metadata".
 - **Each photo has a cutout**, chosen freely on the phone by dragging a frame over the photo (default: the whole photo). The site gets the cutout, capped at 2400 px, JPEG quality 85, no metadata.
 - **Deleting the last photo of a published print** unpublishes the print in the same step, after a warning.
