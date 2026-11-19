@@ -3,13 +3,15 @@
 // posts to savePrint, whose parse is the table's (printform.ts). Submitted by hand (startTransition), not as <form action>, so a refused
 // save keeps what was typed.
 import Link from "next/link";
-import { startTransition, useActionState, useState, type FormEvent } from "react";
+import { startTransition, useActionState, useRef, useState, type FormEvent } from "react";
+import type { ThreeMfReading } from "@/backend/client";
 import { useCopy } from "@/components/CopyProvider";
 import { AddIcon, CloseIcon } from "@/components/icons";
 import { Notice } from "@/components/Notice";
 import { ui } from "@/components/ui";
 import { savePrint } from "../actions";
 import { FORM_ORDER, type FieldSpec, type PrintFieldName } from "./fieldorder";
+import { ThreeMfFill, type FillPart } from "./ThreeMfFill";
 
 export type FormValues = {
   title: string;
@@ -40,6 +42,32 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
   const [result, dispatch, pending] = useActionState(savePrint.bind(null, printId), null);
   const [sources, setSources] = useState(() => (values?.sources ?? []).map((s, i) => ({ ...s, key: i })));
   const [nextKey, setNextKey] = useState(sources.length);
+  const form = useRef<HTMLFormElement>(null);
+
+  // What a 3MF holds goes into the fields: the slicer's numbers and the suggested price always (they belong to that file), the title and
+  // the description only into empty fields, the MakerWorld page only when no source is set. Nothing is saved until the form is.
+  function fill(r: ThreeMfReading): FillPart[] {
+    const filled: FillPart[] = [];
+    const put = (name: FillPart, value: string | number | undefined, onlyIfEmpty = false) => {
+      const el = form.current?.elements.namedItem(name);
+      if (value === undefined || !(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) return;
+      if (onlyIfEmpty && el.value.trim()) return;
+      el.value = String(value);
+      filled.push(name);
+    };
+    put("printTimeMinutes", r.printTimeMinutes);
+    put("weightGrams", r.weightGrams);
+    put("colors", r.colors);
+    put("price", r.price);
+    put("title", r.title, true);
+    put("description", r.description, true);
+    if (r.source && !sources.some((s) => s.url.trim())) {
+      setSources([{ ...r.source, key: nextKey }]);
+      setNextKey(nextKey + 1);
+      filled.push("sources");
+    }
+    return filled;
+  }
 
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -215,7 +243,8 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
   }
 
   return (
-    <form onSubmit={submit} className="mt-4 space-y-5">
+    <form ref={form} onSubmit={submit} className="mt-4 space-y-5">
+      <ThreeMfFill onRead={fill} />
       {fields.map(field)}
       <div
         data-sticky-bottom

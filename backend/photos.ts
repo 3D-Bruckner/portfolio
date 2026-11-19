@@ -76,16 +76,23 @@ export const photoOf = (r: PhotoRow): Photo => ({
       : null,
 });
 
-const photosDir = (rt: Runtime, printId: string): string => join(rt.config.dataDir, "photos", printId);
+/** Ids are UUIDs (made here, never taken from outside): anything else never becomes part of a path. */
+const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+export function pathId(id: string): string {
+  if (!ID.test(id)) throw new Error("not an id");
+  return id;
+}
+
+export const photosDir = (rt: Runtime, printId: string): string => join(rt.config.dataDir, "photos", pathId(printId));
 
 /** Where a photo's cutout (the JPEG the site gets) is stored. */
-export const photoPath = (rt: Runtime, photo: Pick<Photo, "id" | "printId">): string => join(photosDir(rt, photo.printId), `${photo.id}.jpg`);
+export const photoPath = (rt: Runtime, photo: Pick<Photo, "id" | "printId">): string => join(photosDir(rt, photo.printId), `${pathId(photo.id)}.jpg`);
 
 /** The long edge of a thumbnail, in pixels: a list's 64 px at three times the pixel density, with room to spare. */
 const THUMB_EDGE = 256;
 
 const thumbPath = (rt: Runtime, photo: Pick<Photo, "id" | "printId" | "sha256">): string =>
-  join(photosDir(rt, photo.printId), `${photo.id}.thumb.${photo.sha256.slice(0, 16)}.jpg`);
+  join(photosDir(rt, photo.printId), `${pathId(photo.id)}.thumb.${photo.sha256.slice(0, 16)}.jpg`);
 
 /** A photo's thumbnails on disk but `keep` (none kept when null). */
 function removeThumbs(rt: Runtime, photo: Pick<Photo, "id" | "printId">, keep: string | null): void {
@@ -111,7 +118,7 @@ export async function photoThumb(rt: Runtime, photo: Pick<Photo, "id" | "printId
 }
 
 const originalPathAs = (rt: Runtime, photo: Pick<Photo, "id" | "printId">, format: OriginalFormat): string =>
-  join(photosDir(rt, photo.printId), `${photo.id}.orig.${ORIGINALS[format].ext}`);
+  join(photosDir(rt, photo.printId), `${pathId(photo.id)}.orig.${ORIGINALS[format].ext}`);
 
 /** A photo's original, where it is stored and its content type (by its extension); null when it has none. */
 export function originalFile(rt: Runtime, photo: Pick<Photo, "id" | "printId">): { path: string; type: string } | null {
@@ -276,7 +283,7 @@ export async function setCrop(rt: Runtime, photoId: string, crop: Crop | null): 
   }
   if (sameCrop(photo.crop, crop)) return ok(photo);
   const chosen = crop && { left: crop.left, top: crop.top, width: crop.width, height: crop.height };
-  const tmp = join(photosDir(rt, photo.printId), `.${photoId}.${randomUUID()}.tmp`);
+  const tmp = join(photosDir(rt, photo.printId), `.${pathId(photo.id)}.${randomUUID()}.tmp`);
   try {
     let cut: OutputInfo;
     let bytes: Buffer;

@@ -10,6 +10,7 @@ export {
   Check as SavedIcon,
   CircleAlert as ProblemIcon,
   Crop as CropIcon,
+  FileBox as FileIcon,
   FolderTree as CategoriesIcon,
   GripVertical as DragIcon,
   ImagePlus as AddPhotoIcon,

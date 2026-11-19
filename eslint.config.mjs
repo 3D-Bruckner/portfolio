@@ -4,9 +4,14 @@ import nextTs from "eslint-config-next/typescript";
 import prettier from "eslint-config-prettier/flat";
 
 // The frontend/backend boundary: app/, components/, proxy.ts and instrumentation.ts import the backend only through @/backend
-// (backend/index.ts), and backend/ is framework-free.
+// (backend/index.ts), or @/backend/client (pure code for the browser), and backend/ is framework-free.
 const FRONTEND = {
-  patterns: [{ group: ["@/backend/*", "**/backend/*"], message: "The frontend imports the backend only through @/backend (backend/index.ts)." }],
+  patterns: [
+    {
+      group: ["@/backend/*", "**/backend/*", "!@/backend/client"],
+      message: "The frontend imports the backend only through @/backend (backend/index.ts), or @/backend/client in the browser.",
+    },
+  ],
 };
 const BACKEND = {
   paths: ["next", "react", "react-dom"].map((name) => ({ name, message: "backend/ is framework-free." })),

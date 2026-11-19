@@ -2,6 +2,7 @@
 // (and marking the site build pending with the test's clock; nothing is dispatched unless a test ticks, with a fake fetch), and the
 // sign-in mail caught in `mail` instead of sent. `env` adds to or overrides the settings (an empty value unsets one). Close the store at
 // the end (afterEach).
+import { randomUUID } from "node:crypto";
 import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import type { SignInMail } from "next-app-kit/signin";
@@ -56,7 +57,8 @@ let photoNo = 0;
 
 /** A photo row for `printId`, as Task 3's upload would leave it (the file itself isn't needed for the domain's rules). */
 export function seedPhoto(rt: Runtime, printId: string): string {
-  const id = `photo-${++photoNo}`;
+  const id = randomUUID();
+  photoNo++;
   rt.store.insertPhoto({
     id,
     print_id: printId,

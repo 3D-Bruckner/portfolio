@@ -1,0 +1,43 @@
+{
+  "entryPath": ".open-design/upload-screens/upload-screens.html",
+  "id": "2026-11-19T22-04-46",
+  "createdAt": "2026-11-19T22:04:46.815Z",
+  "mode": "page",
+  "errors": 3,
+  "warnings": 1,
+  "findings": [
+    {
+      "severity": "warning",
+      "check": "contrast",
+      "message": "span.chev \"›\" has a contrast ratio of 3.37:1 against its background (needs 4.5:1 for body text)."
+    },
+    {
+      "severity": "error",
+      "check": "overflow",
+      "message": "div.add \"Fotos\" is clipped by its container div.strip — the text is longer than its box."
+    },
+    {
+      "severity": "error",
+      "check": "overflow",
+      "message": "span.cat \"Geschenkideen\" is clipped by its container div.scroll — the text is longer than its box."
+    },
+    {
+      "severity": "error",
+      "check": "overflow",
+      "message": "span.cat \"Werkstatt\" is clipped by its container div.scroll — the text is longer than its box."
+    },
+    {
+      "severity": "info",
+      "check": "contrast",
+      "message": "Contrast not checked for 1 text element(s) on gradient, image or translucent backgrounds — check those by eye."
+    }
+  ],
+  "images": [
+    {
+      "label": "desktop",
+      "file": "01-desktop.jpg",
+      "width": 1000,
+      "height": 960
+    }
+  ]
+}
