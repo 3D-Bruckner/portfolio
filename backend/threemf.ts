@@ -100,16 +100,29 @@ const attr = (tag: string, name: string) => {
   return m ? decode(m[1]!) : undefined;
 };
 
+/** Everything from a < to the next > goes, in one pass over the characters (no pattern that a nested tag could get past). */
+function withoutTags(html: string): string {
+  let out = "";
+  let inTag = false;
+  for (const c of html) {
+    if (c === "<") inTag = true;
+    else if (c === ">" && inTag) inTag = false;
+    else if (!inTag) out += c;
+  }
+  return out;
+}
+
 /** MakerWorld's HTML description as plain text: paragraphs and line breaks kept, tags and entities gone, and no < or > left at all (it
  * is shown as text, but nothing in it should ever read as markup). */
 export function plainText(html: string): string {
   return decode(
-    html
-      .replace(/<\s*br\s*\/?>/gi, "\n")
-      .replace(/<\/\s*li\s*>/gi, "\n")
-      .replace(/<\/\s*(p|div|h[1-6]|ul|ol)\s*>/gi, "\n\n")
-      .replace(/<li[^>]*>/gi, "• ")
-      .replace(/<[^>]+>/g, ""),
+    withoutTags(
+      html
+        .replace(/<\s*br\s*\/?>/gi, "\n")
+        .replace(/<\/\s*li\s*>/gi, "\n")
+        .replace(/<\/\s*(p|div|h[1-6]|ul|ol)\s*>/gi, "\n\n")
+        .replace(/<li[^>]*>/gi, "• "),
+    ),
   )
     .replace(/[ \t]+/g, " ")
     .replace(/ *\n */g, "\n")
