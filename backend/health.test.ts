@@ -11,13 +11,13 @@ describe("healthResponse", () => {
     try {
       expect(healthResponse(rt)).toEqual({ status: 200, body: { status: "ok" } });
     } finally {
-      rt.raw.close();
+      rt.store.close();
     }
   });
 
   it("answers 503 once the database is closed", () => {
     const rt = openRuntime(config());
-    rt.raw.close();
+    rt.store.close();
     expect(healthResponse(rt)).toEqual({ status: 503, body: { status: "unavailable" } });
   });
 });

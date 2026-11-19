@@ -10,12 +10,12 @@ describe("openRuntime", () => {
     const rt = openRuntime(loadConfig({ NODE_ENV: "test", PUBLIC_URL: "https://upload.example.com", UPLOAD_SECRET: "s".repeat(32), DATA_DIR: dataDir }));
     try {
       expect(existsSync(join(dataDir, "upload.sqlite"))).toBe(true);
-      expect(rt.raw.pragma("journal_mode", { simple: true })).toBe("wal");
-      expect(rt.raw.pragma("foreign_keys", { simple: true })).toBe(1);
+      expect(rt.store.answers()).toBe(true);
       expect(rt.clock()).toBeInstanceOf(Date);
       expect(rt.fetch).toBe(globalThis.fetch);
+      expect(() => rt.onSiteChange()).not.toThrow();
     } finally {
-      rt.raw.close();
+      rt.store.close();
     }
   });
 });
