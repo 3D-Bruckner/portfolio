@@ -2,10 +2,11 @@
 // 2400 px (never enlarged) and stored as a JPEG of quality 85 with no metadata at all, so no GPS position, camera or colour profile ever
 // reaches the site. The original stays in the request's temporary file, which the request removes; only the processed JPEG is stored, as
 // DATA_DIR/photos/<printId>/<photoId>.jpg. It is written beside its place under a temporary name, renamed into place and only then given
-// its row, in one transaction: a failure on the way leaves neither a row nor a file. A print's first photo becomes its cover; a change to
-// a published print's photos is a site change.
+// its row, in one transaction: a failure on the way leaves neither a row nor a file (the print's folder stays: another upload to the same
+// print may be writing into it). What a photo is goes by what sharp reads in it, not the type its sender declared. A print's first photo
+// becomes its cover; a change to a published print's photos is a site change.
 import { createHash, randomUUID } from "node:crypto";
-import { mkdirSync, readFileSync, renameSync, rmdirSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync, renameSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import sharp, { type OutputInfo } from "sharp";
 import type { PhotoRow } from "./db";
@@ -16,6 +17,8 @@ export type Photo = { id: string; printId: string; position: number; width: numb
 
 /** The kinds of photo an upload may be; an iPhone's HEIC is not one (sharp's prebuilt libvips can't read it). */
 export const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+/** What sharp must find in the file, whatever its sender declared: an SVG or a GIF named .jpg is refused all the same. */
+const DECODED_FORMATS = ["jpeg", "png", "webp"];
 /** The longest edge a stored photo has, in pixels. */
 export const PHOTO_LONG_EDGE = 2400;
 export const PHOTO_QUALITY = 85;
@@ -53,10 +56,16 @@ export async function addPhoto(rt: Runtime, printId: string, file: { path: strin
   const tmp = join(dir, `.${id}.tmp`);
   const path = photoPath(rt, { id, printId });
   let stored = false;
-  mkdirSync(dir, { recursive: true });
   try {
     let info: OutputInfo;
     try {
+      const format = (await sharp(file.path).metadata()).format;
+      if (!DECODED_FORMATS.includes(format)) {
+        rt.log.warn({ printId, format }, "photo upload: not a JPEG, PNG or WebP inside");
+        return invalid("file: this is no JPEG, PNG or WebP photo, whatever its name says; send it as a JPEG");
+      }
+      // Made right before the file is written, and never removed: another upload to the same print may be writing into it too.
+      mkdirSync(dir, { recursive: true });
       // No withMetadata/keepExif: sharp writes no EXIF, XMP, IPTC or ICC profile unless asked to.
       info = await sharp(file.path)
         .rotate()
@@ -101,14 +110,7 @@ export async function addPhoto(rt: Runtime, printId: string, file: { path: strin
     return out;
   } finally {
     rmSync(tmp, { force: true });
-    if (!stored) {
-      rmSync(path, { force: true });
-      try {
-        rmdirSync(dir);
-      } catch {
-        // the print's other photos are in it
-      }
-    }
+    if (!stored) rmSync(path, { force: true });
   }
 }
 
@@ -131,7 +133,15 @@ export function deletePhoto(rt: Runtime, photoId: string): Outcome<void> {
     gone = photoOf(row);
     return done;
   });
-  if (out.ok && gone) rmSync(photoPath(rt, gone), { force: true });
+  // The row is gone and committed: a file that can't be removed is only logged (it is never served again), not the delete undone.
+  if (out.ok && gone) {
+    const { id, printId } = gone as Photo;
+    try {
+      rmSync(photoPath(rt, gone), { force: true });
+    } catch (e) {
+      rt.log.error({ photoId: id, printId, error: e instanceof Error ? e.message : String(e) }, "photo deleted, but its photo file could not be removed");
+    }
+  }
   return out;
 }
 

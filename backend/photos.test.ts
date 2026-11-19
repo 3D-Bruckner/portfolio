@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -110,6 +110,33 @@ describe("addPhoto", () => {
     expect(photoFiles()).toEqual([]);
   });
 
+  it("refusesOtherDecodedFormats: an SVG declared as a JPEG is refused by what it is, not what it claims", async () => {
+    const p = draft();
+    const path = join(tmp, "drawing");
+    writeFileSync(path, '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#c50"/></svg>');
+    expect((await sharp(path).metadata()).format).toBe("svg");
+    expect(await addPhoto(rt, p.id, { path, type: "image/jpeg" })).toMatchObject({ ok: false, reason: "invalid" });
+    expect(print(p.id).photos).toEqual([]);
+    expect(photoFiles()).toEqual([]);
+  });
+
+  it("a failed upload leaves the print's folder alone, so another upload to the same print can still write into it", async () => {
+    const p = draft();
+    const dir = join(rt.config.dataDir, "photos", p.id);
+    mkdirSync(dir, { recursive: true });
+    const path = join(tmp, "not-a-photo-either");
+    writeFileSync(path, "nope\n".repeat(50));
+    expect(await addPhoto(rt, p.id, { path, type: "image/jpeg" })).toMatchObject({ ok: false, reason: "invalid" });
+    expect(existsSync(dir)).toBe(true);
+    // Two at once, one failing: the good one is stored.
+    const [good, bad] = await Promise.all([
+      addPhoto(rt, p.id, { path: await image(800, 600), type: "image/jpeg" }),
+      addPhoto(rt, p.id, { path, type: "image/jpeg" }),
+    ]);
+    expect([good.ok, bad.ok]).toEqual([true, false]);
+    expect(photoFiles()).toHaveLength(1);
+  });
+
   it("refuses a photo cut off halfway (the upload broke off): invalid, and nothing stays", async () => {
     const p = draft();
     const whole = readFileSync(FIXTURE);
@@ -165,6 +192,22 @@ describe("deletePhoto", () => {
     expect(print(p.id).photos.map((ph) => ph.id)).toEqual([c.id, b.id]);
     expect(existsSync(photoPath(rt, a))).toBe(false);
     expect(existsSync(photoPath(rt, b))).toBe(true);
+  });
+
+  it("a file that can't be removed after the delete is logged; the photo is gone all the same", async () => {
+    const p = draft();
+    const [a, b] = [await jpeg(p.id), await jpeg(p.id)];
+    // A directory where the file was: removing it without recursion throws.
+    rmSync(photoPath(rt, a));
+    mkdirSync(join(photoPath(rt, a), "x"), { recursive: true });
+    const logged = vi.spyOn(rt.log, "error").mockImplementation(() => {});
+    try {
+      expect(deletePhoto(rt, a.id)).toMatchObject({ ok: true });
+      expect(print(p.id).photos.map((ph) => ph.id)).toEqual([b.id]);
+      expect(logged).toHaveBeenCalledWith(expect.objectContaining({ photoId: a.id }), expect.stringContaining("photo file"));
+    } finally {
+      logged.mockRestore();
+    }
   });
 
   it("leaves no cover when the last photo of a draft goes", async () => {
