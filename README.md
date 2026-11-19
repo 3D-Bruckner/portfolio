@@ -4,45 +4,37 @@ Where 3dbruckner.de's prints are put in: their photos and details, from the phon
 
 A Next.js app on [next-app-kit](https://github.com/Marceltov/next-app-kit), which brings the sign-in, API tokens, MCP, REST, migrations and uploads. The design is [`docs/superpowers/specs/2026-11-19-portfolio-app-design.md`](docs/superpowers/specs/2026-11-19-portfolio-app-design.md), approved by Marcel on 2026-11-19.
 
-## Running it
+## Running it locally
 
-The server holds `compose.yaml` and `.env`, nothing else:
-
-```sh
-cp .env.example .env && chmod 600 .env   # then fill it in
-docker compose pull && docker compose up -d
-```
-
-CI publishes `ghcr.io/3d-bruckner/upload:main` from main once the checks passed.
-
-## Settings
-
-Every setting is an environment variable; `.env.example` lists each one with what it does and its default.
-
-| Variable                                   | What it does                                                                                        |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| `PUBLIC_URL`                               | The app's public URL. Required.                                                                     |
-| `UPLOAD_SECRET`                            | At least 32 random characters that sign sessions and tokens. Required.                              |
-| `UPLOAD_ALLOWED_EMAILS`                    | Who may sign in: addresses and `@domain` entries, comma-separated. Empty lets nobody in.            |
-| `UPLOAD_SMTP_URL`, `UPLOAD_SMTP_FROM`      | Sign-in by email (a code or a link).                                                                |
-| `UPLOAD_OIDC_<NAME>_*`                     | A sign-in provider (next-app-kit's: `GITHUB`, `GOOGLE`, `APPLE` built in, any OIDC with `_ISSUER`). |
-| `UPLOAD_E2E`                               | `1` turns the end-to-end tests' sign-in route on, outside production only.                          |
-| `UPLOAD_GITHUB_TOKEN`                      | Fine-grained, `actions: write` on the site's repository only: starts the site build.                |
-| `UPLOAD_SITE_REPO`, `UPLOAD_SITE_WORKFLOW` | The site's repository and its build workflow. Defaults `3D-Bruckner/3dbruckner`, `pages.yml`.       |
-| `UPLOAD_MAX_PHOTO_MB`                      | The largest photo an upload may send, in megabytes. Default `40`.                                   |
-| `DATA_DIR`                                 | `upload.sqlite`, `auth.sqlite` and the photos. Default `/data`.                                     |
-| `PORT`                                     | The port the server listens on; must be the real one (the kit checks tokens against it).            |
-| `TZ`                                       | The time zone.                                                                                      |
-| `UPLOAD_DEV_USER`                          | Development only: a fixed person instead of signing in. Refused under `NODE_ENV=production`.        |
-| `UPLOAD_LOG_LEVEL`                         | The log's level: `debug`, `info`, `warn`, `error` or `silent`. Default `info`.                      |
-
-## Development
+Node 26 (`.nvmrc`):
 
 ```sh
 nvm use && npm ci
-npm run dev            # with PUBLIC_URL, UPLOAD_SECRET and DATA_DIR in .env.local
-npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && npm run test:e2e
+cat > .env.local <<'ENV'
+PUBLIC_URL=http://localhost:3000
+UPLOAD_SECRET=a-development-secret-of-at-least-32-characters
+DATA_DIR=./data
+UPLOAD_DEV_USER=you@example.org
+ENV
+npm run dev            # http://localhost:3000, signed in as UPLOAD_DEV_USER
 ```
+
+`UPLOAD_DEV_USER` skips the sign-in in development (refused in production; it can't make API tokens, passkeys or MCP connections); set `UPLOAD_SMTP_URL` instead to sign in by mail. Without `UPLOAD_GITHUB_TOKEN` nothing starts the site build. The checks CI runs:
+
+```sh
+npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:e2e && npm run build && npm run generate -- --check
+```
+
+## Deploying it
+
+CI publishes `ghcr.io/3d-bruckner/upload:main` from main once the checks passed. The server runs it from `compose.yaml` and `.env` alone ([`compose.yaml`](compose.yaml) here is that file); upload's deployment on products-1, behind gewerbe-1's Caddy, lives in [`3D-Bruckner/stacks`](https://github.com/3D-Bruckner/stacks) (`upload/`, written with plan 4).
+
+## Docs
+
+- [Configuration](docs/configuration.md): every setting, the data directory and what a backup must hold.
+- [MCP tools](docs/mcp.md): the 22 tools Claude uses, their inputs, results and guidance.
+- [ADR 0001](docs/adr/0001-own-app-for-the-portfolio.md): why an own app, and what changed while building it.
+- REST: `/api/v1/openapi.json`, committed as [`openapi.json`](openapi.json).
 
 ## Where the work stands
 
@@ -55,10 +47,4 @@ Four plans, in this order:
 | 3   | The site reads the export                                                                                                                                                                               | `3D-Bruckner/3dbruckner`                                | to write after 2 |
 | 4   | Deployment on products-1 and moving the 25 prints over                                                                                                                                                  | `3D-Bruckner/stacks`, `MarcelBruckner-Business/ansible` | to write after 2 |
 
-Decided along the way (2026-11-19):
-
-- An own app, not notefeed tags, PocketBase, a tool that commits to GitHub, or S3: the spec's _Approaches_.
-- It runs on products-1 (3D Bruckner is a product); "live within a few minutes" is enough.
-- Order: newest first, reorderable, pinned showcases, which are also the start page's selection.
-- Name `upload`, at `upload.3dbruckner.de`; mail from `noreply@3dbruckner.de` with `upload@` as an alias.
-- What can be reused becomes a library, and a library that is a convention goes into the engineering conventions (hence plan 1); existing apps switch to it later, through one issue each.
+What was decided along the way, and why, is in [ADR 0001](docs/adr/0001-own-app-for-the-portfolio.md).

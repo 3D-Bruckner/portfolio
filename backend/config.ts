@@ -1,6 +1,7 @@
 // upload's settings, read once from the environment at start: UPLOAD_*, plus PUBLIC_URL and DATA_DIR. A bad setting stops the start with
-// a message naming the variable. backend/config.ts, .env.example and the README's settings change together. The kit reads the sign-in's
-// own settings (UPLOAD_OIDC_*, UPLOAD_E2E, PORT) itself, through signInFromEnv.
+// a message naming the variable. VARIABLES below names every variable the app and its image read, these and the ones read elsewhere (the
+// kit's sign-in through signInFromEnv, the log, Node, the image's entrypoint); .env.example and docs/configuration.md list exactly those
+// (envExampleListsEveryVariable in config.test.ts), so the three change together.
 import * as z from "zod";
 
 export type Config = {
@@ -48,6 +49,32 @@ const schema = z.object({
   ),
   UPLOAD_DEV_USER: optional,
 });
+
+/** Who reads a variable that isn't loadConfig's own. */
+type ReadBy = "next-app-kit" | "backend/log.ts" | "Node" | "docker-entrypoint.mjs";
+
+/**
+ * Every variable upload reads: loadConfig's (the schema's keys) and the rest, each with who reads it. `<NAME>` stands for a sign-in
+ * provider's name (GITHUB, GOOGLE, APPLE or any OIDC one).
+ */
+export const VARIABLES: Record<string, "loadConfig" | ReadBy> = {
+  ...(Object.fromEntries(
+    Object.keys(schema.shape)
+      .filter((k) => k !== "NODE_ENV")
+      .map((k) => [k, "loadConfig"]),
+  ) as Record<string, "loadConfig">),
+  "UPLOAD_OIDC_<NAME>_CLIENT_ID": "next-app-kit",
+  "UPLOAD_OIDC_<NAME>_CLIENT_SECRET": "next-app-kit",
+  "UPLOAD_OIDC_<NAME>_ISSUER": "next-app-kit",
+  "UPLOAD_OIDC_<NAME>_LABEL": "next-app-kit",
+  UPLOAD_E2E: "next-app-kit",
+  PORT: "next-app-kit",
+  UPLOAD_LOG_LEVEL: "backend/log.ts",
+  TZ: "Node",
+  NODE_EXTRA_CA_CERTS: "Node",
+  PUID: "docker-entrypoint.mjs",
+  PGID: "docker-entrypoint.mjs",
+};
 
 /** The settings from `env`; throws naming every variable that is wrong. */
 export function loadConfig(env: Record<string, string | undefined>): Config {

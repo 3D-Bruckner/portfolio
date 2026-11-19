@@ -1,5 +1,29 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadConfig } from "./config";
+import { loadConfig, VARIABLES } from "./config";
+
+const ROOT = join(import.meta.dirname, "..");
+const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
+
+/** The variable names a text mentions; a provider's own name (GITHUB in UPLOAD_OIDC_GITHUB_CLIENT_ID) counts as <NAME>. */
+function named(text: string): string[] {
+  const names = text.match(/\b(?:UPLOAD_(?:[A-Z0-9]|<NAME>)(?:[A-Z0-9_]|<NAME>)*|PUBLIC_URL|DATA_DIR|PORT|TZ|PUID|PGID|NODE_EXTRA_CA_CERTS)\b/g) ?? [];
+  return [
+    ...new Set(
+      names
+        .filter((n) => !n.endsWith("_"))
+        .map((n) => n.replace(/^UPLOAD_OIDC_(?!<NAME>)[A-Z0-9]+_(CLIENT_ID|CLIENT_SECRET|ISSUER|LABEL)$/, "UPLOAD_OIDC_<NAME>_$1")),
+    ),
+  ].sort();
+}
+
+/** The app's own source files, tests left out. */
+function sources(dir: string): string[] {
+  return readdirSync(join(ROOT, dir), { recursive: true, withFileTypes: true })
+    .filter((e) => e.isFile() && /\.(ts|tsx|mjs)$/.test(e.name) && !/\.test\.tsx?$/.test(e.name) && !e.parentPath.includes("testing"))
+    .map((e) => relative(ROOT, join(e.parentPath, e.name)));
+}
 
 const SECRET = "s".repeat(32);
 const env = (extra: Record<string, string | undefined> = {}): NodeJS.ProcessEnv => ({
@@ -87,5 +111,16 @@ describe("loadConfig", () => {
     expect(c.githubToken).toBeUndefined();
     expect(c.siteRepo).toBe("3D-Bruckner/3dbruckner");
     expect(c.devUser).toBeUndefined();
+  });
+
+  it("envExampleListsEveryVariable: .env.example and docs/configuration.md name exactly the variables the app reads", () => {
+    const every = Object.keys(VARIABLES).sort();
+    expect(named(read(".env.example"))).toEqual(every);
+    expect(named(read("docs/configuration.md"))).toEqual(every);
+    // And nothing reads one that isn't listed (Next.js's own and NODE_ENV aside).
+    const files = [...sources("backend"), ...sources("app"), ...sources("components"), "proxy.ts", "instrumentation.ts", "docker-entrypoint.mjs", "Dockerfile"];
+    const read_ = files.flatMap((f) => [...read(f).matchAll(/process\.env\.([A-Z0-9_]+)/g)].map((m) => m[1]!));
+    const unlisted = [...new Set(read_)].filter((v) => !(v in VARIABLES) && !["NODE_ENV", "NEXT_RUNTIME", "NEXT_PHASE"].includes(v));
+    expect(unlisted).toEqual([]);
   });
 });
