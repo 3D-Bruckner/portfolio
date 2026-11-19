@@ -111,7 +111,8 @@ describe("siteExport", () => {
       { name: "Geschenkideen", slug: "geschenkideen" },
       { name: "Haus & Garten", slug: "haus-garten" },
     ]);
-    expect(e.prints[0]!.categories).toEqual(["Geschenkideen", "Haus & Garten"]);
+    // A print names its categories in its order, the main one first.
+    expect(e.prints[0]!.categories).toEqual(["Haus & Garten", "Geschenkideen"]);
   });
 
   it("exportPhotoShaMatchesFile: each photo's sha256 is its stored cutout's, the cover first or as chosen", async () => {

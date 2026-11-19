@@ -91,4 +91,17 @@ export const MIGRATIONS: Migration[] = [
     name: "original_orientation",
     sql: `alter table photos add column original_orientation integer;`,
   },
+  {
+    // A print's categories in the order they were given: the first is its main one (the site's breadcrumb and "similar prints").
+    // Before, they were listed by name: the rows there keep that order.
+    name: "category_order",
+    sql: `
+      alter table print_categories add column idx integer not null default 0;
+      update print_categories set idx = (
+        select count(*) from print_categories o join categories oc on oc.id = o.category_id
+        where o.print_id = print_categories.print_id
+          and oc.name < (select name from categories where id = print_categories.category_id)
+      );
+    `,
+  },
 ];

@@ -33,6 +33,8 @@ export interface PrintsTable {
 export interface PrintCategoriesTable {
   print_id: string;
   category_id: string;
+  /** The category's place among the print's (0 first: the main one). */
+  idx: number;
 }
 
 export interface PrintSourcesTable {

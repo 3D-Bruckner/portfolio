@@ -69,8 +69,8 @@ function unchanged(current: PrintValues, fields: Partial<PrintValues>): boolean 
   const asked = columns(fields);
   const held = columns(current) as Record<string, unknown>;
   const sameColumns = Object.entries(asked).every(([k, v]) => held[k] === v);
-  const sorted = (ids: string[]) => [...ids].sort();
-  const sameCategories = !fields.categoryIds || JSON.stringify(sorted(fields.categoryIds)) === JSON.stringify(sorted(current.categoryIds));
+  // The order counts: the first category is the print's main one.
+  const sameCategories = !fields.categoryIds || JSON.stringify(fields.categoryIds) === JSON.stringify(current.categoryIds);
   const sameSources = !fields.sources || JSON.stringify(fields.sources) === JSON.stringify(current.sources);
   return sameColumns && sameCategories && sameSources;
 }
@@ -83,10 +83,7 @@ function assemble(rt: Runtime, rows: PrintRow[]): Print[] {
   const sources = rt.store.printSources(ids);
   const photos = rt.store.photosOf(ids);
   return rows.map((row) => {
-    const cats = links
-      .filter((l) => l.print_id === row.id)
-      .map((l) => categories.get(l.category_id)!)
-      .sort((a, b) => a.name.localeCompare(b.name, "de"));
+    const cats = links.filter((l) => l.print_id === row.id).map((l) => categories.get(l.category_id)!);
     const srcs = sources.filter((s) => s.print_id === row.id).map((s) => ({ label: s.label, url: s.url }));
     return {
       id: row.id,
