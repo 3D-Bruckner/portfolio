@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
   // runtime (and its Auth) is opened once per process and kept on globalThis, and the kit knows an Auth it opened by a module-level
   // WeakMap, so every route and instrumentation.ts must share one copy of the kit, not one bundled into each.
   serverExternalPackages: ["pino", "better-sqlite3", "next-app-kit"],
+  // The kit's command for the server's operator (`node node_modules/next-app-kit/dist/cli.js token …`, docs/configuration.md) is imported
+  // by no route, so the standalone build wouldn't trace it.
+  outputFileTracingIncludes: { "/**": ["./node_modules/next-app-kit/dist/**"] },
   // The root layout is in app/[lang] (conventions: code/language), so an address no route matches gets app/global-not-found.tsx.
   experimental: { globalNotFound: true },
   // No page is ever framed: a page of another site must not overlay a "Save", "Delete" or "Allow" click.
