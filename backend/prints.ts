@@ -214,6 +214,15 @@ export function updatePrint(rt: Runtime, id: string, patch: PrintPatch): Outcome
   });
 }
 
+/** What a print still lacks before it can be published: a title, a description, at least one photo; empty when nothing. */
+export function missingToPublish(p: { title: string; description: string; photos: unknown[] }): ("a title" | "a description" | "at least one photo")[] {
+  const missing: ("a title" | "a description" | "at least one photo")[] = [];
+  if (p.title.trim() === "") missing.push("a title");
+  if (p.description.trim() === "") missing.push("a description");
+  if (p.photos.length === 0) missing.push("at least one photo");
+  return missing;
+}
+
 /**
  * Puts a draft on the site, at the top of the portfolio. Needs a title, a description and a photo; refused when its slug is reserved
  * (a deleted print's), naming the slug. Sets firstPublishedAt the first time only.
@@ -223,11 +232,7 @@ export function publishPrint(rt: Runtime, id: string): Outcome<Print> {
     const row = rt.store.print(id);
     if (!row) return notFound(`No print ${id}.`);
     if (row.status === "published") return ok(load(rt, id));
-    const missing = [
-      row.title.trim() === "" && "a title",
-      row.description.trim() === "" && "a description",
-      rt.store.photosOf([id]).length === 0 && "at least one photo",
-    ].filter(Boolean);
+    const missing = missingToPublish({ title: row.title, description: row.description, photos: rt.store.photosOf([id]) });
     if (missing.length > 0) return invalid(`Publishing needs ${missing.join(" and ")}.`);
     // Only a reserved slug can stand in the way: another print can't have this one (prints.slug is UNIQUE, and checkWrite refuses it).
     const reserved = rt.store.reservedSlug(row.slug);

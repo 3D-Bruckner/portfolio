@@ -11,6 +11,7 @@ export type { Config } from "./config";
 export { siteExport, type SiteExport } from "./export";
 export { healthResponse } from "./health";
 export { log } from "./log";
+export { MCP_INSTRUCTIONS, mcpContext } from "./mcp";
 export { movePrint, moveShowcase, setShowcase } from "./order";
 export type { Outcome, Reason } from "./outcome";
 export { addPhoto, deletePhoto, getPhoto, originalFile, PHOTO_TYPES, photoPath, reorderPhotos, setCover, setCrop, type Crop, type Photo } from "./photos";

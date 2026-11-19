@@ -64,3 +64,10 @@ test("MCP clients find the authorization server and the protected resources", as
   expect(await (await request.get("/.well-known/oauth-authorization-server/api/auth")).json()).toMatchObject({ issuer: `${baseURL}/api/auth` });
   expect(await (await request.get("/.well-known/openid-configuration/api/auth")).json()).toMatchObject({ issuer: `${baseURL}/api/auth` });
 });
+
+test("/mcp asks a client without a token to sign in, and takes POST only", async ({ request, baseURL }) => {
+  const r = await request.post("/mcp", { data: { jsonrpc: "2.0", id: 1, method: "tools/list" } });
+  expect(r.status()).toBe(401);
+  expect(r.headers()["www-authenticate"]).toContain(`${baseURL}/.well-known/oauth-protected-resource/mcp`);
+  expect((await request.get("/mcp")).status()).toBe(405);
+});

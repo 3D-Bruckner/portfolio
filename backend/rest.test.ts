@@ -2,12 +2,13 @@
 // token, the operations mirroring the MCP tools, the print bodies built from the field table, and openapi.json as committed.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { openApiDocument, restRoute } from "next-app-kit/rest";
+import { checkOpsMirrorTools, openApiDocument, restRoute } from "next-app-kit/rest";
 import { signedInCookie } from "next-app-kit/testing";
 import { createApiToken, type RestCaller } from "next-app-kit/tokens";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createCategory } from "./categories";
+import { mcpContext } from "./mcp";
 import type { Outcome } from "./outcome";
 import { addPhoto, photoPath, type Photo } from "./photos";
 import { PRINT_FIELDS } from "./printfields";
@@ -261,6 +262,9 @@ describe("the table", () => {
     expect(REST_OPS.every((o) => (o.tool === undefined) !== (o.noTool === undefined))).toBe(true);
   });
 
-  // The kit's checkOpsMirrorTools(REST_OPS, tools) once the MCP tools exist (Task 7); until then the operations name the tools planned.
-  it.todo("everyToolHasAnOperation");
+  it("everyToolHasAnOperation: every MCP tool has the operation that mirrors it, and every operation's tool exists", async () => {
+    const tools = (await mcpContext(rt)).tools;
+    expect(() => checkOpsMirrorTools(REST_OPS, tools)).not.toThrow();
+    expect(() => checkOpsMirrorTools(REST_OPS, [...tools, { name: "a_tool_without_an_operation" }])).toThrow();
+  });
 });

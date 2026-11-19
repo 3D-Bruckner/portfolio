@@ -8,15 +8,33 @@ import { fail, openApiDocument, type OpenApiInfo, type Op, type Reply } from "ne
 import { createApiToken, listApiTokens, revokeApiToken, type RestCaller } from "next-app-kit/tokens";
 import * as z from "zod";
 import { API_TOKEN_PREFIX } from "./accounts";
-import { CATEGORY_NAME_LIMIT, createCategory, deleteCategory, listCategories, renameCategory } from "./categories";
+import { createCategory, deleteCategory, listCategories, renameCategory } from "./categories";
 import { siteExport, siteExportSchema } from "./export";
 import { movePrint, moveShowcase, setShowcase } from "./order";
 import type { Outcome, Reason } from "./outcome";
-import { deletePhoto, getPhoto, photoPath, reorderPhotos, setCover, setCrop, type Photo } from "./photos";
-import { PRINT_FIELDS, printInputSchema, printPatchSchema } from "./printfields";
-import { createPrint, deletePrint, findPrint, getPrint, listPrints, publishPrint, unpublishPrint, updatePrint, type Print } from "./prints";
+import { deletePhoto, getPhoto, photoPath, reorderPhotos, setCover, setCrop } from "./photos";
+import { printInputSchema, printPatchSchema } from "./printfields";
+import { createPrint, deletePrint, findPrint, getPrint, listPrints, publishPrint, unpublishPrint, updatePrint } from "./prints";
 import type { Runtime } from "./runtime";
-import { buildStatus, type BuildStatus } from "./site";
+import {
+  BEFORE_ID,
+  buildStatusSchema,
+  CATEGORY_NAME,
+  categorySchema,
+  categoryWithCountSchema,
+  CROP,
+  cropSchema,
+  newTokenSchema,
+  PHOTO_IDS,
+  photoSchema,
+  printJson,
+  printSchema,
+  SHOWCASE_ON,
+  STATUS_FILTER,
+  tokenInputSchema,
+  tokenSchema,
+} from "./shapes";
+import { buildStatus } from "./site";
 
 /** Where the committed openapi.json says the API is; a running instance serves its own at <PUBLIC_URL>/api/v1/openapi.json. */
 export const PRODUCTION_URL = "https://upload.3dbruckner.de";
@@ -47,9 +65,6 @@ function answer<T>(o: Outcome<T>, status: number, body?: (v: T) => unknown): Rep
   return body ? { status, body: body(o.value) } : { status };
 }
 
-/** A print as REST answers it: with its page in the web app. */
-const printJson = (base: string, p: Print) => ({ ...p, url: `${base}/prints/${p.id}` });
-
 /** After a change that answers nothing of its own, the print as it is now. */
 const thenPrint = (base: string, ctx: Runtime, o: Outcome<void>, id: string): Reply =>
   o.ok ? answer(getPrint(ctx, id), 200, (p) => printJson(base, p)) : answer(o, 200);
@@ -62,79 +77,9 @@ const thenPrint = (base: string, ctx: Runtime, o: Outcome<void>, id: string): Re
 const byApiToken = (caller: RestCaller): boolean => !caller.actor.includes(" via ");
 const NO_TOKENS_BY_TOKEN = "An API token can't make or revoke API tokens; use the web app or a client signed in through OAuth.";
 
-// ---- schemas of the answers (for openapi.json); the print's fields come from the field table
+// ---- the parameters (the schemas are shapes.ts's, shared with MCP)
 
-const cropSchema = z.strictObject({
-  left: z.number().int().min(0),
-  top: z.number().int().min(0),
-  width: z.number().int().min(1),
-  height: z.number().int().min(1),
-});
-
-const photoSchema = z.object({
-  id: z.string(),
-  printId: z.string(),
-  position: z.number(),
-  width: z.number().int().describe("The cutout's width in pixels."),
-  height: z.number().int().describe("The cutout's height in pixels."),
-  bytes: z.number().int().describe("The cutout's file size."),
-  sha256: z.string().describe("The cutout's SHA-256, hex."),
-  original: z
-    .object({ width: z.number().int(), height: z.number().int() })
-    .nullable()
-    .describe("The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."),
-  crop: cropSchema.nullable().describe("The cutout's rectangle in the original as shown; null: the whole photo."),
-}) satisfies z.ZodType<Photo>;
-
-const categorySchema = z.object({ id: z.string(), name: z.string(), slug: z.string().describe("Fixed at creation: the site's /portfolio#<slug>.") });
-
-const printFields = Object.fromEntries(
-  (Object.keys(PRINT_FIELDS) as (keyof typeof PRINT_FIELDS)[]).map((n) => {
-    const f = PRINT_FIELDS[n];
-    return [n, (f.nullable ? f.value.nullable() : f.value).describe(f.description)];
-  }),
-);
-
-const printSchema = z.object({
-  id: z.string(),
-  ...printFields,
-  status: z.enum(["draft", "published"]),
-  showcase: z.boolean().describe("Pinned above the rest of the portfolio (and on the start page)."),
-  coverPhotoId: z.string().nullable(),
-  photos: z.array(photoSchema),
-  categories: z.array(categorySchema),
-  firstPublishedAt: z.string().nullable().describe("When it was first published; its slug is fixed from then on."),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  url: z.string().describe("The print's page in the web app."),
-});
-
-const tokenSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  scope: z.enum(["read", "read+write"]),
-  start: z.string().describe("The token's first characters, to recognise it by."),
-  created_at: z.string(),
-  expires_at: z.string().nullable(),
-  last_used_at: z.string().nullable(),
-});
-
-const buildStatusSchema = z.object({
-  pending: z.boolean().describe("Changes the site shows wait for a build; it is dispatched once nothing changed for a minute."),
-  lastDispatch: z.string().optional().describe("When the site build was last dispatched."),
-  lastError: z.string().optional().describe("Why the last dispatch failed; it is tried again after 1, 2, 4 … minutes, at most 30."),
-  run: z
-    .object({
-      status: z.string().describe("GitHub's: queued, in_progress, completed …"),
-      conclusion: z.string().nullable().describe("GitHub's once completed: success, failure …"),
-      url: z.string().describe("The run on GitHub."),
-      startedAt: z.string(),
-    })
-    .optional()
-    .describe("The latest dispatched run of the site's workflow; absent when there is none or GitHub didn't answer."),
-}) satisfies z.ZodType<BuildStatus>;
-
-const beforeId = z.object({ beforeId: z.string().min(1).nullable().describe("The print to stand before; null: to the end.") });
+const beforeId = z.object({ beforeId: BEFORE_ID });
 const ID = { id: "The print's id" };
 const PRINT_ID_OR_SLUG = { id: "The print's id or slug" };
 const PHOTO_ID = { id: "The photo's id" };
@@ -152,7 +97,7 @@ export const REST_OPS: Op<Runtime>[] = [
     tool: "list_prints",
     summary: "List prints: drafts newest first, then the published ones in the site's order",
     tag: "Prints",
-    query: z.object({ status: z.enum(["draft", "published"]).optional().describe("Only drafts or only published prints.") }),
+    query: z.object({ status: STATUS_FILTER }),
     ok: { status: 200, description: "The prints", schema: z.object({ prints: z.array(printSchema) }) },
     errors: [400, 401],
     handle: ({ ctx, base, query }) => ({
@@ -255,7 +200,7 @@ export const REST_OPS: Op<Runtime>[] = [
     summary: "Pin a published print as a showcase (at the end of the showcases) or unpin it",
     tag: "Order",
     params: ID,
-    body: z.object({ on: z.boolean().describe("true pins it, false unpins it.") }),
+    body: z.object({ on: SHOWCASE_ON }),
     ok: PRINT_OK,
     errors: [400, 401, 403, 404],
     handle: ({ ctx, base, params, body }) => thenPrint(base, ctx, setShowcase(ctx, params.id!, (body as { on: boolean }).on), params.id!),
@@ -282,7 +227,7 @@ export const REST_OPS: Op<Runtime>[] = [
     summary: "Put a print's photos in this order",
     tag: "Photos",
     params: ID,
-    body: z.object({ photoIds: z.array(z.string().min(1)).max(200).describe("Each of the print's photos exactly once.") }),
+    body: z.object({ photoIds: PHOTO_IDS }),
     ok: PRINT_OK,
     errors: [400, 401, 403, 404],
     handle: ({ ctx, base, params, body }) => thenPrint(base, ctx, reorderPhotos(ctx, params.id!, (body as { photoIds: string[] }).photoIds), params.id!),
@@ -308,7 +253,7 @@ export const REST_OPS: Op<Runtime>[] = [
     summary: "Choose a photo's cutout: a rectangle of the original as shown, in whole pixels; null for the whole photo",
     tag: "Photos",
     params: PHOTO_ID,
-    body: z.object({ crop: cropSchema.nullable() }),
+    body: z.object({ crop: CROP }),
     ok: { status: 200, description: "The photo with its new cutout", schema: photoSchema },
     errors: [400, 401, 403, 404, 409],
     handle: async ({ ctx, params, body }) => answer(await setCrop(ctx, params.id!, (body as { crop: z.infer<typeof cropSchema> | null }).crop), 200, (p) => p),
@@ -365,7 +310,7 @@ export const REST_OPS: Op<Runtime>[] = [
     ok: {
       status: 200,
       description: "The categories",
-      schema: z.object({ categories: z.array(categorySchema.extend({ prints: z.number().int().describe("Prints using it, drafts included.") })) }),
+      schema: z.object({ categories: z.array(categoryWithCountSchema) }),
     },
     errors: [401],
     handle: ({ ctx }) => ({ status: 200, body: { categories: listCategories(ctx) } }),
@@ -377,7 +322,7 @@ export const REST_OPS: Op<Runtime>[] = [
     tool: "create_category",
     summary: "Create a category; its slug is made from the name and never changes",
     tag: "Categories",
-    body: z.object({ name: z.string().max(CATEGORY_NAME_LIMIT) }),
+    body: z.object({ name: CATEGORY_NAME }),
     ok: { status: 201, description: "The new category", schema: categorySchema },
     errors: [400, 401, 403, 409],
     handle: ({ ctx, body }) => answer(createCategory(ctx, (body as { name: string }).name), 201, (c) => c),
@@ -390,7 +335,7 @@ export const REST_OPS: Op<Runtime>[] = [
     summary: "Rename a category; its slug stays",
     tag: "Categories",
     params: CATEGORY_ID,
-    body: z.object({ name: z.string().max(CATEGORY_NAME_LIMIT) }),
+    body: z.object({ name: CATEGORY_NAME }),
     ok: { status: 200, description: "The category", schema: categorySchema },
     errors: [400, 401, 403, 404, 409],
     handle: ({ ctx, params, body }) => answer(renameCategory(ctx, params.id!, (body as { name: string }).name), 200, (c) => c),
@@ -449,12 +394,8 @@ export const REST_OPS: Op<Runtime>[] = [
     tool: "create_api_token",
     summary: "Make an API token for the caller; the token is in this answer once and never again. Not with an API token (403)",
     tag: "Tokens",
-    body: z.object({
-      name: z.string().trim().min(1).max(100).describe("What it is for, e.g. 'site build'."),
-      scope: z.enum(["read", "read+write"]).describe("`read` may only GET (the site build's); `read+write` may change things."),
-      expiresInDays: z.number().int().min(1).max(365).nullable().describe("Its lifetime in days; null: it never expires (chosen on purpose)."),
-    }),
-    ok: { status: 201, description: "The new token", schema: tokenSchema.extend({ token: z.string().describe("The token itself, shown this once.") }) },
+    body: tokenInputSchema,
+    ok: { status: 201, description: "The new token", schema: newTokenSchema },
     errors: [400, 401, 403],
     handle: async ({ ctx, caller, body }) => {
       if (byApiToken(caller)) return fail(403, NO_TOKENS_BY_TOKEN);
