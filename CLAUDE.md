@@ -30,5 +30,5 @@ upload: where 3dbruckner.de's prints are put in (their photos and details, from 
 - The kit's peers stay at its exact versions (`backend/peers.test.ts`); no `legacy-peer-deps`. They move together with a kit release.
 - A migration that has shipped is never edited: a schema change is a new migration at the end of `backend/db/migrations.ts`.
 - Tests keep their data in a temporary `DATA_DIR` (`backend/testing/setup.ts`, pinned by `setup.test.ts`).
-- Merge only when Marcel says so. The one exception: Dependabot's patch and minor bumps merge by themselves once CI is green (`.github/workflows/dependabot-automerge.yml`).
+- Merge only when Marcel says so, Dependabot's pull requests included: they are merged by hand until the repository gets auto-merge (a private repository on the free plan has neither auto-merge nor rulesets); then the auto-merge workflow and the ruleset from the conventions' repo-setup/dependabot.md come back.
 - The design is `docs/superpowers/specs/2026-11-19-portfolio-app-design.md`; the plans are in `docs/superpowers/plans/`.
