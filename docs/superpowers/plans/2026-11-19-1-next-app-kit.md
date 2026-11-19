@@ -100,3 +100,18 @@
 - [ ] **Step 2:** Convention: with the `engineering-conventions:add-convention` skill, a new page `stacks/next-app-kit.md` (*Every Next.js app takes sign-in, API tokens, MCP, REST and migrations from next-app-kit; it never copies them*), linked from `stacks/nextjs.md`, `architecture/sign-in.md` and `architecture/mcp-first.md`; PR to `Marceltov/engineering-conventions`.
 - [ ] **Step 3:** One issue each in `noticebox/noticebox`, `Marceltov/freundebuch`, `Gamepanion/gamepanion`: *Use next-app-kit for sign-in, tokens, MCP, REST and migrations*, naming the modules that move and linking the convention PR.
 - [ ] **Step 4:** ADR 0001 in the kit: what was extracted, from where, what changed on the way (`next` → `guidance`, passkeys, prefix parameters).
+
+---
+
+## Conventions check (2026-11-19, engineering-conventions 0.35.0)
+
+Binding amendments; where they and a task above differ, these win.
+
+- **C1 Tests in temp dirs** (*code/tests-temp-dirs*): `src/testing/setup.ts` in Vitest's `setupFiles` makes a temp dir and sets `DATA_DIR` to it before every test, removed after; pinned by `setup.test.ts`. No test writes outside a temp dir (auth.sqlite included). Task 1.
+- **C2 Security setup for a public repo** (*repo-setup/security*): private vulnerability reporting, secret scanning with push protection, CodeQL default setup (the `gh api` calls on that page); `SECURITY.md` with its four sections; `.github/workflows/audit.yml` daily `npm audit --omit=dev --audit-level=high` (no image, so no image scan). Task 1.
+- **C3 Dependabot with auto-merge** (*repo-setup/dependabot*): alerts and security fixes on; `.github/dependabot.yml` for `npm` and `github-actions`, weekly Monday 05:00 Europe/Berlin, `cooldown: default-days: 14`, a first group for the peers that move together (`better-auth`, `@better-auth/*`, `@modelcontextprotocol/server`, `next`), then one minor+patch group, prefix `Dependencies`, label `dependencies`, limit 5; `allow_auto_merge`, a ruleset requiring the CI job(s) on `~DEFAULT_BRANCH` with admin bypass, and `dependabot-automerge.yml`. `CLAUDE.md` names it as the exception to "merge only when I say so". Task 1.
+- **C4 Formatting** (*code/formatting*): Prettier at print width 160 from the shared config, `eslint-config-prettier`, `format:check` in CI. Task 1.
+- **C5 Better Auth stricter than its defaults** (*stacks/better-auth*): magic link always on plus email OTP, `storeToken: "hashed"`, `storeOTP: "hashed"`; no `bearer`, no `device-authorization` plugin; telemetry never enabled; secret passed in from `<PREFIX>_SECRET`; during an MCP/script sign-in the mail holds only a code; built-in providers for Google/Apple/GitHub plus `genericOAuth` from `<PREFIX>_OIDC_<NAME>_*`; a provider's refusal reaches the sign-in page as `?error=` and is logged with the provider's name. Tests in Task 3: `otpStoredHashed`, `noBearerPlugin`, `refusedProviderLogged`.
+- **C6 Releases** (*repo-setup/releases*): `v0.1.0` is an annotated tag whose first line is a headline (e.g. "Sign-in, tokens, MCP and REST for Next.js apps"); `.github/workflows/release.yml` on tags checks the tag equals `package.json`'s version, runs the checks and build, writes `next-app-kit-X.Y.Z-npm.cdx.json` (`npm sbom --package-lock-only --omit dev --sbom-format cyclonedx`) and creates the GitHub release with generated notes and the SBOM attached. `CLAUDE.md` names the release command. Task 8.
+- **C7 Migrations location**: apps keep their list in `backend/db/migrations.ts` (*stacks/sqlite*); the kit's README says so.
+- **C8 Logs** (*stacks/nextjs*): the kit logs through a `log` function the app passes in (pino in apps), English, never a token, code, link or email body.

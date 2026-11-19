@@ -1,0 +1,3168 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "3D Bruckner Upload API",
+    "version": "1",
+    "description": "3dbruckner.de's prints: their fields, photos, categories and order, and the export the site build reads. Every operation but the export and a photo's bytes mirrors an MCP tool of /mcp, named in its description.\n\nEvery error is JSON, `{\"error\": \"...\", \"code\": \"...\"}`. Besides the responses listed per operation, an unknown path answers 404, a method an operation doesn't have 405 with `Allow`, and a failure on the server's side 500 (`internal`) without details."
+  },
+  "servers": [{ "url": "https://upload.3dbruckner.de/api/v1" }],
+  "tags": [
+    { "name": "Prints", "description": "Drafts and published prints, their fields and publishing." },
+    { "name": "Order", "description": "The portfolio's order and the showcases pinned above it." },
+    { "name": "Photos", "description": "A print's photos: order, cover, cutout, delete. Photos are uploaded in the web app." },
+    { "name": "Categories", "description": "The categories prints are filed under." },
+    { "name": "Site", "description": "What the site build reads, and whether one is pending or running." },
+    { "name": "Tokens", "description": "The caller's own API tokens." }
+  ],
+  "paths": {
+    "/prints": {
+      "get": {
+        "operationId": "listPrints",
+        "summary": "List prints: drafts newest first, then the published ones in the site's order",
+        "description": "The REST counterpart of the MCP tool `list_prints`.",
+        "tags": ["Prints"],
+        "security": [{ "bearer": [] }],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Only drafts or only published prints.",
+            "schema": { "description": "Only drafts or only published prints.", "type": "string", "enum": ["draft", "published"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The prints",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "prints": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "title": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200,
+                            "description": "The print's title as the site shows it, e.g. 'Beyblade – Dragoon'."
+                          },
+                          "shortTitle": {
+                            "anyOf": [{ "type": "string", "maxLength": 80 }, { "type": "null" }],
+                            "description": "A shorter title for cards and lists; without it the site uses the title up to ' – '."
+                          },
+                          "description": {
+                            "type": "string",
+                            "maxLength": 5000,
+                            "description": "What the print is, in German, as the site shows it under the photos."
+                          },
+                          "price": {
+                            "anyOf": [{ "type": "integer", "minimum": 0, "maximum": 100000 }, { "type": "null" }],
+                            "description": "The price in whole euros; none: the site shows no price."
+                          },
+                          "selfDesigned": {
+                            "type": "boolean",
+                            "description": "Whether Marcel designed the model himself (rather than printing someone else's)."
+                          },
+                          "weightGrams": {
+                            "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                            "description": "The filament used, in grams, from the slicer."
+                          },
+                          "printTimeMinutes": {
+                            "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                            "description": "The print time in minutes, from the slicer."
+                          },
+                          "colors": {
+                            "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
+                            "description": "How many filament colours the print uses."
+                          },
+                          "categoryIds": {
+                            "maxItems": 20,
+                            "type": "array",
+                            "items": { "type": "string", "minLength": 1, "maxLength": 100 },
+                            "description": "The ids of the print's categories (list them with the categories' list)."
+                          },
+                          "sources": {
+                            "maxItems": 10,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+                                "url": { "type": "string", "maxLength": 2000, "format": "uri" }
+                              },
+                              "required": ["label", "url"],
+                              "additionalProperties": false
+                            },
+                            "description": "Where the model comes from, e.g. [{label: 'MakerWorld', url: 'https://makerworld.com/…'}]."
+                          },
+                          "slug": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "description": "The print's address on the site (/portfolio/<slug>). Can change only until the print is first published."
+                          },
+                          "status": { "type": "string", "enum": ["draft", "published"] },
+                          "showcase": { "type": "boolean", "description": "Pinned above the rest of the portfolio (and on the start page)." },
+                          "coverPhotoId": { "type": ["string", "null"] },
+                          "photos": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": { "type": "string" },
+                                "printId": { "type": "string" },
+                                "position": { "type": "number" },
+                                "width": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "The cutout's width in pixels."
+                                },
+                                "height": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "The cutout's height in pixels."
+                                },
+                                "bytes": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "The cutout's file size."
+                                },
+                                "sha256": { "type": "string", "description": "The cutout's SHA-256, hex." },
+                                "original": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "width": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+                                        "height": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 }
+                                      },
+                                      "required": ["width", "height"],
+                                      "additionalProperties": false
+                                    },
+                                    { "type": "null" }
+                                  ],
+                                  "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
+                                },
+                                "crop": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "left": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                        "top": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                        "width": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+                                        "height": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
+                                      },
+                                      "required": ["left", "top", "width", "height"],
+                                      "additionalProperties": false
+                                    },
+                                    { "type": "null" }
+                                  ],
+                                  "description": "The cutout's rectangle in the original as shown; null: the whole photo."
+                                }
+                              },
+                              "required": ["id", "printId", "position", "width", "height", "bytes", "sha256", "original", "crop"],
+                              "additionalProperties": false
+                            }
+                          },
+                          "categories": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": { "type": "string" },
+                                "name": { "type": "string" },
+                                "slug": { "type": "string", "description": "Fixed at creation: the site's /portfolio#<slug>." }
+                              },
+                              "required": ["id", "name", "slug"],
+                              "additionalProperties": false
+                            }
+                          },
+                          "firstPublishedAt": { "description": "When it was first published; its slug is fixed from then on.", "type": ["string", "null"] },
+                          "createdAt": { "type": "string" },
+                          "updatedAt": { "type": "string" },
+                          "url": { "type": "string", "description": "The print's page in the web app." }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "shortTitle",
+                          "description",
+                          "price",
+                          "selfDesigned",
+                          "weightGrams",
+                          "printTimeMinutes",
+                          "colors",
+                          "categoryIds",
+                          "sources",
+                          "slug",
+                          "status",
+                          "showcase",
+                          "coverPhotoId",
+                          "photos",
+                          "categories",
+                          "firstPublishedAt",
+                          "createdAt",
+                          "updatedAt",
+                          "url"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["prints"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request can't be read, or a value in it is not acceptable (`invalid_input`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPrint",
+        "summary": "Create a print as a draft (photos are added in the web app); its slug is made from the title",
+        "description": "The REST counterpart of the MCP tool `create_print`.",
+        "tags": ["Prints"],
+        "security": [{ "bearer": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "description": "The print's title as the site shows it, e.g. 'Beyblade – Dragoon'."
+                  },
+                  "shortTitle": {
+                    "description": "A shorter title for cards and lists; without it the site uses the title up to ' – '.",
+                    "anyOf": [{ "type": "string", "maxLength": 80 }, { "type": "null" }]
+                  },
+                  "description": { "type": "string", "maxLength": 5000, "description": "What the print is, in German, as the site shows it under the photos." },
+                  "price": {
+                    "description": "The price in whole euros; none: the site shows no price.",
+                    "anyOf": [{ "type": "integer", "minimum": 0, "maximum": 100000 }, { "type": "null" }]
+                  },
+                  "selfDesigned": { "description": "Whether Marcel designed the model himself (rather than printing someone else's).", "type": "boolean" },
+                  "weightGrams": {
+                    "description": "The filament used, in grams, from the slicer.",
+                    "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }]
+                  },
+                  "printTimeMinutes": {
+                    "description": "The print time in minutes, from the slicer.",
+                    "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }]
+                  },
+                  "colors": {
+                    "description": "How many filament colours the print uses.",
+                    "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }]
+                  },
+                  "categoryIds": {
+                    "description": "The ids of the print's categories (list them with the categories' list).",
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": { "type": "string", "minLength": 1, "maxLength": 100 }
+                  },
+                  "sources": {
+                    "description": "Where the model comes from, e.g. [{label: 'MakerWorld', url: 'https://makerworld.com/…'}].",
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+                        "url": { "type": "string", "maxLength": 2000, "format": "uri" }
+                      },
+                      "required": ["label", "url"],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": ["title", "description"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new draft",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200,
+                      "description": "The print's title as the site shows it, e.g. 'Beyblade – Dragoon'."
+                    },
+                    "shortTitle": {
+                      "anyOf": [{ "type": "string", "maxLength": 80 }, { "type": "null" }],
+                      "description": "A shorter title for cards and lists; without it the site uses the title up to ' – '."
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 5000,
+                      "description": "What the print is, in German, as the site shows it under the photos."
+                    },
+                    "price": {
+                      "anyOf": [{ "type": "integer", "minimum": 0, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The price in whole euros; none: the site shows no price."
+                    },
+                    "selfDesigned": { "type": "boolean", "description": "Whether Marcel designed the model himself (rather than printing someone else's)." },
+                    "weightGrams": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The filament used, in grams, from the slicer."
+                    },
+                    "printTimeMinutes": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The print time in minutes, from the slicer."
+                    },
+                    "colors": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
+                      "description": "How many filament colours the print uses."
+                    },
+                    "categoryIds": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": { "type": "string", "minLength": 1, "maxLength": 100 },
+                      "description": "The ids of the print's categories (list them with the categories' list)."
+                    },
+                    "sources": {
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "url": { "type": "string", "maxLength": 2000, "format": "uri" }
+                        },
+                        "required": ["label", "url"],
+                        "additionalProperties": false
+                      },
+                      "description": "Where the model comes from, e.g. [{label: 'MakerWorld', url: 'https://makerworld.com/…'}]."
+                    },
+                    "slug": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "description": "The print's address on the site (/portfolio/<slug>). Can change only until the print is first published."
+                    },
+                    "status": { "type": "string", "enum": ["draft", "published"] },
+                    "showcase": { "type": "boolean", "description": "Pinned above the rest of the portfolio (and on the start page)." },
+                    "coverPhotoId": { "type": ["string", "null"] },
+                    "photos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "printId": { "type": "string" },
+                          "position": { "type": "number" },
+                          "width": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's width in pixels."
+                          },
+                          "height": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's height in pixels."
+                          },
+                          "bytes": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991, "description": "The cutout's file size." },
+                          "sha256": { "type": "string", "description": "The cutout's SHA-256, hex." },
+                          "original": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "width": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 }
+                                },
+                                "required": ["width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
+                          },
+                          "crop": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "left": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "top": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "width": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
+                                },
+                                "required": ["left", "top", "width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The cutout's rectangle in the original as shown; null: the whole photo."
+                          }
+                        },
+                        "required": ["id", "printId", "position", "width", "height", "bytes", "sha256", "original", "crop"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "name": { "type": "string" },
+                          "slug": { "type": "string", "description": "Fixed at creation: the site's /portfolio#<slug>." }
+                        },
+                        "required": ["id", "name", "slug"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "firstPublishedAt": { "description": "When it was first published; its slug is fixed from then on.", "type": ["string", "null"] },
+                    "createdAt": { "type": "string" },
+                    "updatedAt": { "type": "string" },
+                    "url": { "type": "string", "description": "The print's page in the web app." }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "shortTitle",
+                    "description",
+                    "price",
+                    "selfDesigned",
+                    "weightGrams",
+                    "printTimeMinutes",
+                    "colors",
+                    "categoryIds",
+                    "sources",
+                    "slug",
+                    "status",
+                    "showcase",
+                    "coverPhotoId",
+                    "photos",
+                    "categories",
+                    "firstPublishedAt",
+                    "createdAt",
+                    "updatedAt",
+                    "url"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request can't be read, or a value in it is not acceptable (`invalid_input`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "409": {
+            "description": "The request conflicts with the current state of the thing, such as a name that is taken (`conflict`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "413": {
+            "description": "The request body is larger than 256 KiB (`too_large`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/prints/{id}": {
+      "get": {
+        "operationId": "getPrint",
+        "summary": "Get a print by its id or slug",
+        "description": "The REST counterpart of the MCP tool `get_print`.",
+        "tags": ["Prints"],
+        "security": [{ "bearer": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The print's id or slug", "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "The print",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200,
+                      "description": "The print's title as the site shows it, e.g. 'Beyblade – Dragoon'."
+                    },
+                    "shortTitle": {
+                      "anyOf": [{ "type": "string", "maxLength": 80 }, { "type": "null" }],
+                      "description": "A shorter title for cards and lists; without it the site uses the title up to ' – '."
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 5000,
+                      "description": "What the print is, in German, as the site shows it under the photos."
+                    },
+                    "price": {
+                      "anyOf": [{ "type": "integer", "minimum": 0, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The price in whole euros; none: the site shows no price."
+                    },
+                    "selfDesigned": { "type": "boolean", "description": "Whether Marcel designed the model himself (rather than printing someone else's)." },
+                    "weightGrams": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The filament used, in grams, from the slicer."
+                    },
+                    "printTimeMinutes": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The print time in minutes, from the slicer."
+                    },
+                    "colors": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
+                      "description": "How many filament colours the print uses."
+                    },
+                    "categoryIds": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": { "type": "string", "minLength": 1, "maxLength": 100 },
+                      "description": "The ids of the print's categories (list them with the categories' list)."
+                    },
+                    "sources": {
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "url": { "type": "string", "maxLength": 2000, "format": "uri" }
+                        },
+                        "required": ["label", "url"],
+                        "additionalProperties": false
+                      },
+                      "description": "Where the model comes from, e.g. [{label: 'MakerWorld', url: 'https://makerworld.com/…'}]."
+                    },
+                    "slug": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "description": "The print's address on the site (/portfolio/<slug>). Can change only until the print is first published."
+                    },
+                    "status": { "type": "string", "enum": ["draft", "published"] },
+                    "showcase": { "type": "boolean", "description": "Pinned above the rest of the portfolio (and on the start page)." },
+                    "coverPhotoId": { "type": ["string", "null"] },
+                    "photos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "printId": { "type": "string" },
+                          "position": { "type": "number" },
+                          "width": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's width in pixels."
+                          },
+                          "height": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's height in pixels."
+                          },
+                          "bytes": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991, "description": "The cutout's file size." },
+                          "sha256": { "type": "string", "description": "The cutout's SHA-256, hex." },
+                          "original": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "width": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 }
+                                },
+                                "required": ["width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
+                          },
+                          "crop": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "left": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "top": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "width": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
+                                },
+                                "required": ["left", "top", "width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The cutout's rectangle in the original as shown; null: the whole photo."
+                          }
+                        },
+                        "required": ["id", "printId", "position", "width", "height", "bytes", "sha256", "original", "crop"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "name": { "type": "string" },
+                          "slug": { "type": "string", "description": "Fixed at creation: the site's /portfolio#<slug>." }
+                        },
+                        "required": ["id", "name", "slug"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "firstPublishedAt": { "description": "When it was first published; its slug is fixed from then on.", "type": ["string", "null"] },
+                    "createdAt": { "type": "string" },
+                    "updatedAt": { "type": "string" },
+                    "url": { "type": "string", "description": "The print's page in the web app." }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "shortTitle",
+                    "description",
+                    "price",
+                    "selfDesigned",
+                    "weightGrams",
+                    "printTimeMinutes",
+                    "colors",
+                    "categoryIds",
+                    "sources",
+                    "slug",
+                    "status",
+                    "showcase",
+                    "coverPhotoId",
+                    "photos",
+                    "categories",
+                    "firstPublishedAt",
+                    "createdAt",
+                    "updatedAt",
+                    "url"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "patch": {
+        "operationId": "updatePrint",
+        "summary": "Change the fields named; null clears an optional one",
+        "description": "The REST counterpart of the MCP tool `update_print`.",
+        "tags": ["Prints"],
+        "security": [{ "bearer": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The print's id", "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "description": "The print's title as the site shows it, e.g. 'Beyblade – Dragoon'.",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "shortTitle": {
+                    "description": "A shorter title for cards and lists; without it the site uses the title up to ' – '.",
+                    "anyOf": [{ "type": "string", "maxLength": 80 }, { "type": "null" }]
+                  },
+                  "description": { "description": "What the print is, in German, as the site shows it under the photos.", "type": "string", "maxLength": 5000 },
+                  "price": {
+                    "description": "The price in whole euros; none: the site shows no price.",
+                    "anyOf": [{ "type": "integer", "minimum": 0, "maximum": 100000 }, { "type": "null" }]
+                  },
+                  "selfDesigned": { "description": "Whether Marcel designed the model himself (rather than printing someone else's).", "type": "boolean" },
+                  "weightGrams": {
+                    "description": "The filament used, in grams, from the slicer.",
+                    "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }]
+                  },
+                  "printTimeMinutes": {
+                    "description": "The print time in minutes, from the slicer.",
+                    "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }]
+                  },
+                  "colors": {
+                    "description": "How many filament colours the print uses.",
+                    "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }]
+                  },
+                  "categoryIds": {
+                    "description": "The ids of the print's categories (list them with the categories' list).",
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": { "type": "string", "minLength": 1, "maxLength": 100 }
+                  },
+                  "sources": {
+                    "description": "Where the model comes from, e.g. [{label: 'MakerWorld', url: 'https://makerworld.com/…'}].",
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+                        "url": { "type": "string", "maxLength": 2000, "format": "uri" }
+                      },
+                      "required": ["label", "url"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "slug": {
+                    "description": "The print's address on the site (/portfolio/<slug>). Can change only until the print is first published.",
+                    "type": "string",
+                    "maxLength": 100,
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The print as it is now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200,
+                      "description": "The print's title as the site shows it, e.g. 'Beyblade – Dragoon'."
+                    },
+                    "shortTitle": {
+                      "anyOf": [{ "type": "string", "maxLength": 80 }, { "type": "null" }],
+                      "description": "A shorter title for cards and lists; without it the site uses the title up to ' – '."
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 5000,
+                      "description": "What the print is, in German, as the site shows it under the photos."
+                    },
+                    "price": {
+                      "anyOf": [{ "type": "integer", "minimum": 0, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The price in whole euros; none: the site shows no price."
+                    },
+                    "selfDesigned": { "type": "boolean", "description": "Whether Marcel designed the model himself (rather than printing someone else's)." },
+                    "weightGrams": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The filament used, in grams, from the slicer."
+                    },
+                    "printTimeMinutes": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The print time in minutes, from the slicer."
+                    },
+                    "colors": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
+                      "description": "How many filament colours the print uses."
+                    },
+                    "categoryIds": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": { "type": "string", "minLength": 1, "maxLength": 100 },
+                      "description": "The ids of the print's categories (list them with the categories' list)."
+                    },
+                    "sources": {
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "url": { "type": "string", "maxLength": 2000, "format": "uri" }
+                        },
+                        "required": ["label", "url"],
+                        "additionalProperties": false
+                      },
+                      "description": "Where the model comes from, e.g. [{label: 'MakerWorld', url: 'https://makerworld.com/…'}]."
+                    },
+                    "slug": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "description": "The print's address on the site (/portfolio/<slug>). Can change only until the print is first published."
+                    },
+                    "status": { "type": "string", "enum": ["draft", "published"] },
+                    "showcase": { "type": "boolean", "description": "Pinned above the rest of the portfolio (and on the start page)." },
+                    "coverPhotoId": { "type": ["string", "null"] },
+                    "photos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "printId": { "type": "string" },
+                          "position": { "type": "number" },
+                          "width": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's width in pixels."
+                          },
+                          "height": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's height in pixels."
+                          },
+                          "bytes": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991, "description": "The cutout's file size." },
+                          "sha256": { "type": "string", "description": "The cutout's SHA-256, hex." },
+                          "original": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "width": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 }
+                                },
+                                "required": ["width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
+                          },
+                          "crop": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "left": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "top": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "width": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
+                                },
+                                "required": ["left", "top", "width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The cutout's rectangle in the original as shown; null: the whole photo."
+                          }
+                        },
+                        "required": ["id", "printId", "position", "width", "height", "bytes", "sha256", "original", "crop"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "name": { "type": "string" },
+                          "slug": { "type": "string", "description": "Fixed at creation: the site's /portfolio#<slug>." }
+                        },
+                        "required": ["id", "name", "slug"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "firstPublishedAt": { "description": "When it was first published; its slug is fixed from then on.", "type": ["string", "null"] },
+                    "createdAt": { "type": "string" },
+                    "updatedAt": { "type": "string" },
+                    "url": { "type": "string", "description": "The print's page in the web app." }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "shortTitle",
+                    "description",
+                    "price",
+                    "selfDesigned",
+                    "weightGrams",
+                    "printTimeMinutes",
+                    "colors",
+                    "categoryIds",
+                    "sources",
+                    "slug",
+                    "status",
+                    "showcase",
+                    "coverPhotoId",
+                    "photos",
+                    "categories",
+                    "firstPublishedAt",
+                    "createdAt",
+                    "updatedAt",
+                    "url"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request can't be read, or a value in it is not acceptable (`invalid_input`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "409": {
+            "description": "The request conflicts with the current state of the thing, such as a name that is taken (`conflict`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "413": {
+            "description": "The request body is larger than 256 KiB (`too_large`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deletePrint",
+        "summary": "Delete a print and its photos; a slug that was published is never used again",
+        "description": "The REST counterpart of the MCP tool `delete_print`.",
+        "tags": ["Prints"],
+        "security": [{ "bearer": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The print's id", "schema": { "type": "string" } }],
+        "responses": {
+          "204": { "description": "Deleted" },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/prints/{id}/publish": {
+      "post": {
+        "operationId": "publishPrint",
+        "summary": "Put a draft on the site, at the top of the portfolio (needs a title, a description and a photo)",
+        "description": "The REST counterpart of the MCP tool `publish_print`.",
+        "tags": ["Prints"],
+        "security": [{ "bearer": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The print's id", "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "The print as it is now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200,
+                      "description": "The print's title as the site shows it, e.g. 'Beyblade – Dragoon'."
+                    },
+                    "shortTitle": {
+                      "anyOf": [{ "type": "string", "maxLength": 80 }, { "type": "null" }],
+                      "description": "A shorter title for cards and lists; without it the site uses the title up to ' – '."
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 5000,
+                      "description": "What the print is, in German, as the site shows it under the photos."
+                    },
+                    "price": {
+                      "anyOf": [{ "type": "integer", "minimum": 0, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The price in whole euros; none: the site shows no price."
+                    },
+                    "selfDesigned": { "type": "boolean", "description": "Whether Marcel designed the model himself (rather than printing someone else's)." },
+                    "weightGrams": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The filament used, in grams, from the slicer."
+                    },
+                    "printTimeMinutes": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The print time in minutes, from the slicer."
+                    },
+                    "colors": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
+                      "description": "How many filament colours the print uses."
+                    },
+                    "categoryIds": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": { "type": "string", "minLength": 1, "maxLength": 100 },
+                      "description": "The ids of the print's categories (list them with the categories' list)."
+                    },
+                    "sources": {
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "url": { "type": "string", "maxLength": 2000, "format": "uri" }
+                        },
+                        "required": ["label", "url"],
+                        "additionalProperties": false
+                      },
+                      "description": "Where the model comes from, e.g. [{label: 'MakerWorld', url: 'https://makerworld.com/…'}]."
+                    },
+                    "slug": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "description": "The print's address on the site (/portfolio/<slug>). Can change only until the print is first published."
+                    },
+                    "status": { "type": "string", "enum": ["draft", "published"] },
+                    "showcase": { "type": "boolean", "description": "Pinned above the rest of the portfolio (and on the start page)." },
+                    "coverPhotoId": { "type": ["string", "null"] },
+                    "photos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "printId": { "type": "string" },
+                          "position": { "type": "number" },
+                          "width": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's width in pixels."
+                          },
+                          "height": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's height in pixels."
+                          },
+                          "bytes": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991, "description": "The cutout's file size." },
+                          "sha256": { "type": "string", "description": "The cutout's SHA-256, hex." },
+                          "original": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "width": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 }
+                                },
+                                "required": ["width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
+                          },
+                          "crop": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "left": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "top": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "width": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
+                                },
+                                "required": ["left", "top", "width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The cutout's rectangle in the original as shown; null: the whole photo."
+                          }
+                        },
+                        "required": ["id", "printId", "position", "width", "height", "bytes", "sha256", "original", "crop"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "name": { "type": "string" },
+                          "slug": { "type": "string", "description": "Fixed at creation: the site's /portfolio#<slug>." }
+                        },
+                        "required": ["id", "name", "slug"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "firstPublishedAt": { "description": "When it was first published; its slug is fixed from then on.", "type": ["string", "null"] },
+                    "createdAt": { "type": "string" },
+                    "updatedAt": { "type": "string" },
+                    "url": { "type": "string", "description": "The print's page in the web app." }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "shortTitle",
+                    "description",
+                    "price",
+                    "selfDesigned",
+                    "weightGrams",
+                    "printTimeMinutes",
+                    "colors",
+                    "categoryIds",
+                    "sources",
+                    "slug",
+                    "status",
+                    "showcase",
+                    "coverPhotoId",
+                    "photos",
+                    "categories",
+                    "firstPublishedAt",
+                    "createdAt",
+                    "updatedAt",
+                    "url"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request can't be read, or a value in it is not acceptable (`invalid_input`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "409": {
+            "description": "The request conflicts with the current state of the thing, such as a name that is taken (`conflict`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/prints/{id}/unpublish": {
+      "post": {
+        "operationId": "unpublishPrint",
+        "summary": "Take a print off the site, back to a draft",
+        "description": "The REST counterpart of the MCP tool `unpublish_print`.",
+        "tags": ["Prints"],
+        "security": [{ "bearer": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The print's id", "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "The print as it is now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200,
+                      "description": "The print's title as the site shows it, e.g. 'Beyblade – Dragoon'."
+                    },
+                    "shortTitle": {
+                      "anyOf": [{ "type": "string", "maxLength": 80 }, { "type": "null" }],
+                      "description": "A shorter title for cards and lists; without it the site uses the title up to ' – '."
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 5000,
+                      "description": "What the print is, in German, as the site shows it under the photos."
+                    },
+                    "price": {
+                      "anyOf": [{ "type": "integer", "minimum": 0, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The price in whole euros; none: the site shows no price."
+                    },
+                    "selfDesigned": { "type": "boolean", "description": "Whether Marcel designed the model himself (rather than printing someone else's)." },
+                    "weightGrams": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The filament used, in grams, from the slicer."
+                    },
+                    "printTimeMinutes": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The print time in minutes, from the slicer."
+                    },
+                    "colors": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
+                      "description": "How many filament colours the print uses."
+                    },
+                    "categoryIds": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": { "type": "string", "minLength": 1, "maxLength": 100 },
+                      "description": "The ids of the print's categories (list them with the categories' list)."
+                    },
+                    "sources": {
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "url": { "type": "string", "maxLength": 2000, "format": "uri" }
+                        },
+                        "required": ["label", "url"],
+                        "additionalProperties": false
+                      },
+                      "description": "Where the model comes from, e.g. [{label: 'MakerWorld', url: 'https://makerworld.com/…'}]."
+                    },
+                    "slug": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "description": "The print's address on the site (/portfolio/<slug>). Can change only until the print is first published."
+                    },
+                    "status": { "type": "string", "enum": ["draft", "published"] },
+                    "showcase": { "type": "boolean", "description": "Pinned above the rest of the portfolio (and on the start page)." },
+                    "coverPhotoId": { "type": ["string", "null"] },
+                    "photos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "printId": { "type": "string" },
+                          "position": { "type": "number" },
+                          "width": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's width in pixels."
+                          },
+                          "height": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's height in pixels."
+                          },
+                          "bytes": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991, "description": "The cutout's file size." },
+                          "sha256": { "type": "string", "description": "The cutout's SHA-256, hex." },
+                          "original": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "width": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 }
+                                },
+                                "required": ["width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
+                          },
+                          "crop": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "left": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "top": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "width": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
+                                },
+                                "required": ["left", "top", "width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The cutout's rectangle in the original as shown; null: the whole photo."
+                          }
+                        },
+                        "required": ["id", "printId", "position", "width", "height", "bytes", "sha256", "original", "crop"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "name": { "type": "string" },
+                          "slug": { "type": "string", "description": "Fixed at creation: the site's /portfolio#<slug>." }
+                        },
+                        "required": ["id", "name", "slug"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "firstPublishedAt": { "description": "When it was first published; its slug is fixed from then on.", "type": ["string", "null"] },
+                    "createdAt": { "type": "string" },
+                    "updatedAt": { "type": "string" },
+                    "url": { "type": "string", "description": "The print's page in the web app." }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "shortTitle",
+                    "description",
+                    "price",
+                    "selfDesigned",
+                    "weightGrams",
+                    "printTimeMinutes",
+                    "colors",
+                    "categoryIds",
+                    "sources",
+                    "slug",
+                    "status",
+                    "showcase",
+                    "coverPhotoId",
+                    "photos",
+                    "categories",
+                    "firstPublishedAt",
+                    "createdAt",
+                    "updatedAt",
+                    "url"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/prints/{id}/move": {
+      "post": {
+        "operationId": "movePrint",
+        "summary": "Move a published print that isn't a showcase in the portfolio order",
+        "description": "The REST counterpart of the MCP tool `move_print`.",
+        "tags": ["Order"],
+        "security": [{ "bearer": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The print's id", "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "beforeId": {
+                    "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }],
+                    "description": "The print to stand before; null: to the end."
+                  }
+                },
+                "required": ["beforeId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The print as it is now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200,
+                      "description": "The print's title as the site shows it, e.g. 'Beyblade – Dragoon'."
+                    },
+                    "shortTitle": {
+                      "anyOf": [{ "type": "string", "maxLength": 80 }, { "type": "null" }],
+                      "description": "A shorter title for cards and lists; without it the site uses the title up to ' – '."
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 5000,
+                      "description": "What the print is, in German, as the site shows it under the photos."
+                    },
+                    "price": {
+                      "anyOf": [{ "type": "integer", "minimum": 0, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The price in whole euros; none: the site shows no price."
+                    },
+                    "selfDesigned": { "type": "boolean", "description": "Whether Marcel designed the model himself (rather than printing someone else's)." },
+                    "weightGrams": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The filament used, in grams, from the slicer."
+                    },
+                    "printTimeMinutes": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The print time in minutes, from the slicer."
+                    },
+                    "colors": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
+                      "description": "How many filament colours the print uses."
+                    },
+                    "categoryIds": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": { "type": "string", "minLength": 1, "maxLength": 100 },
+                      "description": "The ids of the print's categories (list them with the categories' list)."
+                    },
+                    "sources": {
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "url": { "type": "string", "maxLength": 2000, "format": "uri" }
+                        },
+                        "required": ["label", "url"],
+                        "additionalProperties": false
+                      },
+                      "description": "Where the model comes from, e.g. [{label: 'MakerWorld', url: 'https://makerworld.com/…'}]."
+                    },
+                    "slug": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "description": "The print's address on the site (/portfolio/<slug>). Can change only until the print is first published."
+                    },
+                    "status": { "type": "string", "enum": ["draft", "published"] },
+                    "showcase": { "type": "boolean", "description": "Pinned above the rest of the portfolio (and on the start page)." },
+                    "coverPhotoId": { "type": ["string", "null"] },
+                    "photos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "printId": { "type": "string" },
+                          "position": { "type": "number" },
+                          "width": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's width in pixels."
+                          },
+                          "height": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's height in pixels."
+                          },
+                          "bytes": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991, "description": "The cutout's file size." },
+                          "sha256": { "type": "string", "description": "The cutout's SHA-256, hex." },
+                          "original": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "width": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 }
+                                },
+                                "required": ["width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
+                          },
+                          "crop": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "left": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "top": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "width": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
+                                },
+                                "required": ["left", "top", "width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The cutout's rectangle in the original as shown; null: the whole photo."
+                          }
+                        },
+                        "required": ["id", "printId", "position", "width", "height", "bytes", "sha256", "original", "crop"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "name": { "type": "string" },
+                          "slug": { "type": "string", "description": "Fixed at creation: the site's /portfolio#<slug>." }
+                        },
+                        "required": ["id", "name", "slug"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "firstPublishedAt": { "description": "When it was first published; its slug is fixed from then on.", "type": ["string", "null"] },
+                    "createdAt": { "type": "string" },
+                    "updatedAt": { "type": "string" },
+                    "url": { "type": "string", "description": "The print's page in the web app." }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "shortTitle",
+                    "description",
+                    "price",
+                    "selfDesigned",
+                    "weightGrams",
+                    "printTimeMinutes",
+                    "colors",
+                    "categoryIds",
+                    "sources",
+                    "slug",
+                    "status",
+                    "showcase",
+                    "coverPhotoId",
+                    "photos",
+                    "categories",
+                    "firstPublishedAt",
+                    "createdAt",
+                    "updatedAt",
+                    "url"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request can't be read, or a value in it is not acceptable (`invalid_input`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "413": {
+            "description": "The request body is larger than 256 KiB (`too_large`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/prints/{id}/showcase": {
+      "put": {
+        "operationId": "setShowcase",
+        "summary": "Pin a published print as a showcase (at the end of the showcases) or unpin it",
+        "description": "The REST counterpart of the MCP tool `set_showcase`.",
+        "tags": ["Order"],
+        "security": [{ "bearer": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The print's id", "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "properties": { "on": { "type": "boolean", "description": "true pins it, false unpins it." } }, "required": ["on"] }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The print as it is now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200,
+                      "description": "The print's title as the site shows it, e.g. 'Beyblade – Dragoon'."
+                    },
+                    "shortTitle": {
+                      "anyOf": [{ "type": "string", "maxLength": 80 }, { "type": "null" }],
+                      "description": "A shorter title for cards and lists; without it the site uses the title up to ' – '."
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 5000,
+                      "description": "What the print is, in German, as the site shows it under the photos."
+                    },
+                    "price": {
+                      "anyOf": [{ "type": "integer", "minimum": 0, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The price in whole euros; none: the site shows no price."
+                    },
+                    "selfDesigned": { "type": "boolean", "description": "Whether Marcel designed the model himself (rather than printing someone else's)." },
+                    "weightGrams": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The filament used, in grams, from the slicer."
+                    },
+                    "printTimeMinutes": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The print time in minutes, from the slicer."
+                    },
+                    "colors": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
+                      "description": "How many filament colours the print uses."
+                    },
+                    "categoryIds": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": { "type": "string", "minLength": 1, "maxLength": 100 },
+                      "description": "The ids of the print's categories (list them with the categories' list)."
+                    },
+                    "sources": {
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "url": { "type": "string", "maxLength": 2000, "format": "uri" }
+                        },
+                        "required": ["label", "url"],
+                        "additionalProperties": false
+                      },
+                      "description": "Where the model comes from, e.g. [{label: 'MakerWorld', url: 'https://makerworld.com/…'}]."
+                    },
+                    "slug": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "description": "The print's address on the site (/portfolio/<slug>). Can change only until the print is first published."
+                    },
+                    "status": { "type": "string", "enum": ["draft", "published"] },
+                    "showcase": { "type": "boolean", "description": "Pinned above the rest of the portfolio (and on the start page)." },
+                    "coverPhotoId": { "type": ["string", "null"] },
+                    "photos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "printId": { "type": "string" },
+                          "position": { "type": "number" },
+                          "width": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's width in pixels."
+                          },
+                          "height": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's height in pixels."
+                          },
+                          "bytes": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991, "description": "The cutout's file size." },
+                          "sha256": { "type": "string", "description": "The cutout's SHA-256, hex." },
+                          "original": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "width": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 }
+                                },
+                                "required": ["width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
+                          },
+                          "crop": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "left": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "top": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "width": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
+                                },
+                                "required": ["left", "top", "width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The cutout's rectangle in the original as shown; null: the whole photo."
+                          }
+                        },
+                        "required": ["id", "printId", "position", "width", "height", "bytes", "sha256", "original", "crop"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "name": { "type": "string" },
+                          "slug": { "type": "string", "description": "Fixed at creation: the site's /portfolio#<slug>." }
+                        },
+                        "required": ["id", "name", "slug"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "firstPublishedAt": { "description": "When it was first published; its slug is fixed from then on.", "type": ["string", "null"] },
+                    "createdAt": { "type": "string" },
+                    "updatedAt": { "type": "string" },
+                    "url": { "type": "string", "description": "The print's page in the web app." }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "shortTitle",
+                    "description",
+                    "price",
+                    "selfDesigned",
+                    "weightGrams",
+                    "printTimeMinutes",
+                    "colors",
+                    "categoryIds",
+                    "sources",
+                    "slug",
+                    "status",
+                    "showcase",
+                    "coverPhotoId",
+                    "photos",
+                    "categories",
+                    "firstPublishedAt",
+                    "createdAt",
+                    "updatedAt",
+                    "url"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request can't be read, or a value in it is not acceptable (`invalid_input`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "413": {
+            "description": "The request body is larger than 256 KiB (`too_large`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/showcases/{id}/move": {
+      "post": {
+        "operationId": "moveShowcase",
+        "summary": "Move a showcase among the showcases",
+        "description": "The REST counterpart of the MCP tool `move_showcase`.",
+        "tags": ["Order"],
+        "security": [{ "bearer": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The print's id", "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "beforeId": {
+                    "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }],
+                    "description": "The print to stand before; null: to the end."
+                  }
+                },
+                "required": ["beforeId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The print as it is now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200,
+                      "description": "The print's title as the site shows it, e.g. 'Beyblade – Dragoon'."
+                    },
+                    "shortTitle": {
+                      "anyOf": [{ "type": "string", "maxLength": 80 }, { "type": "null" }],
+                      "description": "A shorter title for cards and lists; without it the site uses the title up to ' – '."
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 5000,
+                      "description": "What the print is, in German, as the site shows it under the photos."
+                    },
+                    "price": {
+                      "anyOf": [{ "type": "integer", "minimum": 0, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The price in whole euros; none: the site shows no price."
+                    },
+                    "selfDesigned": { "type": "boolean", "description": "Whether Marcel designed the model himself (rather than printing someone else's)." },
+                    "weightGrams": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The filament used, in grams, from the slicer."
+                    },
+                    "printTimeMinutes": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The print time in minutes, from the slicer."
+                    },
+                    "colors": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
+                      "description": "How many filament colours the print uses."
+                    },
+                    "categoryIds": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": { "type": "string", "minLength": 1, "maxLength": 100 },
+                      "description": "The ids of the print's categories (list them with the categories' list)."
+                    },
+                    "sources": {
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "url": { "type": "string", "maxLength": 2000, "format": "uri" }
+                        },
+                        "required": ["label", "url"],
+                        "additionalProperties": false
+                      },
+                      "description": "Where the model comes from, e.g. [{label: 'MakerWorld', url: 'https://makerworld.com/…'}]."
+                    },
+                    "slug": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "description": "The print's address on the site (/portfolio/<slug>). Can change only until the print is first published."
+                    },
+                    "status": { "type": "string", "enum": ["draft", "published"] },
+                    "showcase": { "type": "boolean", "description": "Pinned above the rest of the portfolio (and on the start page)." },
+                    "coverPhotoId": { "type": ["string", "null"] },
+                    "photos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "printId": { "type": "string" },
+                          "position": { "type": "number" },
+                          "width": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's width in pixels."
+                          },
+                          "height": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's height in pixels."
+                          },
+                          "bytes": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991, "description": "The cutout's file size." },
+                          "sha256": { "type": "string", "description": "The cutout's SHA-256, hex." },
+                          "original": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "width": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 }
+                                },
+                                "required": ["width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
+                          },
+                          "crop": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "left": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "top": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "width": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
+                                },
+                                "required": ["left", "top", "width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The cutout's rectangle in the original as shown; null: the whole photo."
+                          }
+                        },
+                        "required": ["id", "printId", "position", "width", "height", "bytes", "sha256", "original", "crop"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "name": { "type": "string" },
+                          "slug": { "type": "string", "description": "Fixed at creation: the site's /portfolio#<slug>." }
+                        },
+                        "required": ["id", "name", "slug"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "firstPublishedAt": { "description": "When it was first published; its slug is fixed from then on.", "type": ["string", "null"] },
+                    "createdAt": { "type": "string" },
+                    "updatedAt": { "type": "string" },
+                    "url": { "type": "string", "description": "The print's page in the web app." }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "shortTitle",
+                    "description",
+                    "price",
+                    "selfDesigned",
+                    "weightGrams",
+                    "printTimeMinutes",
+                    "colors",
+                    "categoryIds",
+                    "sources",
+                    "slug",
+                    "status",
+                    "showcase",
+                    "coverPhotoId",
+                    "photos",
+                    "categories",
+                    "firstPublishedAt",
+                    "createdAt",
+                    "updatedAt",
+                    "url"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request can't be read, or a value in it is not acceptable (`invalid_input`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "413": {
+            "description": "The request body is larger than 256 KiB (`too_large`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/prints/{id}/photos/order": {
+      "put": {
+        "operationId": "reorderPhotos",
+        "summary": "Put a print's photos in this order",
+        "description": "The REST counterpart of the MCP tool `reorder_photos`.",
+        "tags": ["Photos"],
+        "security": [{ "bearer": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The print's id", "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "photoIds": {
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": { "type": "string", "minLength": 1 },
+                    "description": "Each of the print's photos exactly once."
+                  }
+                },
+                "required": ["photoIds"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The print as it is now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200,
+                      "description": "The print's title as the site shows it, e.g. 'Beyblade – Dragoon'."
+                    },
+                    "shortTitle": {
+                      "anyOf": [{ "type": "string", "maxLength": 80 }, { "type": "null" }],
+                      "description": "A shorter title for cards and lists; without it the site uses the title up to ' – '."
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 5000,
+                      "description": "What the print is, in German, as the site shows it under the photos."
+                    },
+                    "price": {
+                      "anyOf": [{ "type": "integer", "minimum": 0, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The price in whole euros; none: the site shows no price."
+                    },
+                    "selfDesigned": { "type": "boolean", "description": "Whether Marcel designed the model himself (rather than printing someone else's)." },
+                    "weightGrams": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The filament used, in grams, from the slicer."
+                    },
+                    "printTimeMinutes": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The print time in minutes, from the slicer."
+                    },
+                    "colors": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
+                      "description": "How many filament colours the print uses."
+                    },
+                    "categoryIds": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": { "type": "string", "minLength": 1, "maxLength": 100 },
+                      "description": "The ids of the print's categories (list them with the categories' list)."
+                    },
+                    "sources": {
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "url": { "type": "string", "maxLength": 2000, "format": "uri" }
+                        },
+                        "required": ["label", "url"],
+                        "additionalProperties": false
+                      },
+                      "description": "Where the model comes from, e.g. [{label: 'MakerWorld', url: 'https://makerworld.com/…'}]."
+                    },
+                    "slug": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "description": "The print's address on the site (/portfolio/<slug>). Can change only until the print is first published."
+                    },
+                    "status": { "type": "string", "enum": ["draft", "published"] },
+                    "showcase": { "type": "boolean", "description": "Pinned above the rest of the portfolio (and on the start page)." },
+                    "coverPhotoId": { "type": ["string", "null"] },
+                    "photos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "printId": { "type": "string" },
+                          "position": { "type": "number" },
+                          "width": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's width in pixels."
+                          },
+                          "height": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's height in pixels."
+                          },
+                          "bytes": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991, "description": "The cutout's file size." },
+                          "sha256": { "type": "string", "description": "The cutout's SHA-256, hex." },
+                          "original": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "width": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 }
+                                },
+                                "required": ["width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
+                          },
+                          "crop": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "left": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "top": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "width": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
+                                },
+                                "required": ["left", "top", "width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The cutout's rectangle in the original as shown; null: the whole photo."
+                          }
+                        },
+                        "required": ["id", "printId", "position", "width", "height", "bytes", "sha256", "original", "crop"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "name": { "type": "string" },
+                          "slug": { "type": "string", "description": "Fixed at creation: the site's /portfolio#<slug>." }
+                        },
+                        "required": ["id", "name", "slug"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "firstPublishedAt": { "description": "When it was first published; its slug is fixed from then on.", "type": ["string", "null"] },
+                    "createdAt": { "type": "string" },
+                    "updatedAt": { "type": "string" },
+                    "url": { "type": "string", "description": "The print's page in the web app." }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "shortTitle",
+                    "description",
+                    "price",
+                    "selfDesigned",
+                    "weightGrams",
+                    "printTimeMinutes",
+                    "colors",
+                    "categoryIds",
+                    "sources",
+                    "slug",
+                    "status",
+                    "showcase",
+                    "coverPhotoId",
+                    "photos",
+                    "categories",
+                    "firstPublishedAt",
+                    "createdAt",
+                    "updatedAt",
+                    "url"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request can't be read, or a value in it is not acceptable (`invalid_input`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "413": {
+            "description": "The request body is larger than 256 KiB (`too_large`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/prints/{id}/cover": {
+      "put": {
+        "operationId": "setCover",
+        "summary": "Make one of a print's photos its cover",
+        "description": "The REST counterpart of the MCP tool `set_cover`.",
+        "tags": ["Photos"],
+        "security": [{ "bearer": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The print's id", "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "type": "object", "properties": { "photoId": { "type": "string", "minLength": 1 } }, "required": ["photoId"] } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The print as it is now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200,
+                      "description": "The print's title as the site shows it, e.g. 'Beyblade – Dragoon'."
+                    },
+                    "shortTitle": {
+                      "anyOf": [{ "type": "string", "maxLength": 80 }, { "type": "null" }],
+                      "description": "A shorter title for cards and lists; without it the site uses the title up to ' – '."
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 5000,
+                      "description": "What the print is, in German, as the site shows it under the photos."
+                    },
+                    "price": {
+                      "anyOf": [{ "type": "integer", "minimum": 0, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The price in whole euros; none: the site shows no price."
+                    },
+                    "selfDesigned": { "type": "boolean", "description": "Whether Marcel designed the model himself (rather than printing someone else's)." },
+                    "weightGrams": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The filament used, in grams, from the slicer."
+                    },
+                    "printTimeMinutes": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100000 }, { "type": "null" }],
+                      "description": "The print time in minutes, from the slicer."
+                    },
+                    "colors": {
+                      "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
+                      "description": "How many filament colours the print uses."
+                    },
+                    "categoryIds": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": { "type": "string", "minLength": 1, "maxLength": 100 },
+                      "description": "The ids of the print's categories (list them with the categories' list)."
+                    },
+                    "sources": {
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "url": { "type": "string", "maxLength": 2000, "format": "uri" }
+                        },
+                        "required": ["label", "url"],
+                        "additionalProperties": false
+                      },
+                      "description": "Where the model comes from, e.g. [{label: 'MakerWorld', url: 'https://makerworld.com/…'}]."
+                    },
+                    "slug": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "description": "The print's address on the site (/portfolio/<slug>). Can change only until the print is first published."
+                    },
+                    "status": { "type": "string", "enum": ["draft", "published"] },
+                    "showcase": { "type": "boolean", "description": "Pinned above the rest of the portfolio (and on the start page)." },
+                    "coverPhotoId": { "type": ["string", "null"] },
+                    "photos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "printId": { "type": "string" },
+                          "position": { "type": "number" },
+                          "width": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's width in pixels."
+                          },
+                          "height": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The cutout's height in pixels."
+                          },
+                          "bytes": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991, "description": "The cutout's file size." },
+                          "sha256": { "type": "string", "description": "The cutout's SHA-256, hex." },
+                          "original": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "width": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 }
+                                },
+                                "required": ["width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
+                          },
+                          "crop": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "left": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "top": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                                  "width": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+                                  "height": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
+                                },
+                                "required": ["left", "top", "width", "height"],
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ],
+                            "description": "The cutout's rectangle in the original as shown; null: the whole photo."
+                          }
+                        },
+                        "required": ["id", "printId", "position", "width", "height", "bytes", "sha256", "original", "crop"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "name": { "type": "string" },
+                          "slug": { "type": "string", "description": "Fixed at creation: the site's /portfolio#<slug>." }
+                        },
+                        "required": ["id", "name", "slug"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "firstPublishedAt": { "description": "When it was first published; its slug is fixed from then on.", "type": ["string", "null"] },
+                    "createdAt": { "type": "string" },
+                    "updatedAt": { "type": "string" },
+                    "url": { "type": "string", "description": "The print's page in the web app." }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "shortTitle",
+                    "description",
+                    "price",
+                    "selfDesigned",
+                    "weightGrams",
+                    "printTimeMinutes",
+                    "colors",
+                    "categoryIds",
+                    "sources",
+                    "slug",
+                    "status",
+                    "showcase",
+                    "coverPhotoId",
+                    "photos",
+                    "categories",
+                    "firstPublishedAt",
+                    "createdAt",
+                    "updatedAt",
+                    "url"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request can't be read, or a value in it is not acceptable (`invalid_input`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "413": {
+            "description": "The request body is larger than 256 KiB (`too_large`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/photos/{id}/crop": {
+      "put": {
+        "operationId": "setPhotoCrop",
+        "summary": "Choose a photo's cutout: a rectangle of the original as shown, in whole pixels; null for the whole photo",
+        "description": "The REST counterpart of the MCP tool `set_photo_crop`.",
+        "tags": ["Photos"],
+        "security": [{ "bearer": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The photo's id", "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "crop": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "left": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                          "top": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                          "width": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+                          "height": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
+                        },
+                        "required": ["left", "top", "width", "height"],
+                        "additionalProperties": false
+                      },
+                      { "type": "null" }
+                    ]
+                  }
+                },
+                "required": ["crop"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The photo with its new cutout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "printId": { "type": "string" },
+                    "position": { "type": "number" },
+                    "width": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991, "description": "The cutout's width in pixels." },
+                    "height": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991, "description": "The cutout's height in pixels." },
+                    "bytes": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991, "description": "The cutout's file size." },
+                    "sha256": { "type": "string", "description": "The cutout's SHA-256, hex." },
+                    "original": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "width": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+                            "height": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 }
+                          },
+                          "required": ["width", "height"],
+                          "additionalProperties": false
+                        },
+                        { "type": "null" }
+                      ],
+                      "description": "The original's size as shown (its orientation applied), the space a crop is chosen in; null for a photo stored before originals were kept."
+                    },
+                    "crop": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "left": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                            "top": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+                            "width": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+                            "height": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
+                          },
+                          "required": ["left", "top", "width", "height"],
+                          "additionalProperties": false
+                        },
+                        { "type": "null" }
+                      ],
+                      "description": "The cutout's rectangle in the original as shown; null: the whole photo."
+                    }
+                  },
+                  "required": ["id", "printId", "position", "width", "height", "bytes", "sha256", "original", "crop"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request can't be read, or a value in it is not acceptable (`invalid_input`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "409": {
+            "description": "The request conflicts with the current state of the thing, such as a name that is taken (`conflict`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "413": {
+            "description": "The request body is larger than 256 KiB (`too_large`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/photos/{id}": {
+      "delete": {
+        "operationId": "deletePhoto",
+        "summary": "Delete a photo; deleting a published print's last photo takes the print off the site",
+        "description": "The REST counterpart of the MCP tool `delete_photo`.",
+        "tags": ["Photos"],
+        "security": [{ "bearer": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The photo's id", "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "unpublished": { "type": "boolean", "description": "Whether the print went off the site with it." } },
+                  "required": ["unpublished"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "get": {
+        "operationId": "getPhotoFile",
+        "summary": "A photo's cutout, the JPEG the site shows (ETag: its sha256; If-None-Match with it answers 304)",
+        "tags": ["Site"],
+        "security": [{ "bearer": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The photo's id", "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "The JPEG",
+            "headers": {
+              "ETag": { "description": "The entity tag; send it back as If-None-Match to get 304 when nothing changed", "schema": { "type": "string" } }
+            },
+            "content": { "application/octet-stream": { "schema": { "type": "string", "format": "binary" } } }
+          },
+          "304": { "description": "Not modified: If-None-Match named the current ETag; no body" },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/categories": {
+      "get": {
+        "operationId": "listCategories",
+        "summary": "List the categories by name, with how many prints use each",
+        "description": "The REST counterpart of the MCP tool `list_categories`.",
+        "tags": ["Categories"],
+        "security": [{ "bearer": [] }],
+        "responses": {
+          "200": {
+            "description": "The categories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "name": { "type": "string" },
+                          "slug": { "type": "string", "description": "Fixed at creation: the site's /portfolio#<slug>." },
+                          "prints": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "Prints using it, drafts included."
+                          }
+                        },
+                        "required": ["id", "name", "slug", "prints"],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["categories"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createCategory",
+        "summary": "Create a category; its slug is made from the name and never changes",
+        "description": "The REST counterpart of the MCP tool `create_category`.",
+        "tags": ["Categories"],
+        "security": [{ "bearer": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60,
+                    "description": "The category's name as the site shows it, e.g. 'Geschenkideen'; not empty, at most 60 characters."
+                  }
+                },
+                "required": ["name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new category",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "name": { "type": "string" },
+                    "slug": { "type": "string", "description": "Fixed at creation: the site's /portfolio#<slug>." }
+                  },
+                  "required": ["id", "name", "slug"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request can't be read, or a value in it is not acceptable (`invalid_input`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "409": {
+            "description": "The request conflicts with the current state of the thing, such as a name that is taken (`conflict`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "413": {
+            "description": "The request body is larger than 256 KiB (`too_large`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/categories/{id}": {
+      "patch": {
+        "operationId": "renameCategory",
+        "summary": "Rename a category; its slug stays",
+        "description": "The REST counterpart of the MCP tool `rename_category`.",
+        "tags": ["Categories"],
+        "security": [{ "bearer": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The category's id", "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60,
+                    "description": "The category's name as the site shows it, e.g. 'Geschenkideen'; not empty, at most 60 characters."
+                  }
+                },
+                "required": ["name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The category",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "name": { "type": "string" },
+                    "slug": { "type": "string", "description": "Fixed at creation: the site's /portfolio#<slug>." }
+                  },
+                  "required": ["id", "name", "slug"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request can't be read, or a value in it is not acceptable (`invalid_input`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "409": {
+            "description": "The request conflicts with the current state of the thing, such as a name that is taken (`conflict`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "413": {
+            "description": "The request body is larger than 256 KiB (`too_large`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCategory",
+        "summary": "Delete a category no print uses (refused, naming the prints, while any does)",
+        "description": "The REST counterpart of the MCP tool `delete_category`.",
+        "tags": ["Categories"],
+        "security": [{ "bearer": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The category's id", "schema": { "type": "string" } }],
+        "responses": {
+          "204": { "description": "Deleted" },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "409": {
+            "description": "The request conflicts with the current state of the thing, such as a name that is taken (`conflict`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/export": {
+      "get": {
+        "operationId": "getSiteExport",
+        "summary": "Every published print in the site's order, with its photos and the categories: what the site build reads",
+        "tags": ["Site"],
+        "security": [{ "bearer": [] }],
+        "responses": {
+          "200": {
+            "description": "The export",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": { "type": "number", "const": 1 },
+                    "generatedAt": { "type": "string", "description": "When the export was made (ISO 8601)." },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": { "name": { "type": "string" }, "slug": { "type": "string" } },
+                        "required": ["name", "slug"],
+                        "additionalProperties": false
+                      },
+                      "description": "The categories the published prints use, by name."
+                    },
+                    "prints": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "slug": {
+                            "type": "string",
+                            "description": "The print's address on the site (/portfolio/<slug>). Can change only until the print is first published."
+                          },
+                          "title": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200,
+                            "description": "The print's title as the site shows it, e.g. 'Beyblade – Dragoon'."
+                          },
+                          "shortTitle": {
+                            "description": "A shorter title for cards and lists; without it the site uses the title up to ' – '.",
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "description": {
+                            "type": "string",
+                            "maxLength": 5000,
+                            "description": "What the print is, in German, as the site shows it under the photos."
+                          },
+                          "price": {
+                            "description": "The price in whole euros; none: the site shows no price.",
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 100000
+                          },
+                          "selfDesigned": {
+                            "type": "boolean",
+                            "description": "Whether Marcel designed the model himself (rather than printing someone else's)."
+                          },
+                          "sources": {
+                            "maxItems": 10,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+                                "url": { "type": "string", "maxLength": 2000, "format": "uri" }
+                              },
+                              "required": ["label", "url"],
+                              "additionalProperties": false
+                            },
+                            "description": "Where the model comes from, e.g. [{label: 'MakerWorld', url: 'https://makerworld.com/…'}]."
+                          },
+                          "weightGrams": { "description": "The filament used, in grams, from the slicer.", "type": "integer", "minimum": 1, "maximum": 100000 },
+                          "printTimeMinutes": {
+                            "description": "The print time in minutes, from the slicer.",
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000
+                          },
+                          "colors": { "description": "How many filament colours the print uses.", "type": "integer", "minimum": 1, "maximum": 100 },
+                          "categories": { "type": "array", "items": { "type": "string" }, "description": "The print's categories' names." },
+                          "showcase": { "type": "boolean", "description": "Pinned above the rest of the portfolio and shown on the start page." },
+                          "cover": { "type": "string", "description": "The cover photo's id." },
+                          "photos": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": { "type": "string" },
+                                "sha256": { "type": "string", "description": "The cutout's SHA-256, hex: a new crop changes it." },
+                                "width": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+                                "height": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+                                "url": { "type": "string", "description": "Where its JPEG is downloaded (GET, with the same token)." }
+                              },
+                              "required": ["id", "sha256", "width", "height", "url"],
+                              "additionalProperties": false
+                            },
+                            "description": "The print's photos, in their order."
+                          }
+                        },
+                        "required": ["slug", "title", "description", "selfDesigned", "sources", "categories", "showcase", "cover", "photos"],
+                        "additionalProperties": false
+                      },
+                      "description": "Every published print in the site's order: the showcases first, in theirs, then the rest."
+                    }
+                  },
+                  "required": ["version", "generatedAt", "categories", "prints"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/site/build": {
+      "get": {
+        "operationId": "getSiteBuildStatus",
+        "summary": "Whether a site build is pending (a minute after the last change the site shows), how the last dispatch went, and the latest build run",
+        "description": "The REST counterpart of the MCP tool `site_build_status`.",
+        "tags": ["Site"],
+        "security": [{ "bearer": [] }],
+        "responses": {
+          "200": {
+            "description": "The site build's status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pending": {
+                      "type": "boolean",
+                      "description": "Changes the site shows wait for a build; it is dispatched once nothing changed for a minute."
+                    },
+                    "lastDispatch": { "description": "When the site build was last dispatched.", "type": "string" },
+                    "lastError": { "description": "Why the last dispatch failed; it is tried again after 1, 2, 4 … minutes, at most 30.", "type": "string" },
+                    "run": {
+                      "description": "The latest dispatched run of the site's workflow; absent when there is none or GitHub didn't answer.",
+                      "type": "object",
+                      "properties": {
+                        "status": { "type": "string", "description": "GitHub's: queued, in_progress, completed …" },
+                        "conclusion": { "description": "GitHub's once completed: success, failure …", "type": ["string", "null"] },
+                        "url": { "type": "string", "description": "The run on GitHub." },
+                        "startedAt": { "type": "string" }
+                      },
+                      "required": ["status", "conclusion", "url", "startedAt"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["pending"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/tokens": {
+      "get": {
+        "operationId": "listApiTokens",
+        "summary": "List the caller's API tokens, newest first (never the tokens themselves)",
+        "description": "The REST counterpart of the MCP tool `list_api_tokens`.",
+        "tags": ["Tokens"],
+        "security": [{ "bearer": [] }],
+        "responses": {
+          "200": {
+            "description": "The tokens",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tokens": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "name": { "type": "string" },
+                          "scope": { "type": "string", "enum": ["read", "read+write"] },
+                          "start": { "type": "string", "description": "The token's first characters, to recognise it by." },
+                          "created_at": { "type": "string" },
+                          "expires_at": { "type": ["string", "null"] },
+                          "last_used_at": { "type": ["string", "null"] }
+                        },
+                        "required": ["id", "name", "scope", "start", "created_at", "expires_at", "last_used_at"],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["tokens"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createApiToken",
+        "summary": "Make an API token for the caller; the token is in this answer once and never again. Not with an API token (403)",
+        "description": "The REST counterpart of the MCP tool `create_api_token`.",
+        "tags": ["Tokens"],
+        "security": [{ "bearer": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "minLength": 1, "maxLength": 100, "description": "What it is for, e.g. 'site build'." },
+                  "scope": {
+                    "type": "string",
+                    "enum": ["read", "read+write"],
+                    "description": "`read` may only GET (the site build's); `read+write` may change things."
+                  },
+                  "expiresInDays": {
+                    "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 365 }, { "type": "null" }],
+                    "description": "Its lifetime in days; null: it never expires (chosen on purpose)."
+                  }
+                },
+                "required": ["name", "scope", "expiresInDays"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "name": { "type": "string" },
+                    "scope": { "type": "string", "enum": ["read", "read+write"] },
+                    "start": { "type": "string", "description": "The token's first characters, to recognise it by." },
+                    "created_at": { "type": "string" },
+                    "expires_at": { "type": ["string", "null"] },
+                    "last_used_at": { "type": ["string", "null"] },
+                    "token": { "type": "string", "description": "The token itself, shown this once." }
+                  },
+                  "required": ["id", "name", "scope", "start", "created_at", "expires_at", "last_used_at", "token"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request can't be read, or a value in it is not acceptable (`invalid_input`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "413": {
+            "description": "The request body is larger than 256 KiB (`too_large`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/tokens/{id}": {
+      "delete": {
+        "operationId": "revokeApiToken",
+        "summary": "Revoke one of the caller's API tokens. Not with an API token (403)",
+        "description": "The REST counterpart of the MCP tool `revoke_api_token`.",
+        "tags": ["Tokens"],
+        "security": [{ "bearer": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The token's id", "schema": { "type": "string" } }],
+        "responses": {
+          "204": { "description": "Revoked" },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+        "required": ["error", "code"],
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "An API token (`upl_…`, made in the web app or with create_api_token; a `read` token may only GET), or an OAuth access token from this instance issued for this API (`resource=<base>/api/v1`). A token for /mcp is refused here."
+      }
+    }
+  }
+}
