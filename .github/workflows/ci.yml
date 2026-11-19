@@ -67,6 +67,11 @@ jobs:
           test "$(curl -s http://127.0.0.1:3000/health)" = '{"status":"ok"}'
           # The pages speak the browser's language.
           curl -s -H 'accept-language: de-DE' http://127.0.0.1:3000/ | grep -q '<html lang="de"'
+          # sharp (the photos) loads and works in the distroless image, from what the standalone build traced: it turns, shrinks and
+          # writes a JPEG as an upload does, and the photo routes answer (signed out: 401, in the page's language).
+          docker run --rm --entrypoint /nodejs/bin/node upload:smoke -e "const s = require('sharp'); s({ create: { width: 64, height: 48, channels: 3, background: '#888' } }).rotate().resize({ width: 32, height: 32, fit: 'inside' }).jpeg({ quality: 85, mozjpeg: true }).toBuffer({ resolveWithObject: true }).then(({ info }) => { if (info.format !== 'jpeg' || info.width !== 32) process.exit(1); console.log('sharp', s.versions.sharp, 'libvips', s.versions.vips); })"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/photos/none)" = 401
+          curl -s -X POST -H 'accept-language: de-DE' http://127.0.0.1:3000/api/prints/none/photos | grep -q 'Bitte zuerst anmelden'
           # Outgoing HTTPS trusts the system store: the server runs with --use-system-ca.
           docker inspect --format '{{json .Config.Entrypoint}}' upload:smoke | grep -q -- --use-system-ca
           # Docker's own health check (a node script: the distroless image has no shell) reports healthy.

@@ -5,16 +5,15 @@ import { randomUUID } from "node:crypto";
 import { rmSync } from "node:fs";
 import { join } from "node:path";
 import type { Category } from "./categories";
-import type { PhotoRow, PrintRow, PrintRowPatch } from "./db";
+import type { PrintRow, PrintRowPatch } from "./db";
 import { siteSort } from "./order";
 import { conflict, done, invalid, notFound, ok, type Outcome } from "./outcome";
+import { photoOf, type Photo } from "./photos";
 import { parsePrintInput, parsePrintPatch, type PrintInput, type PrintPatch } from "./printfields";
 import { mutation, type Runtime } from "./runtime";
 import { toSlug } from "./slug";
 
 export type { PrintInput, PrintPatch } from "./printfields";
-
-export type Photo = { id: string; printId: string; position: number; width: number; height: number; bytes: number; sha256: string };
 
 /** A print's fields, with nothing left out. */
 export type PrintValues = Required<PrintInput>;
@@ -65,16 +64,6 @@ function columns(v: Partial<PrintValues>): PrintRowPatch {
   return c;
 }
 
-const photo = (r: PhotoRow): Photo => ({
-  id: r.id,
-  printId: r.print_id,
-  position: r.position,
-  width: r.width,
-  height: r.height,
-  bytes: r.bytes,
-  sha256: r.sha256,
-});
-
 /** The prints of these rows, in the rows' order, with their categories, sources and photos. */
 function assemble(rt: Runtime, rows: PrintRow[]): Print[] {
   const ids = rows.map((r) => r.id);
@@ -99,7 +88,7 @@ function assemble(rt: Runtime, rows: PrintRow[]): Print[] {
       ),
       showcase: row.showcase_position !== null,
       coverPhotoId: row.cover_photo_id,
-      photos: photos.filter((p) => p.print_id === row.id).map(photo),
+      photos: photos.filter((p) => p.print_id === row.id).map(photoOf),
       categories: cats.map((c) => ({ id: c.id, name: c.name, slug: c.slug })),
       firstPublishedAt: row.first_published_at,
       createdAt: row.created_at,

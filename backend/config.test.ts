@@ -43,7 +43,7 @@ describe("loadConfig", () => {
 
   it("has the defaults: /data, the site's repository and workflow, no SMTP, no GitHub token", () => {
     const c = loadConfig(env({ DATA_DIR: undefined }));
-    expect(c).toMatchObject({ dataDir: "/data", siteRepo: "3D-Bruckner/3dbruckner", siteWorkflow: "pages.yml" });
+    expect(c).toMatchObject({ dataDir: "/data", siteRepo: "3D-Bruckner/3dbruckner", siteWorkflow: "pages.yml", maxPhotoMb: 40 });
     expect(c.smtpUrl).toBeUndefined();
     expect(c.smtpFrom).toBeUndefined();
     expect(c.githubToken).toBeUndefined();
@@ -59,6 +59,7 @@ describe("loadConfig", () => {
         UPLOAD_GITHUB_TOKEN: "github_pat_x",
         UPLOAD_SITE_REPO: "someone/site",
         UPLOAD_SITE_WORKFLOW: "build.yml",
+        UPLOAD_MAX_PHOTO_MB: "25",
       }),
     );
     expect(c).toEqual({
@@ -71,11 +72,17 @@ describe("loadConfig", () => {
       githubToken: "github_pat_x",
       siteRepo: "someone/site",
       siteWorkflow: "build.yml",
+      maxPhotoMb: 25,
     });
   });
 
+  it("refuses a photo limit that isn't a whole number of megabytes, at least 1", () => {
+    for (const v of ["0", "-5", "2.5", "lots"]) expect(() => loadConfig(env({ UPLOAD_MAX_PHOTO_MB: v })), v).toThrow("UPLOAD_MAX_PHOTO_MB");
+  });
+
   it("treats an empty value as unset", () => {
-    const c = loadConfig(env({ UPLOAD_SMTP_URL: "", UPLOAD_GITHUB_TOKEN: "", UPLOAD_SITE_REPO: "", UPLOAD_DEV_USER: "" }));
+    const c = loadConfig(env({ UPLOAD_SMTP_URL: "", UPLOAD_GITHUB_TOKEN: "", UPLOAD_SITE_REPO: "", UPLOAD_DEV_USER: "", UPLOAD_MAX_PHOTO_MB: "" }));
+    expect(c.maxPhotoMb).toBe(40);
     expect(c.smtpUrl).toBeUndefined();
     expect(c.githubToken).toBeUndefined();
     expect(c.siteRepo).toBe("3D-Bruckner/3dbruckner");

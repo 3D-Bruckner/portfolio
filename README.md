@@ -27,6 +27,7 @@ Every setting is an environment variable; `.env.example` lists each one with wha
 | `UPLOAD_SMTP_URL`, `UPLOAD_SMTP_FROM`      | Sign-in by email (a code or a link).                                                          |
 | `UPLOAD_GITHUB_TOKEN`                      | Fine-grained, `actions: write` on the site's repository only: starts the site build.          |
 | `UPLOAD_SITE_REPO`, `UPLOAD_SITE_WORKFLOW` | The site's repository and its build workflow. Defaults `3D-Bruckner/3dbruckner`, `pages.yml`. |
+| `UPLOAD_MAX_PHOTO_MB`                      | The largest photo an upload may send, in megabytes. Default `40`.                             |
 | `DATA_DIR`                                 | `upload.sqlite`, `auth.sqlite` and the photos. Default `/data`.                               |
 | `PORT`                                     | The port the server listens on; must be the real one (the kit checks tokens against it).      |
 | `TZ`                                       | The time zone.                                                                                |

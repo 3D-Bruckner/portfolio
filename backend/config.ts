@@ -20,12 +20,16 @@ export type Config = {
   siteRepo: string;
   /** UPLOAD_SITE_WORKFLOW: the workflow file that builds the site. */
   siteWorkflow: string;
+  /** UPLOAD_MAX_PHOTO_MB: the largest photo an upload may send, in megabytes (default 40); what is stored is far smaller. */
+  maxPhotoMb: number;
   /** UPLOAD_DEV_USER: development only, everyone reaching the app is this person. */
   devUser?: string;
 };
 
 // An empty value counts as unset, so a copy of .env.example with a blank line keeps the default.
 const optional = z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().trim().optional());
+
+const MAX_PHOTO = "UPLOAD_MAX_PHOTO_MB must be a whole number of megabytes, at least 1";
 
 const schema = z.object({
   NODE_ENV: z.string().optional(),
@@ -38,6 +42,10 @@ const schema = z.object({
   UPLOAD_GITHUB_TOKEN: optional,
   UPLOAD_SITE_REPO: optional,
   UPLOAD_SITE_WORKFLOW: optional,
+  UPLOAD_MAX_PHOTO_MB: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.coerce.number({ error: MAX_PHOTO }).int(MAX_PHOTO).min(1, MAX_PHOTO).optional(),
+  ),
   UPLOAD_DEV_USER: optional,
 });
 
@@ -57,6 +65,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
       .filter(Boolean),
     siteRepo: e.UPLOAD_SITE_REPO ?? "3D-Bruckner/3dbruckner",
     siteWorkflow: e.UPLOAD_SITE_WORKFLOW ?? "pages.yml",
+    maxPhotoMb: e.UPLOAD_MAX_PHOTO_MB ?? 40,
   };
   if (e.UPLOAD_SMTP_URL) config.smtpUrl = e.UPLOAD_SMTP_URL;
   if (e.UPLOAD_SMTP_FROM) config.smtpFrom = e.UPLOAD_SMTP_FROM;

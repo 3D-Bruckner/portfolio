@@ -14,6 +14,15 @@ export const de: Copy = {
     title: "Drucke",
     empty: "Noch nichts da.",
   },
+  photos: {
+    signedOut: "Bitte zuerst anmelden.",
+    noPrint: "Diesen Druck gibt es nicht (mehr).",
+    noFile: "Mit dem Hochladen kam kein Foto an.",
+    notAccepted: "Bitte als JPEG hochladen",
+    unreadable: "Dieses Foto lässt sich nicht lesen. Bitte als JPEG hochladen",
+    tooLarge: "Dieses Foto ist zu groß.",
+    incomplete: "Das Foto kam nicht vollständig an. Bitte noch einmal versuchen.",
+  },
   notFound: {
     title: "Nicht gefunden",
     text: "Unter dieser Adresse gibt es nichts.",

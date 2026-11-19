@@ -5,7 +5,7 @@ import { loadConfig } from "./config";
 import { openRuntime } from "./runtime";
 
 describe("openRuntime", () => {
-  it("opens DATA_DIR/upload.sqlite, creating the directory, and runs the migrations", () => {
+  it("opens DATA_DIR/upload.sqlite, creating the directory, and runs the migrations; nobody is signed in until sign-in is wired", async () => {
     const dataDir = join(process.env.DATA_DIR!, "nested", "data");
     const rt = openRuntime(loadConfig({ NODE_ENV: "test", PUBLIC_URL: "https://upload.example.com", UPLOAD_SECRET: "s".repeat(32), DATA_DIR: dataDir }));
     try {
@@ -14,6 +14,8 @@ describe("openRuntime", () => {
       expect(rt.clock()).toBeInstanceOf(Date);
       expect(rt.fetch).toBe(globalThis.fetch);
       expect(() => rt.onSiteChange()).not.toThrow();
+      expect(await rt.person(new Headers({ cookie: "x=y" }))).toBeNull();
+      expect(await rt.apiCaller(new Request("http://localhost/", { headers: { authorization: "Bearer upl_x" } }))).toBeNull();
     } finally {
       rt.store.close();
     }

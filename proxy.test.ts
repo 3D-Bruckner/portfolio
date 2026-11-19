@@ -20,6 +20,12 @@ describe("proxy", () => {
     expect(get("/", { "accept-language": "de" }).headers.get("x-middleware-request-x-upload-lang")).toBe("de");
   });
 
+  it("passes the language on to the route handlers too, whose refusals speak it (a photo upload's)", () => {
+    const r = get("/api/prints/abc/photos", { "accept-language": "de", "x-upload-lang": "en" });
+    expect(r.headers.get("x-middleware-request-x-upload-lang")).toBe("de");
+    expect(rewrite(r)).toBeNull();
+  });
+
   it("leaves the route handlers outside app/[lang] alone", () => {
     for (const path of [
       "/health",
