@@ -8,6 +8,7 @@ import { suggestedPrice, type ThreeMfReading } from "@/backend/client";
 import { useCopy } from "@/components/CopyProvider";
 import { AddIcon, CloseIcon } from "@/components/icons";
 import { Notice } from "@/components/Notice";
+import { useHydrated } from "@/components/useHydrated";
 import { ui } from "@/components/ui";
 import { savePrint } from "../actions";
 import { FORM_GROUPS, FORM_ORDER, type FieldSpec, type PrintFieldName } from "./fieldorder";
@@ -52,6 +53,8 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
   const [sources, setSources] = useState(() => (values?.sources ?? []).map((s, i) => ({ ...s, key: i })));
   const [nextKey, setNextKey] = useState(sources.length);
   const form = useRef<HTMLFormElement>(null);
+  // Saving needs the page's script (the form is sent by submit, not by the browser): before it runs, the button waits.
+  const hydrated = useHydrated();
 
   // What a 3MF holds goes into the fields: the slicer's numbers and the suggested price always (they belong to that file), the title and
   // the description only into empty fields, the MakerWorld page only when no source is set. Nothing is saved until the form is.
@@ -334,7 +337,7 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
       )}
       <div data-sticky-bottom className="sticky bottom-[var(--tabbar)] z-10 -mx-safe space-y-2 border-t border-border bg-paper px-safe py-3">
         <Notice result={result} />
-        <button type="submit" disabled={pending} className={`${ui.button} w-full`}>
+        <button type="submit" disabled={pending || !hydrated} className={`${ui.button} w-full`}>
           {pending ? t.common.saving : t.common.save}
         </button>
       </div>
