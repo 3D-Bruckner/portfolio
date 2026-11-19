@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Repository `Marceltov/next-app-kit` (a library without its own brand lives in the personal account — conventions *Where a repository lives*), public, license as `astro-notefeed`.
-- Work on the development box (CT 116 `development`, AMR5), not on the Beelink.
+- Work on the development box (CT 116 `development`), not on a hypervisor.
 - Behaviour stays noticebox's unless this plan says otherwise; noticebox's tests for these modules come along and keep passing.
 - Every setting an app reads is `<PREFIX>_*` with the app's prefix (`UPLOAD`, `NOTICEBOX`, …), plus `PUBLIC_URL`, `DATA_DIR`, `PORT`, `TZ` (conventions *Next.js app*).
 - MCP results carry `guidance: string[]` (conventions *MCP first*; noticebox's `next` is the old name and is not carried over).

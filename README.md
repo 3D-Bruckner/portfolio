@@ -19,8 +19,8 @@ Four plans, in this order:
 | 3 | The site reads the export | `3D-Bruckner/3dbruckner` | to write after 2 |
 | 4 | Deployment on products-1 and moving the 25 prints over | `3D-Bruckner/stacks`, `MarcelBruckner-Business/ansible` | to write after 2 |
 
-To resume: on the development box (CT 116), run plan 1, then plan 2, with
-`superpowers:subagent-driven-development` (Marcel's choice). Not on the Beelink.
+To resume: on the development box (CT 116 `development`), run plan 1, then plan 2, with
+`superpowers:subagent-driven-development` (Marcel's choice).
 
 Decided along the way (2026-11-19):
 
