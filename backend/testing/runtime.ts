@@ -1,6 +1,7 @@
 // A runtime for a test: a fresh upload.sqlite and auth.sqlite in a directory of its own under the test's DATA_DIR, onSiteChange counted
-// instead of starting a build, and the sign-in mail caught in `mail` instead of sent. `env` adds to or overrides the settings (an empty
-// value unsets one). Close the store at the end (afterEach).
+// (and marking the site build pending with the test's clock; nothing is dispatched unless a test ticks, with a fake fetch), and the
+// sign-in mail caught in `mail` instead of sent. `env` adds to or overrides the settings (an empty value unsets one). Close the store at
+// the end (afterEach).
 import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import type { SignInMail } from "next-app-kit/signin";
@@ -8,6 +9,7 @@ import { signInSettings, type MailWording } from "../accounts";
 import { loadConfig } from "../config";
 import { log } from "../log";
 import { openRuntime, type Runtime } from "../runtime";
+import { markSiteChanged } from "../site";
 
 export type TestRuntime = Runtime & { siteChanges: number; mail: Map<string, SignInMail> };
 
@@ -38,7 +40,15 @@ export function testRuntime(env: Record<string, string> = {}, mail: MailWording 
   const caught = new Map<string, SignInMail>();
   const signIn = { ...signInSettings(all, config.dataDir, log), mailer: async (m: SignInMail) => void caught.set(m.to, m) };
   const rt = openRuntime(config, signIn, mail);
-  const t: TestRuntime = { ...rt, siteChanges: 0, mail: caught, onSiteChange: () => void t.siteChanges++ };
+  const t: TestRuntime = {
+    ...rt,
+    siteChanges: 0,
+    mail: caught,
+    onSiteChange: () => {
+      t.siteChanges++;
+      markSiteChanged(t);
+    },
+  };
   return t;
 }
 

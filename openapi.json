@@ -11,7 +11,7 @@
     { "name": "Order", "description": "The portfolio's order and the showcases pinned above it." },
     { "name": "Photos", "description": "A print's photos: order, cover, cutout, delete. Photos are uploaded in the web app." },
     { "name": "Categories", "description": "The categories prints are filed under." },
-    { "name": "Site", "description": "What the site build reads." },
+    { "name": "Site", "description": "What the site build reads, and whether one is pending or running." },
     { "name": "Tokens", "description": "The caller's own API tokens." }
   ],
   "paths": {
@@ -2917,6 +2917,53 @@
                     }
                   },
                   "required": ["version", "generatedAt", "categories", "prints"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/site/build": {
+      "get": {
+        "operationId": "getSiteBuildStatus",
+        "summary": "Whether a site build is pending (a minute after the last change the site shows), how the last dispatch went, and the latest build run",
+        "description": "The REST counterpart of the MCP tool `site_build_status`.",
+        "tags": ["Site"],
+        "security": [{ "bearer": [] }],
+        "responses": {
+          "200": {
+            "description": "The site build's status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pending": {
+                      "type": "boolean",
+                      "description": "Changes the site shows wait for a build; it is dispatched once nothing changed for a minute."
+                    },
+                    "lastDispatch": { "description": "When the site build was last dispatched.", "type": "string" },
+                    "lastError": { "description": "Why the last dispatch failed; it is tried again after 1, 2, 4 … minutes, at most 30.", "type": "string" },
+                    "run": {
+                      "description": "The latest dispatched run of the site's workflow; absent when there is none or GitHub didn't answer.",
+                      "type": "object",
+                      "properties": {
+                        "status": { "type": "string", "description": "GitHub's: queued, in_progress, completed …" },
+                        "conclusion": { "description": "GitHub's once completed: success, failure …", "type": ["string", "null"] },
+                        "url": { "type": "string", "description": "The run on GitHub." },
+                        "startedAt": { "type": "string" }
+                      },
+                      "required": ["status", "conclusion", "url", "startedAt"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["pending"],
                   "additionalProperties": false
                 }
               }

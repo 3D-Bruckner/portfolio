@@ -3,10 +3,12 @@ import { databaseAnswers, openDatabase } from "./connection";
 import { categoryQueries } from "./categories";
 import { photoQueries } from "./photos";
 import { printQueries } from "./prints";
+import { siteStateQueries } from "./site";
 
 export type Store = ReturnType<typeof printQueries> &
   ReturnType<typeof categoryQueries> &
-  ReturnType<typeof photoQueries> & {
+  ReturnType<typeof photoQueries> &
+  ReturnType<typeof siteStateQueries> & {
     /** Runs `fn` in one transaction (a savepoint when nested): all its writes or none. */
     transaction<T>(fn: () => T): T;
     /** Whether the database answers: false once it is closed or broken. */
@@ -21,6 +23,7 @@ export function openStore(dataDir: string): Store {
     ...printQueries(exec),
     ...categoryQueries(exec),
     ...photoQueries(exec),
+    ...siteStateQueries(exec),
     transaction: (fn) => raw.transaction(fn)(),
     answers: () => databaseAnswers(raw),
     close: () => raw.close(),

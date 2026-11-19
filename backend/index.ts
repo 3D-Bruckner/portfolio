@@ -3,6 +3,7 @@ import { signInSettings, type MailWording } from "./accounts";
 import { loadConfig } from "./config";
 import { log as processLog } from "./log";
 import { openRuntime, type Runtime } from "./runtime";
+import { startSiteTimer } from "./site";
 
 export { API_TOKEN_PREFIX, APP_NAME, CONSENT_PAGE, ENV_PREFIX, SIGN_IN_PAGE, type MailWording } from "./accounts";
 export { createCategory, deleteCategory, listCategories, renameCategory, type Category } from "./categories";
@@ -30,10 +31,11 @@ export {
 } from "./prints";
 export { OPEN_API, REST_OPS } from "./rest";
 export type { Runtime } from "./runtime";
+export { buildStatus, type BuildStatus } from "./site";
 export { toSlug } from "./slug";
 
 // One runtime per process, kept on globalThis so Next's dev server, which reloads modules, doesn't open the database twice.
-const g = globalThis as { __upload?: Runtime };
+const g = globalThis as { __upload?: Runtime; __uploadSiteTimer?: () => void };
 
 /**
  * The process's runtime, opened from the environment at the first call; a bad setting throws, naming it. `mail` is the sign-in mail's
@@ -45,4 +47,10 @@ export function runtime(mail: MailWording): Runtime {
     g.__upload = openRuntime(config, signInSettings(process.env, config.dataDir, processLog), mail);
   }
   return g.__upload;
+}
+
+/** Starts the site build's 10 s timer for the process's runtime (instrumentation.ts), once however often it is called; returns its stop. */
+export function startSiteBuilds(rt: Runtime): () => void {
+  g.__uploadSiteTimer ??= startSiteTimer(rt);
+  return g.__uploadSiteTimer;
 }

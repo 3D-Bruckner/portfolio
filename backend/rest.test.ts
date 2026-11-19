@@ -235,6 +235,12 @@ describe("the operations", () => {
     expect(list.tokens).toHaveLength(2);
   });
 
+  it("tells the site build's status: pending after a change the site shows", async () => {
+    expect(await json(await call("GET", "/site/build"))).toEqual({ pending: false });
+    await publishedWithPhoto("Vase");
+    expect(await json(await call("GET", "/site/build"))).toEqual({ pending: true });
+  });
+
   it("deletes a print", async () => {
     const p = value(createPrint(rt, { title: "Vase", description: "x" }));
     expect((await call("DELETE", `/prints/${p.id}`)).status).toBe(204);

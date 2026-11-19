@@ -16,6 +16,7 @@ import { deletePhoto, getPhoto, photoPath, reorderPhotos, setCover, setCrop, typ
 import { PRINT_FIELDS, printInputSchema, printPatchSchema } from "./printfields";
 import { createPrint, deletePrint, findPrint, getPrint, listPrints, publishPrint, unpublishPrint, updatePrint, type Print } from "./prints";
 import type { Runtime } from "./runtime";
+import { buildStatus, type BuildStatus } from "./site";
 
 /** Where the committed openapi.json says the API is; a running instance serves its own at <PUBLIC_URL>/api/v1/openapi.json. */
 export const PRODUCTION_URL = "https://upload.3dbruckner.de";
@@ -30,7 +31,7 @@ export const OPEN_API: OpenApiInfo = {
     { name: "Order", description: "The portfolio's order and the showcases pinned above it." },
     { name: "Photos", description: "A print's photos: order, cover, cutout, delete. Photos are uploaded in the web app." },
     { name: "Categories", description: "The categories prints are filed under." },
-    { name: "Site", description: "What the site build reads." },
+    { name: "Site", description: "What the site build reads, and whether one is pending or running." },
     { name: "Tokens", description: "The caller's own API tokens." },
   ],
   bearer: `An API token (\`${API_TOKEN_PREFIX}…\`, made in the web app or with create_api_token; a \`read\` token may only GET), or an OAuth access token from this instance issued for this API (\`resource=<base>/api/v1\`). A token for /mcp is refused here.`,
@@ -117,6 +118,21 @@ const tokenSchema = z.object({
   expires_at: z.string().nullable(),
   last_used_at: z.string().nullable(),
 });
+
+const buildStatusSchema = z.object({
+  pending: z.boolean().describe("Changes the site shows wait for a build; it is dispatched once nothing changed for a minute."),
+  lastDispatch: z.string().optional().describe("When the site build was last dispatched."),
+  lastError: z.string().optional().describe("Why the last dispatch failed; it is tried again after 1, 2, 4 … minutes, at most 30."),
+  run: z
+    .object({
+      status: z.string().describe("GitHub's: queued, in_progress, completed …"),
+      conclusion: z.string().nullable().describe("GitHub's once completed: success, failure …"),
+      url: z.string().describe("The run on GitHub."),
+      startedAt: z.string(),
+    })
+    .optional()
+    .describe("The latest dispatched run of the site's workflow; absent when there is none or GitHub didn't answer."),
+}) satisfies z.ZodType<BuildStatus>;
 
 const beforeId = z.object({ beforeId: z.string().min(1).nullable().describe("The print to stand before; null: to the end.") });
 const ID = { id: "The print's id" };
@@ -402,6 +418,17 @@ export const REST_OPS: Op<Runtime>[] = [
     ok: { status: 200, description: "The export", schema: siteExportSchema },
     errors: [401],
     handle: ({ ctx }) => ({ status: 200, body: siteExport(ctx) }),
+  },
+  {
+    method: "GET",
+    path: "/site/build",
+    operationId: "getSiteBuildStatus",
+    tool: "site_build_status",
+    summary: "Whether a site build is pending (a minute after the last change the site shows), how the last dispatch went, and the latest build run",
+    tag: "Site",
+    ok: { status: 200, description: "The site build's status", schema: buildStatusSchema },
+    errors: [401],
+    handle: async ({ ctx }) => ({ status: 200, body: await buildStatus(ctx) }),
   },
   // Tokens
   {

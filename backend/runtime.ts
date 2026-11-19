@@ -1,5 +1,5 @@
 // What every surface works with: the settings, the store (backend/db, the only way to the database), the clock, fetch, the log, the
-// hook for changes the site shows and sign-in (the kit's, backend/accounts.ts), opened once per process. Tests open their own with
+// hook for changes the site shows (which marks the site build pending, site.ts) and sign-in (the kit's, backend/accounts.ts), opened once per process. Tests open their own with
 // openRuntime and a config of their own (or testing/runtime.ts); the process's is runtime() in backend/index.ts, which the frontend calls
 // with the sign-in mail's words (app/_lib/runtime.ts).
 import { personOf, type Auth, type Person, type SignInSettings } from "next-app-kit/signin";
@@ -10,6 +10,7 @@ import type { Config } from "./config";
 import { openStore, type Store } from "./db";
 import { log } from "./log";
 import type { Outcome } from "./outcome";
+import { markSiteChanged } from "./site";
 
 export type Runtime = {
   config: Config;
@@ -18,8 +19,8 @@ export type Runtime = {
   fetch: typeof fetch;
   log: Logger;
   /**
-   * Called by every mutation the site shows (a published print, a category in use, the order, the showcases), after it is stored.
-   * The site build's trigger replaces it; until then it does nothing.
+   * Called by every mutation the site shows (a published print, a category in use, the order, the showcases), after it is stored:
+   * markSiteChanged, so the site build is dispatched after a quiet minute (site.ts).
    */
   onSiteChange: () => void;
   /** The kit's sign-in settings (UPLOAD_*, from signInFromEnv). */
@@ -47,18 +48,19 @@ export function openRuntime(config: Config, signIn: SignInSettings, mail: MailWo
     }
     return opened;
   };
-  return {
+  const rt: Runtime = {
     config,
     store: openStore(config.dataDir),
     clock: () => new Date(),
     fetch: globalThis.fetch,
     log,
-    onSiteChange: () => {},
+    onSiteChange: () => markSiteChanged(rt),
     signIn,
     auth,
     person: async (h) => personOf(h, await auth(), signIn.devUser),
     apiCaller: async (req) => restCaller(req, await auth(), signIn),
   };
+  return rt;
 }
 
 class Refused {
