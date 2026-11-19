@@ -102,6 +102,8 @@ describe("readThreeMf", () => {
 describe("plainText", () => {
   it("keepsParagraphs: tags and entities go, paragraphs and lists stay readable", () => {
     expect(plainText("<p>One&nbsp;line<br>two</p><p>Next &amp; last</p>")).toBe("One line\ntwo\n\nNext & last");
+    // Markup written as entities, or left half-open, comes out as text without angle brackets.
+    expect(plainText("&lt;script&gt;alert(1)&lt;/script&gt; <scr<script>ipt>x")).toBe("scriptalert(1)/script iptx");
   });
 });
 

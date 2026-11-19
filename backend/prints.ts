@@ -278,15 +278,18 @@ export function unpublishPrint(rt: Runtime, id: string): Outcome<Print> {
 
 /** Deletes a print and its photos (rows and files). A slug that was ever published is reserved, so no later print takes the address. */
 export function deletePrint(rt: Runtime, id: string): Outcome<void> {
+  // The folder to remove is named by the stored id, never by the one asked for.
+  let folder: string | null = null;
   const out = mutation(rt, (siteChange) => {
     const row = rt.store.print(id);
     if (!row) return notFound(`No print ${id}.`);
+    folder = photosDir(rt, row.id);
     if (row.first_published_at)
       rt.store.reserveSlug({ slug: row.slug, reason: `it was the address of the deleted print "${row.title}"`, created_at: rt.clock().toISOString() });
     rt.store.deletePrint(id);
     if (row.status === "published") siteChange();
     return done;
   });
-  if (out.ok) rmSync(photosDir(rt, id), { recursive: true, force: true });
+  if (out.ok && folder) rmSync(folder, { recursive: true, force: true });
   return out;
 }

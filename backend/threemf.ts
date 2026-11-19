@@ -100,7 +100,8 @@ const attr = (tag: string, name: string) => {
   return m ? decode(m[1]!) : undefined;
 };
 
-/** MakerWorld's HTML description as plain text: paragraphs and line breaks kept, tags and entities gone. */
+/** MakerWorld's HTML description as plain text: paragraphs and line breaks kept, tags and entities gone, and no < or > left at all (it
+ * is shown as text, but nothing in it should ever read as markup). */
 export function plainText(html: string): string {
   return decode(
     html
@@ -112,6 +113,7 @@ export function plainText(html: string): string {
   )
     .replace(/[ \t]+/g, " ")
     .replace(/ *\n */g, "\n")
+    .replace(/[<>]/g, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
