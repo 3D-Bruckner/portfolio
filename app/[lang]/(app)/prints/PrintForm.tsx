@@ -290,7 +290,9 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
             <label htmlFor={id} className={ui.label}>
               {words.label}
             </label>
+            {/* Keyed by the stored address: when a save changes it (it follows a new title), the field shows the new one. */}
             <input
+              key={values?.slug ?? ""}
               id={id}
               name={name}
               defaultValue={values?.slug ?? ""}
