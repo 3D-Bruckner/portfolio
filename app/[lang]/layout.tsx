@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CopyProvider } from "@/components/CopyProvider";
-import { copyFor, isLocale, LOCALES } from "@/components/copy";
+import { copyFor, isLocale } from "@/components/copy";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
 import "../globals.css";
 
@@ -11,8 +11,9 @@ export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Prom
   return { title: { default: t.name, template: `%s · ${t.name}` }, description: t.description, robots: { index: false, follow: false } };
 }
 
-// The languages the UI speaks; the proxy only ever rewrites to one of them.
-export const generateStaticParams = () => LOCALES.map((lang) => ({ lang }));
+// Every page is rendered per request and private: none is prerendered, so none goes out with a shared cache's s-maxage (the language
+// comes from the request, and every page will be a signed-in person's).
+export const dynamic = "force-dynamic";
 
 export default async function RootLayout({ children, params }: LayoutProps<"/[lang]">) {
   const { lang } = await params;

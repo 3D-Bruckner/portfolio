@@ -37,7 +37,10 @@ export function createCategory(rt: Runtime, name: string): Outcome<Category> {
   });
 }
 
-/** Renames a category; its slug stays. A site change when a published print uses it. */
+/**
+ * Renames a category; its slug stays. Refused, as at creation, when the name or the address made from it is another category's (no two
+ * categories that differ only in case). A site change when a published print uses it.
+ */
 export function renameCategory(rt: Runtime, id: string, name: string): Outcome<Category> {
   const checked = checkName(name);
   if (!checked.ok) return checked;
@@ -48,6 +51,9 @@ export function renameCategory(rt: Runtime, id: string, name: string): Outcome<C
     if (row.name === n) return ok(category(row));
     const other = rt.store.categoryByName(n);
     if (other) return conflict(`A category named "${n}" exists already.`);
+    const slug = toSlug(n);
+    const same = rt.store.categoryBySlug(slug);
+    if (same && same.id !== id) return conflict(`"${n}" would have the address "${slug}", which the category "${same.name}" has.`);
     rt.store.renameCategory(id, n);
     if (rt.store.printsInCategory(id).some((p) => p.status === "published")) siteChange();
     return ok({ ...category(row), name: n });

@@ -40,6 +40,15 @@ describe("categories", () => {
     expect(renameCategory(rt, other.id, "Geschenkideen")).toMatchObject({ ok: false, reason: "conflict" });
   });
 
+  it("refuses a rename to a name whose slug is another category's, as create does; its own slug is fine", () => {
+    const gift = value(createCategory(rt, "Geschenkideen"));
+    const other = value(createCategory(rt, "Deko"));
+    const o = renameCategory(rt, other.id, "geschenkideen!");
+    expect(o).toMatchObject({ ok: false, reason: "conflict" });
+    if (!o.ok) expect(o.message).toContain('"Geschenkideen"');
+    expect(value(renameCategory(rt, gift.id, "GeschenkIdeen"))).toEqual({ id: gift.id, name: "GeschenkIdeen", slug: "geschenkideen" });
+  });
+
   it("renameKeepsSlug", () => {
     const c = value(createCategory(rt, "Geschenkideen"));
     expect(value(renameCategory(rt, c.id, "Geschenke"))).toEqual({ id: c.id, name: "Geschenke", slug: "geschenkideen" });

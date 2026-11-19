@@ -210,7 +210,7 @@ export function updatePrint(rt: Runtime, id: string, patch: PrintPatch): Outcome
 
 /**
  * Puts a draft on the site, at the top of the portfolio. Needs a title, a description and a photo; refused when its slug is reserved
- * (a deleted print's) or taken, naming the slug. Sets firstPublishedAt the first time only.
+ * (a deleted print's), naming the slug. Sets firstPublishedAt the first time only.
  */
 export function publishPrint(rt: Runtime, id: string): Outcome<Print> {
   return mutation(rt, (siteChange) => {
@@ -223,6 +223,7 @@ export function publishPrint(rt: Runtime, id: string): Outcome<Print> {
       rt.store.photosOf([id]).length === 0 && "at least one photo",
     ].filter(Boolean);
     if (missing.length > 0) return invalid(`Publishing needs ${missing.join(" and ")}.`);
+    // Only a reserved slug can stand in the way: another print can't have this one (prints.slug is UNIQUE, and checkWrite refuses it).
     const reserved = rt.store.reservedSlug(row.slug);
     if (reserved)
       return conflict(
