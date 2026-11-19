@@ -32,5 +32,5 @@ The whole picture is [`docs/architecture.md`](docs/architecture.md); the tools [
 - Tests keep their data in a temporary `DATA_DIR` (`backend/testing/setup.ts`, pinned by `setup.test.ts`); they never reach GitHub (a fake `rt.fetch`).
 - Logs (pino, `backend/log.ts`) never hold a token, a photo's name or an email address.
 - Architectural decisions go to `docs/adr/NNNN-*.md` (MADR); a changed decision gets a new ADR that supersedes the old one.
-- Merge only when Marcel says so, Dependabot's pull requests included: they are merged by hand until the repository gets auto-merge (a private repository on the free plan has neither auto-merge nor rulesets); then the auto-merge workflow and the ruleset from the conventions' repo-setup/dependabot.md come back.
+- Merge only when Marcel says so. The one exception: Dependabot's patch and minor bumps merge by themselves once CI's `check` is green (`.github/workflows/dependabot-automerge.yml`; the ruleset `main` requires `check`, with admins allowed to bypass). A merge by the workflow starts no push to main, so its image is built with the next merge.
 - The design is `docs/superpowers/specs/2026-11-19-portfolio-app-design.md`; the plans are in `docs/superpowers/plans/`.
