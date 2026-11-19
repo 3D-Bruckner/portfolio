@@ -5,7 +5,7 @@
 // conflict 409. A read token may only GET (the kit refuses the rest with 403); the site build's token is one.
 import { readFile } from "node:fs/promises";
 import { fail, openApiDocument, type OpenApiInfo, type Op, type Reply } from "next-app-kit/rest";
-import { createApiToken, listApiTokens, revokeApiToken } from "next-app-kit/tokens";
+import { createApiToken, listApiTokens, revokeApiToken, type RestCaller } from "next-app-kit/tokens";
 import * as z from "zod";
 import { API_TOKEN_PREFIX } from "./accounts";
 import { CATEGORY_NAME_LIMIT, createCategory, deleteCategory, listCategories, renameCategory } from "./categories";
@@ -52,6 +52,14 @@ const printJson = (base: string, p: Print) => ({ ...p, url: `${base}/prints/${p.
 /** After a change that answers nothing of its own, the print as it is now. */
 const thenPrint = (base: string, ctx: Runtime, o: Outcome<void>, id: string): Reply =>
   o.ok ? answer(getPrint(ctx, id), 200, (p) => printJson(base, p)) : answer(o, 200);
+
+/**
+ * Whether the caller came with an API token: the kit's restCaller makes an API token's actor the bare address and an OAuth token's
+ * "<email> via <client>" (an address has no spaces). An API token may not make or revoke tokens, so a leaked one can't mint more or
+ * lock its owner's other tokens out; a person signed in through OAuth (Claude) still may.
+ */
+const byApiToken = (caller: RestCaller): boolean => !caller.actor.includes(" via ");
+const NO_TOKENS_BY_TOKEN = "An API token can't make or revoke API tokens; use the web app or a client signed in through OAuth.";
 
 // ---- schemas of the answers (for openapi.json); the print's fields come from the field table
 
@@ -412,7 +420,7 @@ export const REST_OPS: Op<Runtime>[] = [
     path: "/tokens",
     operationId: "createApiToken",
     tool: "create_api_token",
-    summary: "Make an API token for the caller; the token is in this answer once and never again",
+    summary: "Make an API token for the caller; the token is in this answer once and never again. Not with an API token (403)",
     tag: "Tokens",
     body: z.object({
       name: z.string().trim().min(1).max(100).describe("What it is for, e.g. 'site build'."),
@@ -422,6 +430,7 @@ export const REST_OPS: Op<Runtime>[] = [
     ok: { status: 201, description: "The new token", schema: tokenSchema.extend({ token: z.string().describe("The token itself, shown this once.") }) },
     errors: [400, 401, 403],
     handle: async ({ ctx, caller, body }) => {
+      if (byApiToken(caller)) return fail(403, NO_TOKENS_BY_TOKEN);
       const made = await createApiToken(await ctx.auth(), caller.person, body as { name: string; scope: "read" | "read+write"; expiresInDays: number | null });
       return "error" in made ? fail(400, made.error) : { status: 201, body: made };
     },
@@ -431,12 +440,13 @@ export const REST_OPS: Op<Runtime>[] = [
     path: "/tokens/{id}",
     operationId: "revokeApiToken",
     tool: "revoke_api_token",
-    summary: "Revoke one of the caller's API tokens",
+    summary: "Revoke one of the caller's API tokens. Not with an API token (403)",
     tag: "Tokens",
     params: { id: "The token's id" },
     ok: { status: 204, description: "Revoked" },
     errors: [401, 403, 404],
     handle: async ({ ctx, caller, params }) => {
+      if (byApiToken(caller)) return fail(403, NO_TOKENS_BY_TOKEN);
       const r = await revokeApiToken(await ctx.auth(), caller.person, params.id!);
       return r.ok ? { status: 204 } : fail(404, r.error);
     },

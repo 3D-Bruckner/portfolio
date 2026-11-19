@@ -1,11 +1,12 @@
 // A JPEG's metadata taken out without touching its image: a walk over the file's marker segments (no decoding) that keeps only what a
 // decoder needs, by a whitelist. Kept: SOI; the frame (SOF0–3, 5–7, 9–11, 13–15; one); the tables (DHT, DAC, DQT); the restart interval
-// (DRI); DNL at its 4 bytes only; every scan's entropy-coded data byte for byte; EOI; the colour profile (APP2 ICC_PROFILE chunks, their
+// (DRI); DNL between scans only; every scan's entropy-coded data byte for byte; EOI; the colour profile (APP2 ICC_PROFILE chunks, their
 // sequence checked and their data exactly the profile its header announces); Adobe's APP14 at exactly its 12 bytes (it says how the colour
 // components are coded, nothing about the photo). Dropped: every other APPn (Exif with its GPS position, camera and date, XMP, JFIF and
 // its thumbnail, IPTC, MPF, makers' own), every comment, and whatever follows EOI (an iPhone puts further images there). Any other marker
-// (DHP, EXP, JPG, JPGn, TEM, a second frame), a longer DNL and a colour profile with a tail are refused: nothing rides along in a segment
-// that is kept. The orientation, read from the Exif, is written back as a minimal Exif of its own: IFD0 with the one Orientation entry. A
+// (DHP, EXP, JPG, JPGn, TEM, a second frame), a DNL before the first scan, a DRI, DNL, frame or scan header longer or shorter than the
+// standard makes it (DRI and DNL 4 bytes, a frame header 8 + 3 per component, a scan header 6 + 2 per component) and a colour profile with a
+// tail are refused: nothing rides along in a segment that is kept. The orientation, read from the Exif, is written back as a minimal Exif of its own: IFD0 with the one Orientation entry. A
 // file that isn't one whole JPEG is refused as invalid.
 import { invalid, ok, type Outcome } from "./outcome";
 
@@ -99,9 +100,23 @@ function strip(b: Buffer): Buffer {
     if (at + length > b.length) throw new Malformed("a segment runs past the end of the file");
     return at + length;
   };
-  /** A table or setting a decoder reads, checked; DNL is its 2-byte line count and nothing else. */
-  const table = (code: number, payload: Buffer) => {
-    if (code === DNL && payload.length !== 2) throw new Malformed(`a DNL of ${payload.length + 2} bytes, not 4`);
+  /**
+   * A kept segment whose length the standard fixes, checked, so nothing rides along after what a decoder reads: DRI and DNL are 4 bytes,
+   * a frame header 8 + 3 per component, a scan header 6 + 2 per component.
+   */
+  const pinned = (code: number, payload: Buffer) => {
+    const exactly = (name: string, length: number) => {
+      if (payload.length + 2 !== length) throw new Malformed(`a ${name} of ${payload.length + 2} bytes, not ${length}`);
+    };
+    if (code === DRI) exactly("DRI", 4);
+    else if (code === DNL) exactly("DNL", 4);
+    else if (isFrame(code)) {
+      if (payload.length < 6) throw new Malformed("a frame header without its component count");
+      exactly("frame header", 8 + 3 * payload.readUInt8(5));
+    } else if (code === SOS) {
+      if (payload.length < 1) throw new Malformed("a scan header without its component count");
+      exactly("scan header", 6 + 2 * payload.readUInt8(0));
+    }
   };
 
   // The header: everything up to the first SOS, segment by segment.
@@ -116,6 +131,8 @@ function strip(b: Buffer): Buffer {
     const end = segmentEnd(next);
     const payload = b.subarray(next + 2, end);
     pos = end;
+    if (code === DNL) throw new Malformed("a DNL before the first scan");
+    pinned(code, payload);
     if (code === SOS) {
       if (!frame) throw new Malformed("image data before the frame header");
       sos = start;
@@ -124,7 +141,6 @@ function strip(b: Buffer): Buffer {
       frame = true;
       out.push(segmentOf(code, payload));
     } else if (isTable(code)) {
-      table(code, payload);
       out.push(segmentOf(code, payload));
     } else if (code === APP1 && orientation === null && startsWith(payload, EXIF)) {
       orientation = readOrientation(payload.subarray(EXIF.length));
@@ -153,7 +169,7 @@ function strip(b: Buffer): Buffer {
     if (code === SOI) throw new Malformed("a second SOI");
     if (code !== SOS && code !== COM && !isApp(code) && !isTable(code)) throw new Malformed(`a marker JPEG photos don't carry between scans, ${hex(code)}`);
     const end = segmentEnd(next);
-    if (isTable(code)) table(code, b.subarray(next + 2, end));
+    pinned(code, b.subarray(next + 2, end));
     if (code === COM || isApp(code)) {
       scans.push(b.subarray(from, pos));
       from = end;

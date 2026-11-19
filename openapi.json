@@ -2976,7 +2976,7 @@
       },
       "post": {
         "operationId": "createApiToken",
-        "summary": "Make an API token for the caller; the token is in this answer once and never again",
+        "summary": "Make an API token for the caller; the token is in this answer once and never again. Not with an API token (403)",
         "description": "The REST counterpart of the MCP tool `create_api_token`.",
         "tags": ["Tokens"],
         "security": [{ "bearer": [] }],
@@ -3048,7 +3048,7 @@
     "/tokens/{id}": {
       "delete": {
         "operationId": "revokeApiToken",
-        "summary": "Revoke one of the caller's API tokens",
+        "summary": "Revoke one of the caller's API tokens. Not with an API token (403)",
         "description": "The REST counterpart of the MCP tool `revoke_api_token`.",
         "tags": ["Tokens"],
         "security": [{ "bearer": [] }],

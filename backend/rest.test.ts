@@ -42,6 +42,12 @@ async function withToken(method: string, path: string, token?: string): Promise<
   return restRoute(req, REST_OPS, rt, await rt.apiCaller(req), { base: BASE, log: () => {} });
 }
 
+/** The same with a JSON body. */
+async function withTokenBody(method: string, path: string, token: string, body: unknown): Promise<Response> {
+  const req = request(method, path, { token, body });
+  return restRoute(req, REST_OPS, rt, await rt.apiCaller(req), { base: BASE, log: () => {} });
+}
+
 /** A request from a caller who may read and write (who they are is restCaller's, tested in accounts.test.ts). */
 const call = (method: string, path: string, body?: unknown, caller: RestCaller = WRITER) =>
   restRoute(request(method, path, { body }), REST_OPS, rt, caller, { base: BASE, log: () => {} });
@@ -192,10 +198,10 @@ describe("the operations", () => {
     expect((await call("DELETE", `/categories/${cat.id}`)).status).toBe(204);
   });
 
-  it("makes, lists and revokes the caller's own API tokens", async () => {
+  it("makes, lists and revokes the caller's own API tokens (signed in through OAuth)", async () => {
     const auth = await rt.auth();
     const person = (await rt.person(new Headers({ cookie: await signedInCookie(auth, MARCEL) })))!.id;
-    const me: RestCaller = { person, actor: MARCEL, scope: "read+write" };
+    const me: RestCaller = { person, actor: `${MARCEL} via Claude`, scope: "read+write" };
     const made = await call("POST", "/tokens", { name: "site build", scope: "read", expiresInDays: null }, me);
     expect(made.status).toBe(201);
     const t = await json<{ id: string; token: string; scope: string; expires_at: string | null }>(made);
@@ -206,6 +212,27 @@ describe("the operations", () => {
     expect(JSON.stringify(list)).not.toContain(t.token);
     expect((await call("DELETE", `/tokens/${t.id}`, undefined, me)).status).toBe(204);
     expect((await call("DELETE", `/tokens/${t.id}`, undefined, me)).status).toBe(404);
+  });
+
+  it("tokenManagementRefusesApiTokens: an API token may list tokens but neither make nor revoke one (403 forbidden)", async () => {
+    const auth = await rt.auth();
+    const person = (await rt.person(new Headers({ cookie: await signedInCookie(auth, MARCEL) })))!.id;
+    const kept = await createApiToken(auth, person, { name: "site build", scope: "read", expiresInDays: null });
+    if ("error" in kept) throw new Error(kept.error);
+    // As restCaller finds them: a write token is the person by their address alone.
+    const writeToken = await token("read+write");
+    const made = await withTokenBody("POST", "/tokens", writeToken, { name: "more", scope: "read+write", expiresInDays: null });
+    expect(made.status).toBe(403);
+    expect(await json(made)).toMatchObject({ code: "forbidden" });
+    const revoked = await withToken("DELETE", `/tokens/${kept.id}`, writeToken);
+    expect(revoked.status).toBe(403);
+    expect(await json(revoked)).toMatchObject({ code: "forbidden" });
+    expect((await withToken("GET", "/tokens", writeToken)).status).toBe(200);
+    const list = await json<{ tokens: { id: string }[] }>(
+      await call("GET", "/tokens", undefined, { person, actor: `${MARCEL} via Claude`, scope: "read+write" }),
+    );
+    expect(list.tokens.map((x) => x.id)).toContain(kept.id);
+    expect(list.tokens).toHaveLength(2);
   });
 
   it("deletes a print", async () => {

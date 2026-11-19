@@ -261,6 +261,39 @@ describe("stripJpegMetadata", () => {
     for (const [name, input] of cases) expect(stripJpegMetadata(input), name).toMatchObject({ ok: false, reason: "invalid" });
   });
 
+  it("pins the length of every kept segment that has one: DRI 4, SOF 8+3·Nf, SOS 6+2·Ns; DNL only between scans", () => {
+    const soi = Buffer.from([0xff, 0xd8]);
+    const sof = segment(0xc0, Buffer.from([8, 0, 1, 0, 1, 1, 1, 0x11, 0]));
+    const sos = segment(0xda, Buffer.from([1, 1, 0, 0, 0x3f, 0]));
+    const dri = segment(0xdd, Buffer.from([0, 4]));
+    const dnl = segment(0xdc, Buffer.from([0, 1]));
+    const data = Buffer.from([0x12, 0x34]);
+    const eoi = Buffer.from([0xff, 0xd9]);
+    const tail = Buffer.from("GPSLatitude 48.137 N", "latin1");
+    const file = (...parts: Buffer[]) => Buffer.concat([soi, ...parts]);
+    // At their lengths they are kept as they are, a DRI between scans too.
+    const good = file(dri, sof, sos, data, dri, sos, data, eoi);
+    expect(value(stripJpegMetadata(good)).equals(good)).toBe(true);
+    // Two components: SOF 8+3·2 = 14, SOS 6+2·2 = 10.
+    const sof2 = segment(0xc0, Buffer.from([8, 0, 1, 0, 1, 2, 1, 0x11, 0, 2, 0x11, 0]));
+    const sos2 = segment(0xda, Buffer.from([2, 1, 0, 2, 0x11, 0, 0x3f, 0]));
+    expect(value(stripJpegMetadata(file(sof2, sos2, data, eoi))).equals(file(sof2, sos2, data, eoi))).toBe(true);
+    const cases: [string, Buffer][] = [
+      ["a DRI with a tail", file(segment(0xdd, Buffer.concat([Buffer.from([0, 4]), tail])), sof, sos, data, eoi)],
+      ["a DRI with a tail between scans", file(sof, sos, data, segment(0xdd, Buffer.concat([Buffer.from([0, 4]), tail])), sos, data, eoi)],
+      ["a DRI too short", file(segment(0xdd, Buffer.from([0])), sof, sos, data, eoi)],
+      ["a frame with a tail", file(segment(0xc0, Buffer.concat([Buffer.from([8, 0, 1, 0, 1, 1, 1, 0x11, 0]), tail])), sos, data, eoi)],
+      ["a frame shorter than its components", file(segment(0xc0, Buffer.from([8, 0, 1, 0, 1, 2, 1, 0x11, 0])), sos, data, eoi)],
+      ["a frame without its component count", file(segment(0xc0, Buffer.from([8, 0, 1, 0, 1])), sos, data, eoi)],
+      ["a scan header with a tail", file(sof, segment(0xda, Buffer.concat([Buffer.from([1, 1, 0, 0, 0x3f, 0]), tail])), data, eoi)],
+      ["a later scan header with a tail", file(sof, sos, data, segment(0xda, Buffer.concat([Buffer.from([1, 1, 0, 0, 0x3f, 0]), tail])), data, eoi)],
+      ["a scan header shorter than its components", file(sof, segment(0xda, Buffer.from([2, 1, 0, 0, 0x3f, 0])), data, eoi)],
+      ["a scan header without its component count", file(sof, segment(0xda, Buffer.alloc(0)), data, eoi)],
+      ["a DNL before the first scan", file(sof, dnl, sos, data, eoi)],
+    ];
+    for (const [name, input] of cases) expect(stripJpegMetadata(input), name).toMatchObject({ ok: false, reason: "invalid" });
+  });
+
   it("refuses what isn't a whole JPEG", async () => {
     const whole = readFileSync(FIXTURE);
     const sof = segment(0xc0, Buffer.from([8, 0, 1, 0, 1, 1, 1, 0x11, 0]));
