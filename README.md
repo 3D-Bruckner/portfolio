@@ -25,6 +25,10 @@ npm run dev            # http://localhost:3000, signed in as UPLOAD_DEV_USER
 npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:e2e && npm run build && npm run generate -- --check
 ```
 
+## On the iPhone
+
+Open the app in Safari, tap Share, then "Add to Home Screen". It then opens full-screen like an app, with the 3D Bruckner mark as its icon; it is the same web app, with no service worker and no offline mode (an upload needs the server anyway). Sign in with the code from the mail, which is the first thing the sign-in page offers: a link in a mail opens in Safari, not in the Home Screen app, and the code keeps the sign-in inside it. A passkey works there too. The icons are made by `node scripts/generate-icons.mjs` from `app/icon.svg`.
+
 ## Deploying it
 
 CI publishes `ghcr.io/3d-bruckner/upload:main` from main once the checks passed. The server runs it from `compose.yaml` and `.env` alone ([`compose.yaml`](compose.yaml) here is that file); upload's deployment on products-1, behind gewerbe-1's Caddy, lives in [`3D-Bruckner/stacks`](https://github.com/3D-Bruckner/stacks) (`upload/`, written with plan 4).

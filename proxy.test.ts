@@ -42,3 +42,21 @@ describe("proxy", () => {
     }
   });
 });
+
+describe("proxy and the Home Screen's files", () => {
+  it("staticAssetsNotRewritten: leaves the manifest, the icons and anything with a file extension alone", () => {
+    for (const path of [
+      "/manifest.webmanifest",
+      "/apple-icon.png",
+      "/icon.svg",
+      "/favicon.ico",
+      "/icons/icon-192.png",
+      "/icons/maskable-512.png",
+      "/robots.txt",
+    ]) {
+      const r = proxy(new NextRequest(new URL(path, "http://localhost"), { headers: { "accept-language": "de" } }));
+      expect(r.headers.get("x-middleware-rewrite"), path).toBeNull();
+      expect(r.headers.get("x-middleware-next"), path).toBe("1");
+    }
+  });
+});

@@ -7,9 +7,11 @@ export default async function PublicLayout({ children, params }: LayoutProps<"/[
   const t = copyFor(lang);
   return (
     <>
-      <header className="flex items-center justify-between border-b border-border px-4 py-3">
-        <span className="font-semibold">{t.app.name}</span>
-        {isLocale(lang) && <LanguageSwitch lang={lang} />}
+      <header className="border-b border-border">
+        <div className="flex items-center justify-between px-4 py-3">
+          <span className="font-semibold">{t.app.name}</span>
+          {isLocale(lang) && <LanguageSwitch lang={lang} />}
+        </div>
       </header>
       <main className="px-4 py-6">{children}</main>
     </>

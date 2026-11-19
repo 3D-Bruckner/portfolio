@@ -211,7 +211,10 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
   return (
     <form onSubmit={submit} className="mt-4 space-y-5">
       {fields.map(field)}
-      <div data-sticky-bottom className="sticky bottom-0 -mx-4 space-y-2 border-t border-border bg-paper px-4 py-3">
+      <div
+        data-sticky-bottom
+        className="sticky bottom-0 -mx-4 space-y-2 border-t border-border bg-paper px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+      >
         <Notice result={result} />
         <button type="submit" disabled={pending} className={`${ui.button} w-full`}>
           {pending ? t.common.saving : t.common.save}
