@@ -79,15 +79,24 @@ describe("claudeAsker", () => {
     expect(claudeAsker(config({ UPLOAD_CLAUDE_URL: "https://claude.example.org" }), log)).toBeNull();
   });
 
-  it("asksTheGateway: POST /v1/ask with the bearer token, the output back", async () => {
-    const seen: { url: string; auth: string | null; body: unknown }[] = [];
+  it("asksTheGateway: OpenAI chat completions with the bearer token and a JSON schema, the parsed JSON back", async () => {
+    const seen: { url: string; auth: string | null; body: Record<string, unknown> }[] = [];
     const fake = (async (url: string, init: RequestInit) => {
       seen.push({ url, auth: new Headers(init.headers).get("authorization"), body: JSON.parse(String(init.body)) });
-      return new Response(JSON.stringify({ output: { ok: 1 } }));
+      return new Response(JSON.stringify({ choices: [{ message: { role: "assistant", content: '{"ok":1}' } }] }));
     }) as unknown as typeof fetch;
     const ask = claudeAsker(config({ UPLOAD_CLAUDE_URL: "https://claude.example.org/", UPLOAD_CLAUDE_TOKEN: "t0k" }), log, fake)!;
     expect(await ask({ system: "s", prompt: "p", schema: { type: "object" } })).toEqual({ ok: 1 });
-    expect(seen).toEqual([{ url: "https://claude.example.org/v1/ask", auth: "Bearer t0k", body: { system: "s", prompt: "p", schema: { type: "object" } } }]);
+    expect(seen).toHaveLength(1);
+    expect(seen[0]!.url).toBe("https://claude.example.org/v1/chat/completions");
+    expect(seen[0]!.auth).toBe("Bearer t0k");
+    expect(seen[0]!.body).toMatchObject({
+      messages: [
+        { role: "system", content: "s" },
+        { role: "user", content: "p" },
+      ],
+      response_format: { type: "json_schema", json_schema: { name: "answer", schema: { type: "object" } } },
+    });
   });
 
   it("throwsWhenTheGatewayRefuses", async () => {
