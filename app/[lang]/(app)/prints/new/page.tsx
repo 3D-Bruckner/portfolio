@@ -24,7 +24,7 @@ export default async function NewPrintPage({ params }: PageProps<"/[lang]/prints
         {t.common.back}
       </Link>
       <h1 className={`${ui.h1} mt-2`}>{t.print.newTitle}</h1>
-      <PrintForm printId={null} specs={fieldSpecs()} categories={listCategories(runtime())} values={null} slugFixed={false} />
+      <PrintForm ai={runtime().askClaude !== null} printId={null} specs={fieldSpecs()} categories={listCategories(runtime())} values={null} slugFixed={false} />
     </>
   );
 }

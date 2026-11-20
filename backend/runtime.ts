@@ -8,6 +8,7 @@ import type { Logger } from "pino";
 import { openUploadAuth, type MailWording } from "./accounts";
 import type { Config } from "./config";
 import { openStore, type Store } from "./db";
+import { claudeAsker, type AskClaude } from "./claude";
 import { log } from "./log";
 import type { Outcome } from "./outcome";
 import { noteSiteChange } from "./site";
@@ -18,6 +19,8 @@ export type Runtime = {
   clock: () => Date;
   fetch: typeof fetch;
   log: Logger;
+  /** Claude through Marcel's gateway (claude.ts), or null without UPLOAD_CLAUDE_URL and UPLOAD_CLAUDE_TOKEN. Tests replace it. */
+  askClaude: AskClaude | null;
   /**
    * Called by every mutation the site shows (a published print, a category in use, the order, the showcases), after it is stored:
    * markSiteChanged, so the site build is dispatched after a quiet minute (site.ts); a failure to mark is logged, not thrown (noteSiteChange).
@@ -54,6 +57,7 @@ export function openRuntime(config: Config, signIn: SignInSettings, mail: MailWo
     clock: () => new Date(),
     fetch: globalThis.fetch,
     log,
+    askClaude: claudeAsker(config, log),
     onSiteChange: () => noteSiteChange(rt),
     signIn,
     auth,

@@ -16,6 +16,9 @@ import {
   deletePrint,
   importFromLink,
   printOfModel,
+  suggestForPrint,
+  type EnhanceInput,
+  type Suggestion,
   movePrint,
   moveShowcase,
   publishPrint,
@@ -122,6 +125,17 @@ export async function otherPrintOfModel(link: string, printId: string | null): P
   if (!(await actionPerson())) return null;
   const p = printOfModel(runtime(), link, printId);
   return p ? { id: p.id, title: p.title } : null;
+}
+
+/** Claude's suggestion for the texts of the print the form shows (backend/enhance.ts); nothing is saved. */
+export async function enhanceWithAi(input: EnhanceInput): Promise<{ ok: true; value: Suggestion } | { ok: false; error: string }> {
+  const t = await words();
+  if (!(await actionPerson())) return { ok: false, error: t.common.signedOut };
+  const got = await suggestForPrint(runtime(), input);
+  if (got.ok) return { ok: true, value: got.value };
+  const e = t.print.ai.errors;
+  if (got.reason === "conflict") return { ok: false, error: e.off };
+  return { ok: false, error: got.message.startsWith("title:") ? e.empty : e.failed };
 }
 
 export async function publish(id: string): Promise<Result> {

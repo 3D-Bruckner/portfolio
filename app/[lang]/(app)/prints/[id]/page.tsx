@@ -64,6 +64,7 @@ export default async function PrintPage({ params }: PageProps<"/[lang]/prints/[i
           {t.print.details}
         </h2>
         <PrintForm
+          ai={runtime().askClaude !== null}
           printId={p.id}
           specs={fieldSpecs()}
           categories={listCategories(rt)}

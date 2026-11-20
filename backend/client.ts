@@ -2,3 +2,4 @@
 // the frontend import @/backend/client and nothing else under @/backend/), never from @/backend, whose runtime would drag the server in.
 export { priceParts, suggestedPrice } from "./pricing";
 export { readThreeMf, type ByteSource, type ThreeMfReading } from "./threemf";
+export type { EnhanceInput, Suggestion } from "./enhance";

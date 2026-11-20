@@ -145,6 +145,19 @@ export const de: Copy = {
       sources: { label: "Quellen", hint: "Woher das Modell stammt." },
       slug: { label: "Adresse auf der Website", hint: "Folgt dem Titel, bis du sie selbst änderst; liegt fest, sobald der Druck veröffentlicht ist." },
     },
+    ai: {
+      button: "Mit KI verbessern",
+      busy: "Claude schreibt…",
+      hint: "Claude schreibt Titel, Kurztitel und Beschreibung auf Deutsch und wählt Kategorien. Es füllt nur das Formular: prüfen, dann speichern.",
+      done: "Claude hat die Texte eingetragen. Prüfen, dann speichern.",
+      undo: "Rückgängig",
+      undone: "Wieder deine Texte.",
+      errors: {
+        off: "KI ist auf diesem Server nicht eingerichtet (UPLOAD_CLAUDE_URL).",
+        empty: "Gib einen Titel oder eine Beschreibung als Anfang.",
+        failed: "Claude hat nicht geantwortet. Versuch es gleich noch einmal.",
+      },
+    },
     threeMf: {
       button: "Aus 3MF-Datei ausfüllen",
       hint: "Eine Bambu-Studio-Datei, für Zeit, Gewicht, Farben und Preis gesliced. Sie bleibt auf dem Handy; nur die Werte werden eingetragen.",

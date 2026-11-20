@@ -25,6 +25,10 @@ export type Config = {
   siteUrl: string;
   /** UPLOAD_THINGIVERSE_TOKEN: an app token for Thingiverse's API; without it a Thingiverse link can't be imported. */
   thingiverseToken?: string;
+  /** UPLOAD_CLAUDE_URL: Marcel's Claude gateway (backend/claude.ts) for "Enhance with AI"; without it and its token the button isn't shown. */
+  claudeUrl?: string;
+  /** UPLOAD_CLAUDE_TOKEN: upload's bearer token at the gateway. */
+  claudeToken?: string;
   /** UPLOAD_MAX_PHOTO_MB: the largest photo an upload may send, in megabytes (default 40); what is stored is far smaller. */
   maxPhotoMb: number;
   /** UPLOAD_DEV_USER: development only, everyone reaching the app is this person. */
@@ -46,6 +50,8 @@ const schema = z.object({
   UPLOAD_SMTP_FROM: optional,
   UPLOAD_GITHUB_TOKEN: optional,
   UPLOAD_THINGIVERSE_TOKEN: optional,
+  UPLOAD_CLAUDE_URL: z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.url({ protocol: /^https?$/ }).optional()),
+  UPLOAD_CLAUDE_TOKEN: optional,
   UPLOAD_SITE_REPO: optional,
   UPLOAD_SITE_WORKFLOW: optional,
   UPLOAD_SITE_URL: z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.url({ protocol: /^https?$/ }).optional()),
@@ -105,6 +111,8 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
   if (e.UPLOAD_SMTP_FROM) config.smtpFrom = e.UPLOAD_SMTP_FROM;
   if (e.UPLOAD_GITHUB_TOKEN) config.githubToken = e.UPLOAD_GITHUB_TOKEN;
   if (e.UPLOAD_THINGIVERSE_TOKEN) config.thingiverseToken = e.UPLOAD_THINGIVERSE_TOKEN;
+  if (e.UPLOAD_CLAUDE_URL) config.claudeUrl = e.UPLOAD_CLAUDE_URL.replace(/\/$/, "");
+  if (e.UPLOAD_CLAUDE_TOKEN) config.claudeToken = e.UPLOAD_CLAUDE_TOKEN;
   if (e.UPLOAD_DEV_USER) config.devUser = e.UPLOAD_DEV_USER;
   return config;
 }

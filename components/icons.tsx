@@ -18,6 +18,7 @@ export {
   FolderTree as CategoriesIcon,
   GripVertical as DragIcon,
   Link2 as LinkIcon,
+  Sparkles as AiIcon,
   ImagePlus as AddPhotoIcon,
   Image as PhotoIcon,
   KeyRound as TokenIcon,
