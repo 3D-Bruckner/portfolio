@@ -14,6 +14,7 @@ import {
   deleteCategory,
   deletePhoto,
   deletePrint,
+  importFromLink,
   movePrint,
   moveShowcase,
   publishPrint,
@@ -96,6 +97,23 @@ export async function startWithPhotos(): Promise<{ ok: true; id: string } | { ok
   const made = createPrint(rt, { title: t.list.draftTitle(when), description: "" });
   if (!made.ok) return { ok: false, error: printProblem(made, t) };
   return { ok: true, id: made.value.id };
+}
+
+/** A draft from a model page's link, with its pictures (backend/sources). A model imported before opens its print instead. */
+export async function importLink(url: string): Promise<{ ok: true; id: string } | { ok: false; error: string; id?: string }> {
+  const t = await words();
+  if (!(await actionPerson())) return { ok: false, error: t.common.signedOut };
+  const got = await importFromLink(runtime(), url);
+  const e = t.list.importErrors;
+  if (got.ok) return { ok: true, id: got.value.print.id };
+  if (got.reason === "conflict") {
+    const id = /is print ([0-9a-f-]{36})/.exec(got.message)?.[1];
+    return { ok: false, error: e.already, ...(id ? { id } : {}) };
+  }
+  if (got.reason === "not_found") return { ok: false, error: e.noModel };
+  if (got.message.startsWith("url:")) return { ok: false, error: e.link };
+  if (got.message.startsWith("thingiverse:")) return { ok: false, error: e.thingiverse };
+  return { ok: false, error: e.unreachable };
 }
 
 export async function publish(id: string): Promise<Result> {

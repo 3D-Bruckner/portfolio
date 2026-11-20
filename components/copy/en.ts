@@ -107,6 +107,19 @@ export const en = {
     starting: "Making the draft…",
     startHint: "Straight from the camera roll: a draft with these photos; name it afterwards.",
     draftTitle: (when: string) => `New print ${when}`,
+    importLink: "Paste a model's link",
+    importPlaceholder: "https://makerworld.com/de/models/…",
+    importGo: "Import",
+    importBusy: "Fetching…",
+    importHint:
+      "From MakerWorld, Printables or Thingiverse: title, description, print time, weight, colours, price and the pictures come in as a draft. The time is put onto the A1. The pictures are the designer's: swap in your own before publishing.",
+    importErrors: {
+      link: "That isn't a model's address on MakerWorld, Printables or Thingiverse.",
+      already: "This model is a print already; it's open now.",
+      noModel: "There is no model at this address.",
+      unreachable: "The site can't be reached right now. Try again in a moment.",
+      thingiverse: "Thingiverse needs an app token on this server (UPLOAD_THINGIVERSE_TOKEN).",
+    },
     emptyPublished: "No print is published yet. Open a draft and publish it.",
     emptyDrafts: "No drafts. Start one with “New print”.",
     showcase: "Showcase",
@@ -248,6 +261,7 @@ export const en = {
     unpin: "Unpin",
     unpinLabel: (title: string) => `${title} unpin`,
     saved: "Order saved",
+    edit: (title: string) => `Edit ${title}`,
   },
   categories: {
     title: "Categories",

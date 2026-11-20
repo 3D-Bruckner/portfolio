@@ -106,6 +106,19 @@ export const de: Copy = {
     starting: "Entwurf wird angelegt…",
     startHint: "Direkt aus der Mediathek: ein Entwurf mit diesen Fotos; benennen kannst du ihn danach.",
     draftTitle: (when: string) => `Neuer Druck ${when}`,
+    importLink: "Link zu einem Modell einfügen",
+    importPlaceholder: "https://makerworld.com/de/models/…",
+    importGo: "Übernehmen",
+    importBusy: "Wird geholt…",
+    importHint:
+      "Von MakerWorld, Printables oder Thingiverse: Titel, Beschreibung, Druckzeit, Gewicht, Farben, Preis und die Bilder kommen als Entwurf. Die Druckzeit wird auf den A1 umgerechnet. Die Bilder sind die des Designers: vor dem Veröffentlichen durch deine eigenen ersetzen.",
+    importErrors: {
+      link: "Das ist keine Adresse eines Modells auf MakerWorld, Printables oder Thingiverse.",
+      already: "Dieses Modell ist schon ein Druck; er ist jetzt geöffnet.",
+      noModel: "Unter dieser Adresse gibt es kein Modell.",
+      unreachable: "Die Seite ist gerade nicht erreichbar. Versuch es gleich noch einmal.",
+      thingiverse: "Für Thingiverse fehlt auf diesem Server der App-Token (UPLOAD_THINGIVERSE_TOKEN).",
+    },
     emptyPublished: "Noch ist kein Druck veröffentlicht. Öffne einen Entwurf und veröffentliche ihn.",
     emptyDrafts: "Keine Entwürfe. Fang einen mit „Neuer Druck“ an.",
     showcase: "Showcase",
@@ -248,6 +261,7 @@ export const de: Copy = {
     unpin: "Lösen",
     unpinLabel: (title: string) => `${title} lösen`,
     saved: "Reihenfolge gespeichert",
+    edit: (title: string) => `${title} bearbeiten`,
   },
   categories: {
     title: "Kategorien",

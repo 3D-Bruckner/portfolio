@@ -54,3 +54,12 @@ test("listThumbnails: the lists show each cover as a small thumbnail, loaded as 
     await expect.poll(() => img.evaluate((e: HTMLImageElement) => Math.max(e.naturalWidth, e.naturalHeight)), { message: path }).toBe(256);
   }
 });
+
+test("openFromOrder: a print's cover and title on the order page open it, to change it", async ({ page }) => {
+  const title = unique("Zum Bearbeiten");
+  const id = await publishedPrint(page, title);
+  await page.goto("/order");
+  await page.getByRole("link", { name: `${title} bearbeiten` }).click();
+  await expect(page).toHaveURL(new RegExp(`/prints/${id}$`));
+  await expect(page.getByLabel("Titel", { exact: true })).toHaveValue(title);
+});

@@ -1,6 +1,8 @@
 "use client";
 // One of the site's two lists (the showcases, the rest of the portfolio): drag a print by its handle, or move it with its up and down
-// buttons; pin it as a showcase or unpin it. Each change is saved at once and the site build follows after a quiet minute.
+// buttons; pin it as a showcase or unpin it; tap its cover or title to change the print itself. Each change is saved at once and the
+// site build follows after a quiet minute.
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 import { useCopy } from "@/components/CopyProvider";
@@ -76,15 +78,18 @@ export function OrderList({ kind, prints }: { kind: "showcases" | "portfolio"; p
                 >
                   <DragIcon className="size-5" />
                 </span>
-                {p.cover ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- the app's own photo route, private and per-session
-                  <img src={p.cover} alt="" width={48} height={48} loading="lazy" className="size-12 shrink-0 rounded-md bg-surface object-cover" />
-                ) : (
-                  <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-surface text-muted">
-                    <PhotoIcon aria-hidden="true" className={ui.iconSize} />
-                  </span>
-                )}
-                <span className="line-clamp-2 min-w-0 flex-1 font-medium break-words">{p.title}</span>
+                {/* The cover and title open the print, to change it; the handle and the buttons stay for the order. */}
+                <Link href={`/prints/${id}`} aria-label={t.edit(p.title)} className="group flex min-w-0 flex-1 items-center gap-2 rounded-md">
+                  {p.cover ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- the app's own photo route, private and per-session
+                    <img src={p.cover} alt="" width={48} height={48} loading="lazy" className="size-12 shrink-0 rounded-md bg-surface object-cover" />
+                  ) : (
+                    <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-surface text-muted">
+                      <PhotoIcon aria-hidden="true" className={ui.iconSize} />
+                    </span>
+                  )}
+                  <span className="line-clamp-2 min-w-0 flex-1 font-medium break-words underline-offset-2 group-hover:underline">{p.title}</span>
+                </Link>
                 <span className="flex shrink-0 gap-1">
                   <button type="button" aria-label={t.up(p.title)} disabled={busy || i === 0} onClick={() => step(id, -1)} className={`${ui.icon} size-9`}>
                     <UpIcon aria-hidden="true" className={ui.iconSize} />

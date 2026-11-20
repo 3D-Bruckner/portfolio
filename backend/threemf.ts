@@ -186,7 +186,7 @@ function model(xml: string): Pick<ThreeMfReading, "title" | "description" | "des
 }
 
 /** The material the price is counted in: PETG when a filament is PETG, else PLA (the site's two). */
-const materialOf = (filaments: Filament[]): Material => (filaments.some((f) => /PETG/i.test(f.type)) ? "PETG" : "PLA");
+export const materialOf = (filaments: Pick<Filament, "type">[]): Material => (filaments.some((f) => /PETG/i.test(f.type)) ? "PETG" : "PLA");
 
 /** Reads what a print's form can be filled with from a 3MF; nothing in the file is trusted beyond the numbers and text it yields. */
 export async function readThreeMf(src: ByteSource): Promise<ThreeMfResult> {

@@ -17,6 +17,7 @@ export {
   FileBox as FileIcon,
   FolderTree as CategoriesIcon,
   GripVertical as DragIcon,
+  Link2 as LinkIcon,
   ImagePlus as AddPhotoIcon,
   Image as PhotoIcon,
   KeyRound as TokenIcon,

@@ -35,6 +35,7 @@ import {
   tokenSchema,
 } from "./shapes";
 import { buildStatus } from "./site";
+import { importFromLink } from "./sources";
 
 /** Where the committed openapi.json says the API is; a running instance serves its own at <PUBLIC_URL>/api/v1/openapi.json. */
 export const PRODUCTION_URL = "https://upload.3dbruckner.de";
@@ -127,6 +128,18 @@ export const REST_OPS: Op<Runtime>[] = [
     ok: { status: 201, description: "The new draft", schema: printSchema },
     errors: [400, 401, 403, 409],
     handle: ({ ctx, base, body }) => answer(createPrint(ctx, body as z.infer<typeof printInputSchema>), 201, (p) => printJson(base, p)),
+  },
+  {
+    method: "POST",
+    path: "/prints/from-link",
+    operationId: "importFromLink",
+    tool: "import_from_link",
+    summary: "Create a draft from a model page on MakerWorld, Printables or Thingiverse: its words, source, slicer numbers, price and up to 12 pictures",
+    tag: "Prints",
+    body: z.object({ url: z.string().min(1).describe("The model page's address, e.g. https://makerworld.com/de/models/123456") }),
+    ok: { status: 201, description: "The new draft", schema: printSchema },
+    errors: [400, 401, 403, 404, 409],
+    handle: async ({ ctx, base, body }) => answer(await importFromLink(ctx, (body as { url: string }).url), 201, (i) => printJson(base, i.print)),
   },
   {
     method: "PATCH",

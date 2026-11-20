@@ -12,6 +12,7 @@ export { siteExport, type SiteExport } from "./export";
 export { healthResponse } from "./health";
 export { log } from "./log";
 export { MCP_INSTRUCTIONS, mcpContext } from "./mcp";
+export { importFromLink, modelLink } from "./sources";
 export { movePrint, moveShowcase, setShowcase } from "./order";
 export type { Outcome, Reason } from "./outcome";
 export {
