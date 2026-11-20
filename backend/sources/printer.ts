@@ -18,3 +18,19 @@ export function onOurPrinter(minutes: number, printer: string | null | undefined
   const factor = printer && FASTER.test(printer) ? A1_FACTOR : 1;
   return { minutes: Math.max(1, Math.round(minutes * factor)), factor };
 }
+
+/** Bambu Studio's printer codes (a 3MF's slice_info printer_model_id, MakerWorld's devModelName) and the printers they name. */
+const BAMBU_MODELS: Record<string, string> = {
+  N2S: "A1",
+  N1: "A1 mini",
+  C11: "P1P",
+  C12: "P1S",
+  "BL-P001": "X1 Carbon",
+  "BL-P002": "X1",
+  C13: "X1E",
+  O1D: "H2D",
+  O1S: "H2S",
+};
+
+/** The printer a Bambu printer code names; an unknown code as it is. */
+export const bambuPrinter = (code: string): string => BAMBU_MODELS[code] ?? code;

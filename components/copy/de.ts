@@ -1,6 +1,8 @@
 // The UI's words in German, typed against the English module: a string missing here fails the typecheck.
 import type { Copy } from "./en";
 
+const euro = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+
 export const de: Copy = {
   app: {
     name: "upload",
@@ -152,6 +154,9 @@ export const de: Copy = {
       nothing: "In dieser Datei steht nichts zum Ausfüllen.",
       notSliced: "Nicht gesliced: keine Zeit, kein Gewicht, keine Farben darin. In Bambu Studio slicen und neu speichern.",
       filled: (parts: string[]) => `Ausgefüllt: ${parts.join(", ")}. Bitte prüfen und speichern.`,
+      forA1: "Für den A1 gesliced: die Druckzeit stimmt.",
+      twin: "Dieses Modell gibt es schon als Druck:",
+      scaled: (printer: string, from: number, to: number) => `Für einen ${printer} gesliced: ${from} min dort sind auf dem A1 etwa ${to} min (hochgerechnet).`,
       parts: {
         printTimeMinutes: "Druckzeit",
         weightGrams: "Gewicht",
@@ -164,6 +169,13 @@ export const de: Copy = {
     },
     onSite: "Auf der Website ansehen",
     suggestedPrice: (euros: number) => `Nach Preisformel (PLA): ${euros} €`,
+    priceParts: (p: { material: number; time: number; multicolor: number; fee: number }) =>
+      [
+        `Material ${euro(p.material)}`,
+        `Zeit ${euro(p.time)}`,
+        ...(p.multicolor ? [`Mehrfarbig ${euro(p.multicolor)}`] : []),
+        `Grundgebühr ${euro(p.fee)}`,
+      ].join(" + "),
     takeSuggestion: "Übernehmen",
     readiness: {
       heading: "Für die Website",

@@ -15,3 +15,15 @@ export function suggestedPrice(input: { weightGrams: number; printTimeMinutes: n
   const price = input.multicolor ? (single - ORDER_FEE) * (1 + MULTICOLOR_SURCHARGE) + ORDER_FEE : single;
   return Math.max(1, Math.round(price));
 }
+
+/** What the site's price is made of, in euros (unrounded): filament, machine time, the multi-colour surcharge and the order fee. */
+export function priceParts(input: { weightGrams: number; printTimeMinutes: number; multicolor: boolean; material: Material }): {
+  material: number;
+  time: number;
+  multicolor: number;
+  fee: number;
+} {
+  const material = (input.weightGrams / 1000) * PRICE_PER_KG[input.material];
+  const time = (input.printTimeMinutes / 60) * PRICE_PER_HOUR;
+  return { material, time, multicolor: input.multicolor ? (material + time) * MULTICOLOR_SURCHARGE : 0, fee: ORDER_FEE };
+}

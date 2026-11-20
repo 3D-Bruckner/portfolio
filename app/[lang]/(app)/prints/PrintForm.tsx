@@ -4,7 +4,7 @@
 // save keeps what was typed.
 import Link from "next/link";
 import { startTransition, useActionState, useEffect, useRef, useState, type FormEvent } from "react";
-import { suggestedPrice, type ThreeMfReading } from "@/backend/client";
+import { priceParts, suggestedPrice, type ThreeMfReading } from "@/backend/client";
 import { useCopy } from "@/components/CopyProvider";
 import { AddIcon, CloseIcon } from "@/components/icons";
 import { Notice } from "@/components/Notice";
@@ -120,10 +120,12 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
   });
   const setNum = (name: string, value: string) => setNums((n) => ({ ...n, [name]: value === "" ? null : Number(value) }));
   const minutes = nums.printTimeMinutes ?? null;
-  const suggestion =
+  const priceInput =
     nums.weightGrams && nums.printTimeMinutes
-      ? suggestedPrice({ weightGrams: nums.weightGrams, printTimeMinutes: nums.printTimeMinutes, multicolor: (nums.colors ?? 1) >= 2, material: "PLA" })
+      ? { weightGrams: nums.weightGrams, printTimeMinutes: nums.printTimeMinutes, multicolor: (nums.colors ?? 1) >= 2, material: "PLA" as const }
       : null;
+  const suggestion = priceInput ? suggestedPrice(priceInput) : null;
+  const parts = priceInput ? priceParts(priceInput) : null;
   function takeSuggestion() {
     const el = form.current?.elements.namedItem("price");
     if (suggestion === null || !(el instanceof HTMLInputElement)) return;
@@ -307,7 +309,7 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
 
   return (
     <form ref={form} onSubmit={submit} className="mt-4 space-y-5">
-      <ThreeMfFill onRead={fill} />
+      <ThreeMfFill printId={printId} onRead={fill} />
       {groups.map(({ group, fields }) =>
         group === "numbers" ? (
           <section key={group} aria-labelledby={`group-${group}`} className={ui.card}>
@@ -316,17 +318,19 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
             </h3>
             <p className={`${ui.hint} mt-0.5`}>{t.print.groups.numbersHint}</p>
             <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-4">{fields.map(field)}</div>
-            {/* From weight and time, the price the site's own formula gives (PLA): one tap takes it. */}
-            {suggestion !== null && suggestion !== nums.price && (
-              <p
-                className="mt-3 flex min-h-11 flex-wrap items-center justify-between gap-x-3 rounded-lg border border-border bg-paper px-3 text-sm"
-                aria-live="polite"
-              >
-                <span className="tabular text-muted">{t.print.suggestedPrice(suggestion)}</span>
-                <button type="button" onClick={takeSuggestion} className="min-h-11 font-semibold text-ink underline underline-offset-2">
-                  {t.print.takeSuggestion}
-                </button>
-              </p>
+            {/* From weight and time, the price the site's own formula gives (PLA), and what it is made of: one tap takes it. */}
+            {suggestion !== null && parts !== null && (
+              <div className="mt-3 rounded-lg border border-border bg-paper px-3 py-2 text-sm" aria-live="polite">
+                <p className="flex min-h-9 flex-wrap items-center justify-between gap-x-3">
+                  <span className="tabular text-muted">{t.print.suggestedPrice(suggestion)}</span>
+                  {suggestion !== nums.price && (
+                    <button type="button" onClick={takeSuggestion} className="min-h-11 font-semibold text-ink underline underline-offset-2">
+                      {t.print.takeSuggestion}
+                    </button>
+                  )}
+                </p>
+                <p className="tabular text-xs text-muted">{t.print.priceParts(parts)}</p>
+              </div>
             )}
           </section>
         ) : (

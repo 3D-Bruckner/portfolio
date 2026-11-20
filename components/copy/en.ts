@@ -1,5 +1,7 @@
 // The UI's words in English, the reference every other language is typed against (conventions: code/language). Components take their
 // words from here through copyFor(lang) or useCopy(), never text of their own.
+const euro = (n: number) => n.toLocaleString("en-IE", { style: "currency", currency: "EUR" });
+
 export const en = {
   app: {
     name: "upload",
@@ -146,6 +148,10 @@ export const en = {
     },
     onSite: "See it on the website",
     suggestedPrice: (euros: number) => `Price formula (PLA): ${euros} €`,
+    priceParts: (p: { material: number; time: number; multicolor: number; fee: number }) =>
+      [`Material ${euro(p.material)}`, `time ${euro(p.time)}`, ...(p.multicolor ? [`multi-colour ${euro(p.multicolor)}`] : []), `fee ${euro(p.fee)}`].join(
+        " + ",
+      ),
     takeSuggestion: "Use it",
     readiness: {
       heading: "For the website",
@@ -178,6 +184,9 @@ export const en = {
       nothing: "This file holds nothing to fill in.",
       notSliced: "Not sliced: no time, weight or colours in it. Slice it in Bambu Studio and save it again.",
       filled: (parts: string[]) => `Filled in: ${parts.join(", ")}. Check it and save.`,
+      forA1: "Sliced for the A1: the print time is right.",
+      twin: "This model is a print already:",
+      scaled: (printer: string, from: number, to: number) => `Sliced for a ${printer}: ${from} min there are about ${to} min on the A1 (scaled).`,
       parts: {
         printTimeMinutes: "print time",
         weightGrams: "weight",

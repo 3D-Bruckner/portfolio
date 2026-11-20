@@ -3,7 +3,7 @@ import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import { getPrint, listPrints } from "../prints";
 import { testRuntime } from "../testing/runtime";
-import { importFromLink, modelLink } from ".";
+import { importFromLink, modelLink, printOfModel } from ".";
 import { draftFrom as fromMakerWorld, MAKERWORLD_API } from "./makerworld";
 import { draftFrom as fromPrintables, PRINTABLES_API } from "./printables";
 import { A1_FACTOR, onOurPrinter } from "./printer";
@@ -221,6 +221,14 @@ describe("importFromLink", () => {
     const p = getPrint(rt, got.value.print.id);
     expect(p.ok && p.value).toMatchObject({ status: "draft", weightGrams: 9 });
     expect(p.ok && p.value.photos).toHaveLength(2);
+  });
+  it("printOfModel: the same model on any address, but not the print itself", async () => {
+    const { rt } = await withSites({ [MAKERWORLD_API]: { body: design } });
+    const got = await importFromLink(rt, "https://makerworld.com/en/models/2872376");
+    const id = got.ok ? got.value.print.id : "";
+    expect(printOfModel(rt, "https://makerworld.com/de/models/2872376-radar#profileId-1")?.id).toBe(id);
+    expect(printOfModel(rt, "https://makerworld.com/de/models/2872376", id)).toBeNull();
+    expect(printOfModel(rt, "https://makerworld.com/de/models/1")).toBeNull();
   });
   it("refusesTheSameModelTwice", async () => {
     const { rt } = await withSites({ [MAKERWORLD_API]: { body: design } });
