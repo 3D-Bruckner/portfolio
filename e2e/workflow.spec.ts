@@ -62,11 +62,11 @@ test("saveKeepsOtherChanges: a save sends only what was changed in it, so a chan
   await expect(page.getByLabel("Preis (Euro)")).toHaveValue("9");
 });
 
-test("fromMakerWorld: a link that is no MakerWorld model is refused with what is wrong, and nothing is made", async ({ page }) => {
+test("fromLink: a link that is no model page is refused with what is wrong, and nothing is made", async ({ page }) => {
   await signIn(page, "/");
-  const field = page.getByLabel("MakerWorld-Link einfügen");
-  await field.fill("https://www.printables.com/model/12345");
+  const field = page.getByLabel("Link zu einem Modell einfügen");
+  await field.fill("https://www.example.com/model/12345");
   await page.getByRole("button", { name: "Übernehmen" }).click();
-  await expect(page.getByText("Das ist keine Adresse eines MakerWorld-Modells")).toBeVisible();
+  await expect(page.getByText("Das ist keine Adresse eines Modells")).toBeVisible();
   await expect(page).toHaveURL(/\/$/);
 });

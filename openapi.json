@@ -983,11 +983,11 @@
         }
       }
     },
-    "/prints/from-makerworld": {
+    "/prints/from-link": {
       "post": {
-        "operationId": "importFromMakerWorld",
-        "summary": "Create a draft from a MakerWorld model's address: its words, source, print time, weight, colours, price and up to 12 pictures",
-        "description": "The REST counterpart of the MCP tool `import_from_makerworld`.",
+        "operationId": "importFromLink",
+        "summary": "Create a draft from a model page on MakerWorld, Printables or Thingiverse: its words, source, slicer numbers, price and up to 12 pictures",
+        "description": "The REST counterpart of the MCP tool `import_from_link`.",
         "tags": ["Prints"],
         "security": [{ "bearer": [] }],
         "requestBody": {
@@ -997,7 +997,7 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "url": { "type": "string", "minLength": 1, "description": "The MakerWorld model's address, e.g. https://makerworld.com/de/models/123456" }
+                  "url": { "type": "string", "minLength": 1, "description": "The model page's address, e.g. https://makerworld.com/de/models/123456" }
                 },
                 "required": ["url"]
               }

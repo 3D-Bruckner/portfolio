@@ -10,7 +10,6 @@ import * as z from "zod";
 import { API_TOKEN_PREFIX } from "./accounts";
 import { createCategory, deleteCategory, listCategories, renameCategory } from "./categories";
 import { siteExport, siteExportSchema } from "./export";
-import { importFromMakerWorld } from "./makerworld";
 import { movePrint, moveShowcase, setShowcase } from "./order";
 import type { Outcome, Reason } from "./outcome";
 import { deletePhoto, getPhoto, photoPath, reorderPhotos, setCover, setCrop } from "./photos";
@@ -36,6 +35,7 @@ import {
   tokenSchema,
 } from "./shapes";
 import { buildStatus } from "./site";
+import { importFromLink } from "./sources";
 
 /** Where the committed openapi.json says the API is; a running instance serves its own at <PUBLIC_URL>/api/v1/openapi.json. */
 export const PRODUCTION_URL = "https://upload.3dbruckner.de";
@@ -131,15 +131,15 @@ export const REST_OPS: Op<Runtime>[] = [
   },
   {
     method: "POST",
-    path: "/prints/from-makerworld",
-    operationId: "importFromMakerWorld",
-    tool: "import_from_makerworld",
-    summary: "Create a draft from a MakerWorld model's address: its words, source, print time, weight, colours, price and up to 12 pictures",
+    path: "/prints/from-link",
+    operationId: "importFromLink",
+    tool: "import_from_link",
+    summary: "Create a draft from a model page on MakerWorld, Printables or Thingiverse: its words, source, slicer numbers, price and up to 12 pictures",
     tag: "Prints",
-    body: z.object({ url: z.string().min(1).describe("The MakerWorld model's address, e.g. https://makerworld.com/de/models/123456") }),
+    body: z.object({ url: z.string().min(1).describe("The model page's address, e.g. https://makerworld.com/de/models/123456") }),
     ok: { status: 201, description: "The new draft", schema: printSchema },
     errors: [400, 401, 403, 404, 409],
-    handle: async ({ ctx, base, body }) => answer(await importFromMakerWorld(ctx, (body as { url: string }).url), 201, (i) => printJson(base, i.print)),
+    handle: async ({ ctx, base, body }) => answer(await importFromLink(ctx, (body as { url: string }).url), 201, (i) => printJson(base, i.print)),
   },
   {
     method: "PATCH",

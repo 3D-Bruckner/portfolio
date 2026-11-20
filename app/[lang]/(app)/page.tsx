@@ -6,7 +6,7 @@ import { copyFor, type Copy } from "@/components/copy";
 import { AddIcon, ChevronIcon, PhotoIcon, ShowcaseIcon } from "@/components/icons";
 import { Tabs } from "@/components/Tabs";
 import { ui } from "@/components/ui";
-import { FromMakerWorld } from "./FromMakerWorld";
+import { FromLink } from "./FromLink";
 import { StartWithPhotos } from "./StartWithPhotos";
 
 // The start page: the prints, published ones in the site's order and drafts newest first, each with its cover; "New print" on top.
@@ -30,7 +30,7 @@ export default async function Home({ params, searchParams }: PageProps<"/[lang]"
         <StartWithPhotos />
       </div>
       <div className="mt-4">
-        <FromMakerWorld />
+        <FromLink />
       </div>
       <div className="mt-5">
         <Tabs

@@ -8,7 +8,6 @@ import { defineTool, refuse, type McpContext, type Refused, type Tool, type Who 
 import { createApiToken, listApiTokens, revokeApiToken } from "next-app-kit/tokens";
 import * as z from "zod";
 import { createCategory, deleteCategory, listCategories, renameCategory } from "./categories";
-import { importFromMakerWorld } from "./makerworld";
 import { movePrint, moveShowcase, setShowcase } from "./order";
 import type { Outcome } from "./outcome";
 import { deletePhoto, getPhoto, reorderPhotos, setCover, setCrop } from "./photos";
@@ -35,11 +34,12 @@ import {
   tokenSchema,
 } from "./shapes";
 import { buildStatus, type BuildStatus } from "./site";
+import { importFromLink } from "./sources";
 
 /** The server's own text: what a client may drop, so nothing here is needed after a call (that is each result's guidance). */
 export const MCP_INSTRUCTIONS = [
   "3D Bruckner Upload is where the prints on 3dbruckner.de's portfolio are put in: their details, photos, categories and order. Marcel runs it.",
-  "Photos are added only in the web app's form, at a print's url (usually from his phone); the tools here order, crop and delete photos but can't upload them. The one exception: import_from_makerworld brings a MakerWorld model's pictures along with its details.",
+  "Photos are added only in the web app's form, at a print's url (usually from his phone); the tools here order, crop and delete photos but can't upload them. The one exception: import_from_link brings a model page's pictures along with its details.",
   "A new print is a draft, and a draft is not on the site; publish_print puts it there. The site rebuilds itself about a minute after the last change it shows (site_build_status).",
   "A print's description is German, as the site shows it; everything else here is English.",
 ].join(" ");
@@ -159,25 +159,38 @@ export function mcpTools(rt: Runtime): Tool[] {
       },
     }),
     defineTool({
-      name: "import_from_makerworld",
+      name: "import_from_link",
       description:
-        "Create a draft from a MakerWorld model's address (https://makerworld.com/<lang>/models/<id>, optionally #profileId-<n> for a print profile): its title, description (as MakerWorld has it, often English), the MakerWorld page as its source, print time, weight, colours and the site's price from the profile, and up to 12 of its pictures as photos. Refused when the model is a print already.",
-      input: z.object({ url: z.string().min(1).describe("The MakerWorld model's address.") }),
-      output: printSchema.extend({ photosAdded: z.number(), photosSkipped: z.number(), profile: z.string().nullable() }),
+        "Create a draft from a model page's address on MakerWorld (https://makerworld.com/<lang>/models/<id>, optionally #profileId-<n>), Printables (https://www.printables.com/model/<id>) or Thingiverse (https://www.thingiverse.com/thing:<id>): its title, description (as the site has it, often English), the page as its source, print time, weight, colours and the site's price where the site has slicer numbers (the time put onto Marcel's Bambu Lab A1), and up to 12 of its pictures as photos. Refused when the model is a print already.",
+      input: z.object({ url: z.string().min(1).describe("The model page's address.") }),
+      output: printSchema.extend({
+        site: z.string(),
+        photosAdded: z.number(),
+        photosSkipped: z.number(),
+        profile: z.string().nullable(),
+        scaled: z.object({ from: z.string(), factor: z.number(), to: z.string() }).nullable(),
+      }),
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
       handle: async ({ url }, who) => {
-        const got = await importFromMakerWorld(rt, url);
+        const got = await importFromLink(rt, url);
         if (!got.ok) return refused(got);
-        const { print, photos, photosSkipped, profile } = got.value;
+        const { print, site, photos, photosSkipped, profile, scaled } = got.value;
         const link = printUrl(who.base, print.id);
         return {
           ...printJson(who.base, print),
+          site,
           photosAdded: photos,
           photosSkipped,
           profile,
+          scaled,
           guidance: [
-            `Created as a draft from MakerWorld${profile ? ` (profile "${profile}")` : ""}: not on the site yet.`,
-            "The description is MakerWorld's, often English: the site's is German, so write it in German with update_print (what the print is, short).",
+            `Created as a draft from ${site}${profile ? ` (numbers from "${profile}")` : ""}: not on the site yet.`,
+            ...(scaled
+              ? [
+                  `The print time was sliced for a ${scaled.from} and is scaled by ${scaled.factor} for Marcel's ${scaled.to}: an estimate; his own 3MF gives the real time.`,
+                ]
+              : []),
+            "The description is the site's, often English: the site's is German, so write it in German with update_print (what the print is, short).",
             `The ${photos} photo${photos === 1 ? " is" : "s are"} the designer's pictures, not Marcel's: before publishing, Marcel adds his own at ${link} and removes these.`,
             ...tips(print),
           ],

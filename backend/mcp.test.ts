@@ -75,7 +75,7 @@ const TOOLS = [
   "list_prints",
   "get_print",
   "create_print",
-  "import_from_makerworld",
+  "import_from_link",
   "update_print",
   "publish_print",
   "unpublish_print",
