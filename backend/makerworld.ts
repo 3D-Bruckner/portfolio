@@ -1,14 +1,13 @@
 // A print from a MakerWorld link: paste the model's address and upload makes the draft from what MakerWorld says about it, so in the
 // best case nothing is typed by hand. MakerWorld's own JSON API (the one its pages load, open without signing in) gives:
-//   GET https://makerworld.com/api/v1/design-service/design/<id>
+//   GET https://api.bambulab.com/v1/design-service/design/<id>
 //   title, summary (HTML), designCreator.name, designExtension.design_pictures / real_pictures (the gallery), defaultInstanceId and
 //   instances[]: the print profiles, each with prediction (seconds), weight (grams), instanceFilaments[{type, color, usedG}], pictures.
 // The draft gets the title, the description as plain text, the MakerWorld page as its source, and time, weight, colours and the site's
 // price from one profile: the one the link names (#profileId-<n>), else the default, else the first. The 3MF itself needs a MakerWorld
 // sign-in and isn't fetched; the profile carries the slicer's numbers already. Then the gallery's pictures become its photos (a GIF by
 // its first frame), at most PHOTO_MAX, fetched only from MakerWorld's own picture hosts. A picture that fails is skipped and counted;
-// MakerWorld being unreachable or answering something else refuses the import and makes nothing. Requests go through rt.httpGet, not
-// fetch: MakerWorld's bot protection refuses Node's fetch (httpget.ts).
+// MakerWorld being unreachable or answering something else refuses the import and makes nothing.
 //
 // The pictures are the designer's, not Marcel's: the import says so (guidance, the UI's message), so they are replaced by his own before
 // the print goes on the site.
@@ -25,11 +24,12 @@ import { createPrint, getPrint, listPrints, type Print } from "./prints";
 import type { Runtime } from "./runtime";
 import { materialOf, plainText } from "./threemf";
 
-export const MAKERWORLD_API = "https://makerworld.com/api/v1/design-service/design";
+// Bambu Lab's own API host: it answers MakerWorld's design data to a plain client (makerworld.com's own copy sits behind bot protection,
+// which upload doesn't try to get around).
+export const MAKERWORLD_API = "https://api.bambulab.com/v1/design-service/design";
 /** The most photos one import brings; the gallery can hold dozens. */
 export const PHOTO_MAX = 12;
 const PICTURE_BYTES_MAX = 25 * 1024 * 1024;
-const DESIGN_BYTES_MAX = 5 * 1024 * 1024;
 const TIMEOUT_MS = 20_000;
 // MakerWorld's API answers a plain client; a browser's name isn't needed, a name of our own is honest.
 const USER_AGENT = "3dbruckner-upload (+https://upload.3dbruckner.de)";
@@ -147,17 +147,16 @@ export async function importFromMakerWorld(rt: Runtime, link: string): Promise<O
 
   let design: Design;
   try {
-    const r = await rt.httpGet(`${MAKERWORLD_API}/${named.designId}`, {
+    const r = await rt.fetch(`${MAKERWORLD_API}/${named.designId}`, {
       headers: { accept: "application/json", "user-agent": USER_AGENT },
-      timeoutMs: TIMEOUT_MS,
-      maxBytes: DESIGN_BYTES_MAX,
+      signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if (r.status === 404) return notFound(`MakerWorld has no model ${named.designId}.`);
-    if (r.status !== 200) {
+    if (!r.ok) {
       rt.log.warn({ designId: named.designId, status: r.status }, "makerworld: the API refused");
       return invalid(`MakerWorld didn't answer (${r.status}); try again later.`);
     }
-    const parsed = designSchema.safeParse(JSON.parse(r.body.toString("utf8")));
+    const parsed = designSchema.safeParse(await r.json());
     if (!parsed.success) {
       rt.log.warn({ designId: named.designId, issues: parsed.error.issues.slice(0, 3) }, "makerworld: an answer of another shape");
       return invalid("MakerWorld answered with something upload doesn't read; the import needs a change.");
@@ -180,9 +179,11 @@ export async function importFromMakerWorld(rt: Runtime, link: string): Promise<O
     for (const [i, url] of draft.pictures.entries()) {
       const file = join(dir, `${i}.jpg`);
       try {
-        const r = await rt.httpGet(url, { headers: { "user-agent": USER_AGENT }, timeoutMs: TIMEOUT_MS, maxBytes: PICTURE_BYTES_MAX });
-        if (r.status !== 200) throw new Error(`status ${r.status}`);
-        const bytes = r.body;
+        const r = await rt.fetch(url, { headers: { "user-agent": USER_AGENT }, signal: AbortSignal.timeout(TIMEOUT_MS) });
+        if (!r.ok) throw new Error(`status ${r.status}`);
+        if (Number(r.headers.get("content-length") ?? 0) > PICTURE_BYTES_MAX) throw new Error("too large");
+        const bytes = Buffer.from(await r.arrayBuffer());
+        if (bytes.length > PICTURE_BYTES_MAX) throw new Error("too large");
         // Whatever it is (JPEG, PNG, WebP, an animated GIF), the photo is a JPEG of its first frame, upright.
         writeFileSync(file, await sharp(bytes, { animated: false }).rotate().jpeg({ quality: 92 }).toBuffer());
         const added = await addPhoto(rt, id, { path: file, type: "image/jpeg" });
