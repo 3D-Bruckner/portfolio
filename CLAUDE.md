@@ -17,7 +17,7 @@ upload: where 3dbruckner.de's prints are put in (their photos and details, from 
 
 The whole picture is [`docs/architecture.md`](docs/architecture.md); the tools [`docs/mcp.md`](docs/mcp.md); the settings and data directory [`docs/configuration.md`](docs/configuration.md).
 
-- `app/` (pages under `app/[lang]/`, route handlers outside it) and `components/` import the backend only through `@/backend`; `backend/` never imports Next.js, React or the frontend. ESLint enforces both.
+- `app/` (pages under `app/[lang]/`, route handlers outside it) and `components/` import the backend only through `@/backend`, or `@/backend/client` in the browser (pure code only, such as the 3MF reader); `backend/` never imports Next.js, React or the frontend. ESLint enforces both.
 - `backend/db/` alone holds `better-sqlite3`, `kysely` (types excepted), the connection, the migrations and every query; domain code reaches the database only through `rt.store`, and a change runs in `mutation(rt, fn)` (one transaction, then `onSiteChange` once if the site shows it). ESLint enforces it.
 - A print's fields are listed once, in `backend/printfields.ts`; the create/edit schemas, MCP, REST and the web form are built from it.
 - MCP (`backend/mcp.ts`), REST (`backend/rest.ts`) and the web app's server actions call the same domain functions. Each REST operation names the MCP tool it mirrors or says why none (`checkOpsMirrorTools`); every MCP result carries `guidance` and, for a print, its `url` (`<PUBLIC_URL>/prints/<id>`).

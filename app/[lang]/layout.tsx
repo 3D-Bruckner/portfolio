@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { CopyProvider } from "@/components/CopyProvider";
 import { copyFor, isLocale } from "@/components/copy";
+import "@fontsource-variable/archivo";
+import "@fontsource-variable/hanken-grotesk";
 import "../globals.css";
 
 // The root layout. Its language is the page's, from proxy.ts's rewrite; no URL carries it (conventions: code/language).

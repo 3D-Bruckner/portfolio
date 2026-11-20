@@ -14,6 +14,7 @@
   --accent-hover: #a3264d;
   --on-accent: #ffffff;
   --danger: #b42318;
+  --success: #1f7a4d;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -28,6 +29,7 @@
     --accent-hover: #f79bb3;
     --on-accent: #1b0a11;
     --danger: #ff8a7a;
+    --success: #5fd39a;
   }
 }
 
@@ -42,6 +44,10 @@
   --color-accent-hover: var(--accent-hover);
   --color-on-accent: var(--on-accent);
   --color-danger: var(--danger);
+  --color-success: var(--success);
+  /* 3dbruckner.de's type: Hanken Grotesk for text, Archivo for headings (self-hosted, app/[lang]/layout.tsx). */
+  --font-sans: "Hanken Grotesk Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Archivo Variable", system-ui, sans-serif;
 }
 
 @layer base {
@@ -59,7 +65,11 @@
   /* A page with a sticky bar at the bottom (the print form's Save bar): a field brought into view (focus, the next field on a phone's
      keyboard) stops above the bar, not under it. */
   html:has([data-sticky-bottom]) {
-    scroll-padding-bottom: 9rem;
+    scroll-padding-bottom: calc(9rem + var(--tabbar));
+  }
+  /* Numbers line up: weights, times, prices, counts. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -68,6 +78,8 @@
    run to the edges; the headers take the top and the Save bar the bottom themselves. -mx-safe lets a bar inside a padded row reach its
    edges. */
 :root {
+  /* The tab bar at the bottom (NavLinks): what a page and a sticky bar keep clear of. */
+  --tabbar: calc(3.75rem + env(safe-area-inset-bottom));
   --gutter-left: max(1rem, env(safe-area-inset-left));
   --gutter-right: max(1rem, env(safe-area-inset-right));
 }

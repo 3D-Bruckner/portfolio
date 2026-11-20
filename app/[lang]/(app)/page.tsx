@@ -3,7 +3,7 @@ import { requirePerson } from "@/app/_lib/signin";
 import { runtime } from "@/app/_lib/runtime";
 import { listPrints, type Print } from "@/backend";
 import { copyFor, type Copy } from "@/components/copy";
-import { AddIcon, PhotoIcon, ShowcaseIcon } from "@/components/icons";
+import { AddIcon, ChevronIcon, PhotoIcon, ShowcaseIcon } from "@/components/icons";
 import { Tabs } from "@/components/Tabs";
 import { ui } from "@/components/ui";
 
@@ -24,7 +24,7 @@ export default async function Home({ params, searchParams }: PageProps<"/[lang]"
           {t.list.newPrint}
         </Link>
       </div>
-      <div className="mt-4">
+      <div className="mt-5">
         <Tabs
           label={t.list.tabs}
           initial={typeof tab === "string" ? tab : published.length === 0 && drafts.length > 0 ? "drafts" : "published"}
@@ -51,7 +51,7 @@ function PrintList({ prints, empty, t }: { prints: Print[]; empty: string; t: Co
         const sha = p.photos.find((ph) => ph.id === cover)?.sha256;
         return (
           <li key={p.id}>
-            <Link href={`/prints/${p.id}`} className="flex items-center gap-3 py-3">
+            <Link href={`/prints/${p.id}`} className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-surface">
               {cover ? (
                 // eslint-disable-next-line @next/next/no-img-element -- the app's own photo route, private and per-session
                 <img
@@ -60,26 +60,29 @@ function PrintList({ prints, empty, t }: { prints: Print[]; empty: string; t: Co
                   width={64}
                   height={64}
                   loading="lazy"
-                  className="size-16 shrink-0 rounded-lg bg-surface object-cover"
+                  className="size-16 shrink-0 rounded-xl bg-surface object-cover"
                 />
               ) : (
-                <span className="flex size-16 shrink-0 items-center justify-center rounded-lg bg-surface text-muted">
+                <span className="flex size-16 shrink-0 items-center justify-center rounded-xl bg-surface text-muted">
                   <PhotoIcon aria-hidden="true" className="size-6" />
                 </span>
               )}
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium">{p.title}</span>
-                <span className="mt-0.5 flex flex-wrap items-center gap-x-3 text-sm text-muted">
-                  <span>{p.photos.length === 0 ? t.list.noPhoto : t.list.photos(p.photos.length)}</span>
-                  {p.price !== null && <span>{t.list.price(p.price)}</span>}
+                <span className="block truncate font-semibold">{p.title}</span>
+                <span className="tabular mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+                  <span>
+                    {p.photos.length === 0 ? t.list.noPhoto : t.list.photos(p.photos.length)}
+                    {p.price !== null && ` · ${t.list.price(p.price)}`}
+                  </span>
                   {p.showcase && (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-line px-2 font-medium text-ink">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-px text-xs font-semibold text-ink">
                       <ShowcaseIcon aria-hidden="true" className="size-3.5" />
                       {t.list.showcase}
                     </span>
                   )}
                 </span>
               </span>
+              <ChevronIcon aria-hidden="true" className="size-5 shrink-0 text-muted" />
             </Link>
           </li>
         );

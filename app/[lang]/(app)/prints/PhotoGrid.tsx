@@ -15,6 +15,9 @@ import { CropFrame, type Crop } from "./CropFrame";
 
 export type GridPhoto = { id: string; sha256: string; original: { width: number; height: number } | null; crop: Crop | null };
 
+/** How many photos show before "show all". */
+const FIRST_FEW = 6;
+
 export function PhotoGrid({ printId, published, coverId, photos }: { printId: string; published: boolean; coverId: string | null; photos: GridPhoto[] }) {
   const t = useCopy();
   const tg = t.photoGrid;
@@ -23,6 +26,14 @@ export function PhotoGrid({ printId, published, coverId, photos }: { printId: st
   const [busy, start] = useTransition();
   const [deleting, setDeleting] = useState<string | null>(null);
   const [cropping, setCropping] = useState<string | null>(null);
+  // A print with many photos shows the first few until asked, so its details aren't screens away.
+  const [all, setAll] = useState(photos.length <= FIRST_FEW);
+  // New photos are added at the end: once there are more than before, all of them show, so the new ones can be seen.
+  const [seen, setSeen] = useState(photos.length);
+  if (photos.length !== seen) {
+    setSeen(photos.length);
+    if (photos.length > seen) setAll(true);
+  }
   const byId = new Map(photos.map((p) => [p.id, p]));
 
   const run = (fn: () => Promise<Result>) =>
@@ -63,7 +74,7 @@ export function PhotoGrid({ printId, published, coverId, photos }: { printId: st
         <ul aria-label={tg.label} className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {order.map((id, i) => {
             const p = byId.get(id);
-            if (!p) return null;
+            if (!p || (!all && i >= FIRST_FEW)) return null;
             const n = i + 1;
             const cover = id === coverId;
             return (
@@ -138,6 +149,11 @@ export function PhotoGrid({ printId, published, coverId, photos }: { printId: st
             );
           })}
         </ul>
+      )}
+      {!all && (
+        <button type="button" onClick={() => setAll(true)} className={`${ui.secondary} mt-3 w-full`}>
+          {tg.showAll(photos.length)}
+        </button>
       )}
       <ConfirmDialog
         open={deleting !== null}

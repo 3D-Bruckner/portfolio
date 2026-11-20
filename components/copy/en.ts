@@ -127,6 +127,14 @@ export const en = {
       sources: { label: "Sources", hint: "Where the model comes from." },
       slug: { label: "Address on the site", hint: "Fixed once the print is published." },
     },
+    groups: {
+      text: "Text",
+      numbers: "Price & slicer",
+      numbersHint: "From the slicer, or filled in from a 3MF file above.",
+      categories: "Categories",
+      origin: "Origin",
+      address: "Address",
+    },
     slugFixed: "Fixed since the print was first published.",
     threeMf: {
       button: "Fill in from a 3MF file",
@@ -174,6 +182,7 @@ export const en = {
     addHint: "From the camera roll; several at once, one after the other.",
     label: "Photos",
     none: "No photos yet.",
+    showAll: (n: number) => `Show all ${n} photos`,
     photo: (n: number) => `Photo ${n}`,
     uploading: (name: string, percent: number) => `${name}: ${percent} %`,
     processing: (name: string) => `${name}: processing…`,

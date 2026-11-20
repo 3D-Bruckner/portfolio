@@ -1,0 +1,35 @@
+:root {
+  --bg: #ffffff;
+  --surface: #f5f5f6;
+  --fg: #15171c;
+  --muted: #5a606c;
+  --border: #e2e4e9;
+  --accent: #c2305e;
+  --accent-hover: #a3264d;
+  --accent-on: #ffffff;
+  --danger: #b42318;
+  --success: #1f7a4d;
+  --font-display: "Archivo", system-ui, sans-serif;
+  --font-body: "Hanken Grotesk", system-ui, -apple-system, sans-serif;
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 17px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 28px;
+  --text-4xl: 36px;
+  --leading-body: 1.5;
+  --leading-tight: 1.15;
+  --tracking-display: -0.02em;
+  --section-y-desktop: 64px;
+  --section-y-tablet: 48px;
+  --section-y-phone: 24px;
+  --container-max: 640px;
+  --container-gutter-desktop: 32px;
+  --container-gutter-tablet: 24px;
+  --container-gutter-phone: 16px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
