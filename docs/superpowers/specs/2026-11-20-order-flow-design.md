@@ -1,6 +1,6 @@
 # Order flow: from the order form to the A1 and back
 
-Status: draft, decisions marked **D1–D6** wait for Marcel. Date: 2026-11-20.
+Status: agreed 2026-11-20 (Marcel: "go on with the spec and order flow"; D1–D6 as recommended below, D4 later). Date: 2026-11-20.
 
 ## Goal
 
@@ -95,7 +95,9 @@ same states, so its inbox shows where each request is.
 
 ## Order of work
 
-1. Bambuddy and Spoolman in the homelab (spec there, with the Claude gateway).
+1. Bambuddy and Spoolman in the homelab (spec there, with the Claude gateway: MarcelBruckner-Homelab/homelab#596; the A1's mode,
+   cloud read-only or LAN-only with Developer Mode, is Marcel's call there and decides whether the bridge can queue prints or only
+   report them).
 2. upload: orders without the bridge (noticebox → order → Invoice Ninja draft → states), tested end to end with noticebox's test
    posts.
 3. print-bridge and the link from a catalogue print to its Bambuddy archive entry (D3).
