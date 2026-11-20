@@ -10,6 +10,7 @@ import * as z from "zod";
 import { API_TOKEN_PREFIX } from "./accounts";
 import { createCategory, deleteCategory, listCategories, renameCategory } from "./categories";
 import { siteExport, siteExportSchema } from "./export";
+import { importFromMakerWorld } from "./makerworld";
 import { movePrint, moveShowcase, setShowcase } from "./order";
 import type { Outcome, Reason } from "./outcome";
 import { deletePhoto, getPhoto, photoPath, reorderPhotos, setCover, setCrop } from "./photos";
@@ -127,6 +128,18 @@ export const REST_OPS: Op<Runtime>[] = [
     ok: { status: 201, description: "The new draft", schema: printSchema },
     errors: [400, 401, 403, 409],
     handle: ({ ctx, base, body }) => answer(createPrint(ctx, body as z.infer<typeof printInputSchema>), 201, (p) => printJson(base, p)),
+  },
+  {
+    method: "POST",
+    path: "/prints/from-makerworld",
+    operationId: "importFromMakerWorld",
+    tool: "import_from_makerworld",
+    summary: "Create a draft from a MakerWorld model's address: its words, source, print time, weight, colours, price and up to 12 pictures",
+    tag: "Prints",
+    body: z.object({ url: z.string().min(1).describe("The MakerWorld model's address, e.g. https://makerworld.com/de/models/123456") }),
+    ok: { status: 201, description: "The new draft", schema: printSchema },
+    errors: [400, 401, 403, 404, 409],
+    handle: async ({ ctx, base, body }) => answer(await importFromMakerWorld(ctx, (body as { url: string }).url), 201, (i) => printJson(base, i.print)),
   },
   {
     method: "PATCH",

@@ -107,6 +107,18 @@ export const en = {
     starting: "Making the draft…",
     startHint: "Straight from the camera roll: a draft with these photos; name it afterwards.",
     draftTitle: (when: string) => `New print ${when}`,
+    makerWorld: "Paste a MakerWorld link",
+    makerWorldPlaceholder: "https://makerworld.com/de/models/…",
+    makerWorldGo: "Import",
+    makerWorldBusy: "Fetching from MakerWorld…",
+    makerWorldErrors: {
+      link: "That isn't a MakerWorld model's address (https://makerworld.com/…/models/…).",
+      already: "This model is a print already; it's open now.",
+      noModel: "MakerWorld has no model at this address.",
+      unreachable: "MakerWorld can't be reached right now. Try again in a moment.",
+    },
+    makerWorldHint:
+      "Title, description, print time, weight, colours, price and the pictures come in as a draft. The pictures are the designer's: swap in your own before publishing.",
     emptyPublished: "No print is published yet. Open a draft and publish it.",
     emptyDrafts: "No drafts. Start one with “New print”.",
     showcase: "Showcase",

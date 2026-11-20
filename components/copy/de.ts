@@ -106,6 +106,18 @@ export const de: Copy = {
     starting: "Entwurf wird angelegt…",
     startHint: "Direkt aus der Mediathek: ein Entwurf mit diesen Fotos; benennen kannst du ihn danach.",
     draftTitle: (when: string) => `Neuer Druck ${when}`,
+    makerWorld: "MakerWorld-Link einfügen",
+    makerWorldPlaceholder: "https://makerworld.com/de/models/…",
+    makerWorldGo: "Übernehmen",
+    makerWorldBusy: "Wird von MakerWorld geholt…",
+    makerWorldErrors: {
+      link: "Das ist keine Adresse eines MakerWorld-Modells (https://makerworld.com/…/models/…).",
+      already: "Dieses Modell ist schon ein Druck; er ist jetzt geöffnet.",
+      noModel: "Unter dieser Adresse hat MakerWorld kein Modell.",
+      unreachable: "MakerWorld ist gerade nicht erreichbar. Versuch es gleich noch einmal.",
+    },
+    makerWorldHint:
+      "Titel, Beschreibung, Druckzeit, Gewicht, Farben, Preis und die Bilder kommen als Entwurf. Die Bilder sind die des Designers: vor dem Veröffentlichen durch deine eigenen ersetzen.",
     emptyPublished: "Noch ist kein Druck veröffentlicht. Öffne einen Entwurf und veröffentliche ihn.",
     emptyDrafts: "Keine Entwürfe. Fang einen mit „Neuer Druck“ an.",
     showcase: "Showcase",
