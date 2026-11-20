@@ -248,6 +248,7 @@ export const en = {
     unpin: "Unpin",
     unpinLabel: (title: string) => `${title} unpin`,
     saved: "Order saved",
+    edit: (title: string) => `Edit ${title}`,
   },
   categories: {
     title: "Categories",

@@ -248,6 +248,7 @@ export const de: Copy = {
     unpin: "Lösen",
     unpinLabel: (title: string) => `${title} lösen`,
     saved: "Reihenfolge gespeichert",
+    edit: (title: string) => `${title} bearbeiten`,
   },
   categories: {
     title: "Kategorien",
