@@ -32,8 +32,9 @@ export function Categories({ categories }: { categories: Category[] }) {
       <form onSubmit={submitWith(create)} className="mt-5 flex flex-wrap items-end gap-3">
         <label className="block min-w-0 flex-1">
           <span className={ui.label}>{tc.newLabel}</span>
-          {/* A created category empties the field: the input is new once the list has one more. */}
-          <input name="name" required maxLength={60} key={created?.ok ? categories.length : "typing"} className={ui.input} />
+          {/* A created category empties the field: the input is new once the list has one more. A refusal leaves the list (and the
+              typed name) as it was. */}
+          <input name="name" required maxLength={60} key={categories.length} className={ui.input} />
         </label>
         <button type="submit" disabled={creating} className={ui.button}>
           <AddIcon aria-hidden="true" className={ui.iconSize} />

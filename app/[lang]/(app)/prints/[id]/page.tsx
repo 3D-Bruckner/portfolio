@@ -13,6 +13,7 @@ import { PhotoUploader } from "../PhotoUploader";
 import { fieldSpecs } from "../printform";
 import { PrintForm, type FormValues } from "../PrintForm";
 import { DeletePrint, PublishBar } from "../PublishBar";
+import { Readiness } from "../Readiness";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/prints/[id]">): Promise<Metadata> {
   const { lang, id } = await params;
@@ -42,7 +43,8 @@ export default async function PrintPage({ params }: PageProps<"/[lang]/prints/[i
         {t.common.back}
       </Link>
       <h1 className={`${ui.h1} break-words`}>{p.title}</h1>
-      <PublishBar printId={p.id} status={p.status} missing={missing} />
+      <PublishBar printId={p.id} status={p.status} missing={missing} siteHref={`${rt.config.siteUrl}/portfolio/${p.slug}/`} />
+      <Readiness print={p} lang={lang} />
 
       <section aria-labelledby="photos-heading" className={`${ui.card} mt-6`}>
         <h2 id="photos-heading" className={ui.h2}>

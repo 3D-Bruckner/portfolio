@@ -4,12 +4,12 @@
 import { useState, useTransition } from "react";
 import { useCopy } from "@/components/CopyProvider";
 import { ConfirmDialog } from "@/components/Dialog";
-import { DeleteIcon, PublishIcon, UnpublishIcon } from "@/components/icons";
+import { DeleteIcon, ExternalIcon, PublishIcon, UnpublishIcon } from "@/components/icons";
 import { Notice } from "@/components/Notice";
 import { ui } from "@/components/ui";
 import { publish, removePrint, unpublish, type Result } from "../actions";
 
-export function PublishBar({ printId, status, missing }: { printId: string; status: "draft" | "published"; missing: string[] }) {
+export function PublishBar({ printId, status, missing, siteHref }: { printId: string; status: "draft" | "published"; missing: string[]; siteHref: string }) {
   const t = useCopy();
   const [result, setResult] = useState<Result | null>(null);
   const [busy, start] = useTransition();
@@ -20,6 +20,12 @@ export function PublishBar({ printId, status, missing }: { printId: string; stat
       <p className={`flex items-center gap-2 text-sm font-semibold ${published ? "text-success" : "text-muted"}`}>
         {published ? <PublishIcon aria-hidden="true" className={ui.iconSize} /> : <UnpublishIcon aria-hidden="true" className={ui.iconSize} />}
         <span>{t.print.status[status]}</span>
+        {published && (
+          <a href={siteHref} className="ml-auto inline-flex min-h-11 items-center gap-1 font-semibold text-ink underline underline-offset-2">
+            {t.print.onSite}
+            <ExternalIcon aria-hidden="true" className="size-3.5" />
+          </a>
+        )}
       </p>
       {!published && missing.length > 0 && <p className="text-sm text-muted">{t.print.missing(missing)}</p>}
       {published ? (

@@ -95,3 +95,14 @@ describe("formTakesEveryPrintField", () => {
     expect(Object.keys(specs).sort()).toEqual(Object.keys(PRINT_FIELDS).sort());
   });
 });
+
+describe("changedOnly", () => {
+  it("onlyWhatWasChanged: with _fields, an edit carries only the fields named there; a checkbox left out stays as it is", () => {
+    const fd = filled();
+    fd.delete("selfDesigned");
+    fd.set("_fields", "price,colors");
+    expect(formValues(fd, "edit")).toEqual({ price: 6, colors: 2 });
+    fd.set("_fields", "");
+    expect(formValues(fd, "edit")).toEqual({});
+  });
+});

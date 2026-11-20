@@ -35,9 +35,14 @@ function read(fd: FormData, name: PrintFieldName): unknown {
 /** The wire values of a posted print form: on create the fields create takes, on edit every field (the slug only when posted). */
 export function formValues(fd: FormData, mode: "create" | "edit"): Record<string, unknown> {
   const out: Record<string, unknown> = {};
+  // The form names the fields that were changed in it (_fields): only those are saved, so what someone else (Claude, another tab)
+  // changed since the page was opened stays.
+  const named = fd.get("_fields");
+  const only = mode === "edit" && typeof named === "string" ? new Set(named.split(",").filter(Boolean)) : null;
   for (const name of NAMES) {
     const f = PRINT_FIELDS[name];
     if (mode === "create" && f.onCreate === null) continue;
+    if (only && !only.has(name)) continue;
     if (f.kind === "slug" && !fd.has(name)) continue;
     out[name] = read(fd, name);
   }

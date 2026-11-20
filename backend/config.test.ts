@@ -100,6 +100,7 @@ describe("loadConfig", () => {
         UPLOAD_GITHUB_TOKEN: "github_pat_x",
         UPLOAD_SITE_REPO: "someone/site",
         UPLOAD_SITE_WORKFLOW: "build.yml",
+        UPLOAD_SITE_URL: "https://example.org/",
         UPLOAD_MAX_PHOTO_MB: "25",
       }),
     );
@@ -113,6 +114,7 @@ describe("loadConfig", () => {
       githubToken: "github_pat_x",
       siteRepo: "someone/site",
       siteWorkflow: "build.yml",
+      siteUrl: "https://example.org",
       maxPhotoMb: 25,
     });
   });

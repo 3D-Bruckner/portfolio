@@ -167,6 +167,13 @@ describe("prints", () => {
     expect(await refusal("get_print", { id: "nope" })).toMatch(/No print/);
   });
 
+  it("get_print and update_print: tips for how the print looks on the site, until it has what they name", async () => {
+    const d = draft("Lampe");
+    expect(said(await tool("get_print", { id: d.id }))).toMatch(/No price/);
+    expect(said(await tool("update_print", { id: d.id, price: 12 }))).not.toMatch(/No price/);
+    expect(said(await tool("get_print", { id: d.id }))).toMatch(/No category/);
+  });
+
   it("create_print: a draft with its URL; photos are added in the web form there, and a draft is not on the site", async () => {
     const cat = value(createCategory(rt, "Deko"));
     const made = await tool<{ id: string; url: string; status: string; slug: string; categoryIds: string[]; price: number | null }>("create_print", {

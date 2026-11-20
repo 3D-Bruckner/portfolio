@@ -35,7 +35,7 @@ export function Tokens({ tokens }: { tokens: Token[] }) {
       <form onSubmit={submit} className="mt-4 space-y-3">
         <label className="block">
           <span className={ui.label}>{tt.name}</span>
-          <input name="name" required maxLength={100} className={ui.input} />
+          <input name="name" required maxLength={60} className={ui.input} />
         </label>
         <div className="flex flex-wrap gap-3">
           <label className="block">

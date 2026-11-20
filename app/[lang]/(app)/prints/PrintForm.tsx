@@ -3,14 +3,15 @@
 // posts to savePrint, whose parse is the table's (printform.ts). Submitted by hand (startTransition), not as <form action>, so a refused
 // save keeps what was typed.
 import Link from "next/link";
-import { startTransition, useActionState, useRef, useState, type FormEvent } from "react";
-import type { ThreeMfReading } from "@/backend/client";
+import { startTransition, useActionState, useEffect, useRef, useState, type FormEvent } from "react";
+import { suggestedPrice, type ThreeMfReading } from "@/backend/client";
 import { useCopy } from "@/components/CopyProvider";
 import { AddIcon, CloseIcon } from "@/components/icons";
 import { Notice } from "@/components/Notice";
+import { useHydrated } from "@/components/useHydrated";
 import { ui } from "@/components/ui";
 import { savePrint } from "../actions";
-import { FORM_GROUPS, type FieldSpec, type PrintFieldName } from "./fieldorder";
+import { FORM_GROUPS, FORM_ORDER, type FieldSpec, type PrintFieldName } from "./fieldorder";
 import { ThreeMfFill, type FillPart } from "./ThreeMfFill";
 
 export type FormValues = {
@@ -35,6 +36,12 @@ type Props = {
   slugFixed: boolean;
 };
 
+/** Each field's posted entries (a source's label and url go under "sources"), as one string to compare. */
+function snapshot(form: HTMLFormElement): Record<string, string> {
+  const entries = [...new FormData(form).entries()].map(([k, v]) => [k, String(v)] as const);
+  return Object.fromEntries(FORM_ORDER.map((n) => [n, JSON.stringify(entries.filter(([k]) => k === n || k.startsWith(`${n}.`)))]));
+}
+
 /** 135 → "2 h 15 min". */
 const formatMinutes = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}` : `${m} min`);
 
@@ -46,6 +53,8 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
   const [sources, setSources] = useState(() => (values?.sources ?? []).map((s, i) => ({ ...s, key: i })));
   const [nextKey, setNextKey] = useState(sources.length);
   const form = useRef<HTMLFormElement>(null);
+  // Saving needs the page's script (the form is sent by submit, not by the browser): before it runs, the button waits.
+  const hydrated = useHydrated();
 
   // What a 3MF holds goes into the fields: the slicer's numbers and the suggested price always (they belong to that file), the title and
   // the description only into empty fields, the MakerWorld page only when no source is set. Nothing is saved until the form is.
@@ -59,13 +68,20 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
       filled.push(name);
     };
     put("printTimeMinutes", r.printTimeMinutes);
-    if (r.printTimeMinutes !== undefined) setMinutes(r.printTimeMinutes);
+    setNums((n) => ({
+      price: r.price ?? n.price ?? null,
+      weightGrams: r.weightGrams ?? n.weightGrams ?? null,
+      printTimeMinutes: r.printTimeMinutes ?? n.printTimeMinutes ?? null,
+      colors: r.colors ?? n.colors ?? null,
+    }));
     put("weightGrams", r.weightGrams);
     put("colors", r.colors);
     put("price", r.price);
     put("title", r.title, true);
     put("description", r.description, true);
-    if (r.source && !sources.some((s) => s.url.trim())) {
+    // A source counts as there when its address field holds something now (typed, not only the one the page came with).
+    const typed = [...(form.current?.querySelectorAll<HTMLInputElement>('input[name="sources.url"]') ?? [])].some((i) => i.value.trim());
+    if (r.source && !typed) {
       setSources([{ ...r.source, key: nextKey }]);
       setNextKey(nextKey + 1);
       filled.push("sources");
@@ -73,15 +89,47 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
     return filled;
   }
 
+  // The form's values as they were shown (and as last saved), per field: a save sends only the fields that differ, so what Claude or
+  // another tab changed since stays (printform.ts, _fields).
+  const shown = useRef<Record<string, string> | null>(null);
+  useEffect(() => {
+    if (form.current) shown.current = snapshot(form.current);
+  }, []);
+  useEffect(() => {
+    if (result?.ok && form.current) shown.current = snapshot(form.current);
+  }, [result]);
+
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    if (printId !== null && shown.current) {
+      const now = snapshot(e.currentTarget);
+      fd.set("_fields", FORM_ORDER.filter((n) => now[n] !== shown.current![n]).join(","));
+    }
     startTransition(() => dispatch(fd));
   }
 
   const groups = FORM_GROUPS.map((g) => ({ ...g, fields: g.fields.filter((n) => printId !== null || n !== "slug") })).filter((g) => g.fields.length > 0);
   // The print time as hours and minutes, under its field, as it is typed.
-  const [minutes, setMinutes] = useState<number | null>(values?.printTimeMinutes ?? null);
+  // The numbers as typed, for the print time in hours and the price the site's formula suggests from weight and time.
+  const [nums, setNums] = useState<Record<string, number | null>>({
+    price: values?.price ?? null,
+    weightGrams: values?.weightGrams ?? null,
+    printTimeMinutes: values?.printTimeMinutes ?? null,
+    colors: values?.colors ?? null,
+  });
+  const setNum = (name: string, value: string) => setNums((n) => ({ ...n, [name]: value === "" ? null : Number(value) }));
+  const minutes = nums.printTimeMinutes ?? null;
+  const suggestion =
+    nums.weightGrams && nums.printTimeMinutes
+      ? suggestedPrice({ weightGrams: nums.weightGrams, printTimeMinutes: nums.printTimeMinutes, multicolor: (nums.colors ?? 1) >= 2, material: "PLA" })
+      : null;
+  function takeSuggestion() {
+    const el = form.current?.elements.namedItem("price");
+    if (suggestion === null || !(el instanceof HTMLInputElement)) return;
+    el.value = String(suggestion);
+    setNum("price", el.value);
+  }
 
   function field(name: PrintFieldName) {
     const spec = specs[name];
@@ -135,7 +183,7 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
               max={spec.max}
               defaultValue={(values?.[name] as number | null | undefined) ?? ""}
               aria-describedby={name === "printTimeMinutes" ? `${id}-as-hours` : undefined}
-              onInput={name === "printTimeMinutes" ? (e) => setMinutes(e.currentTarget.value ? Number(e.currentTarget.value) : null) : undefined}
+              onInput={(e) => setNum(name, e.currentTarget.value)}
               className={`${ui.input} tabular`}
             />
             {/* The group says where these come from; the print time also says itself in hours. */}
@@ -236,7 +284,9 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
             <label htmlFor={id} className={ui.label}>
               {words.label}
             </label>
+            {/* Keyed by the stored address: when a save changes it (it follows a new title), the field shows the new one. */}
             <input
+              key={values?.slug ?? ""}
               id={id}
               name={name}
               defaultValue={values?.slug ?? ""}
@@ -266,6 +316,18 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
             </h3>
             <p className={`${ui.hint} mt-0.5`}>{t.print.groups.numbersHint}</p>
             <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-4">{fields.map(field)}</div>
+            {/* From weight and time, the price the site's own formula gives (PLA): one tap takes it. */}
+            {suggestion !== null && suggestion !== nums.price && (
+              <p
+                className="mt-3 flex min-h-11 flex-wrap items-center justify-between gap-x-3 rounded-lg border border-border bg-paper px-3 text-sm"
+                aria-live="polite"
+              >
+                <span className="tabular text-muted">{t.print.suggestedPrice(suggestion)}</span>
+                <button type="button" onClick={takeSuggestion} className="min-h-11 font-semibold text-ink underline underline-offset-2">
+                  {t.print.takeSuggestion}
+                </button>
+              </p>
+            )}
           </section>
         ) : (
           <section key={group} aria-labelledby={`group-${group}`} className={`${ui.card} space-y-4`}>
@@ -278,7 +340,7 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
       )}
       <div data-sticky-bottom className="sticky bottom-[var(--tabbar)] z-10 -mx-safe space-y-2 border-t border-border bg-paper px-safe py-3">
         <Notice result={result} />
-        <button type="submit" disabled={pending} className={`${ui.button} w-full`}>
+        <button type="submit" disabled={pending || !hydrated} className={`${ui.button} w-full`}>
           {pending ? t.common.saving : t.common.save}
         </button>
       </div>
