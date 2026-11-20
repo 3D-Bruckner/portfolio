@@ -1,4 +1,4 @@
-// The MakerWorld import with a fake MakerWorld (rt.fetch): never the real one.
+// The MakerWorld import with a fake MakerWorld (rt.httpGet): never the real one.
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import { draftFrom, importFromMakerWorld, makerWorldLink, MAKERWORLD_API } from "./makerworld";
@@ -50,13 +50,12 @@ async function withMakerWorld(answer: unknown = design, status = 200) {
   const rt = testRuntime();
   const asked: string[] = [];
   const images: Record<string, Buffer> = { [PIC("a.png")]: await png(), [PIC("b.gif")]: await gif() };
-  rt.fetch = (async (url: string | URL | Request) => {
-    const u = String(url);
-    asked.push(u);
-    if (u.startsWith(MAKERWORLD_API)) return new Response(JSON.stringify(answer), { status });
-    const img = images[u];
-    return img ? new Response(new Uint8Array(img)) : new Response("gone", { status: 404 });
-  }) as typeof fetch;
+  rt.httpGet = async (url) => {
+    asked.push(url);
+    if (url.startsWith(MAKERWORLD_API)) return { status, type: "application/json", body: Buffer.from(JSON.stringify(answer)) };
+    const img = images[url];
+    return img ? { status: 200, type: "image/png", body: img } : { status: 404, type: "text/plain", body: Buffer.from("gone") };
+  };
   return { rt, asked };
 }
 

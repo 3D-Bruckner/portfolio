@@ -8,6 +8,7 @@ import type { Logger } from "pino";
 import { openUploadAuth, type MailWording } from "./accounts";
 import type { Config } from "./config";
 import { openStore, type Store } from "./db";
+import { httpGet, type HttpGet } from "./httpget";
 import { log } from "./log";
 import type { Outcome } from "./outcome";
 import { noteSiteChange } from "./site";
@@ -17,6 +18,8 @@ export type Runtime = {
   store: Store;
   clock: () => Date;
   fetch: typeof fetch;
+  /** A plain HTTPS GET for the pages Marcel shares to import (MakerWorld refuses fetch; httpget.ts). */
+  httpGet: HttpGet;
   log: Logger;
   /**
    * Called by every mutation the site shows (a published print, a category in use, the order, the showcases), after it is stored:
@@ -53,6 +56,7 @@ export function openRuntime(config: Config, signIn: SignInSettings, mail: MailWo
     store: openStore(config.dataDir),
     clock: () => new Date(),
     fetch: globalThis.fetch,
+    httpGet,
     log,
     onSiteChange: () => noteSiteChange(rt),
     signIn,
