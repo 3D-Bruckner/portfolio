@@ -74,8 +74,8 @@ same states, so its inbox shows where each request is.
 2. **noticebox form `3dbruckner-order`:** the six states, the webhook target (URL with the secret from the vault).
 3. **print-bridge (homelab stack):** a small Node or Python service, one loop: fetch jobs to print from upload, queue them in
    Bambuddy (its REST API with an API key), poll Bambuddy for their progress, report back. Its own upload token (jobs only).
-4. **Bambuddy and Spoolman (homelab stacks):** the A1 in LAN mode; Bambuddy's library scans the Nextcloud folder with the sliced
-   3MFs (D3); Bambuddy syncs Spoolman.
+4. **Bambuddy and Spoolman (homelab stacks):** the A1 in LAN mode; Bambuddy archives every file sent to the printer (D3);
+   Bambuddy syncs Spoolman.
 5. **The order form (site):** optional field "Druck aus dem Portfolio" (slug) and a colour from Spoolman's stock (D4, later).
 
 ## Decisions for Marcel
@@ -84,8 +84,10 @@ same states, so its inbox shows where each request is.
   products-1, ~150 MB) or keeping orders only in noticebox (no place for jobs and results).
 - **D2 What starts printing:** a button "Auftrag annehmen" in upload (recommended: one clear moment), or the quote's "approved" in
   Invoice Ninja (upload would poll it).
-- **D3 Which file Bambuddy prints:** a catalogue print gets a field "3MF in Nextcloud" (its path in the folder Bambuddy's library
-  scans); a custom order (no catalogue print) gets no Bambuddy job until Marcel puts its 3MF there and picks it. Recommended.
+- **D3 Which file Bambuddy prints:** Bambuddy's archive, which keeps every file sent to the printer from Bambu Studio. A catalogue
+  print points to its archive entry (picked once, in upload, from Bambuddy's list through the bridge); an order for it queues that
+  entry again. A custom order (no catalogue print) gets its job once Marcel has sliced it and sent it to the printer, which archives
+  it: he links that entry to the order. No shared folder. Recommended. (Marcel 2026-11-20: no Nextcloud.)
 - **D4 Colours from stock on the order form:** later, after Spoolman runs (it needs the site's form and noticebox's field to change).
 - **D5 Invoice Ninja is only ever a draft:** upload never sends a quote or an invoice; Marcel does, in Invoice Ninja. Recommended.
 - **D6 The customer hears from Marcel, not from the system:** no automatic mails; "fertig" is a state and a push to his phone (ntfy).
@@ -96,5 +98,5 @@ same states, so its inbox shows where each request is.
 1. Bambuddy and Spoolman in the homelab (spec there, with the Claude gateway).
 2. upload: orders without the bridge (noticebox → order → Invoice Ninja draft → states), tested end to end with noticebox's test
    posts.
-3. print-bridge and the Bambuddy file link (D3).
+3. print-bridge and the link from a catalogue print to its Bambuddy archive entry (D3).
 4. Results back (time, grams) into the order and the print's numbers (the "real print" feature).
