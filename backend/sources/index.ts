@@ -53,16 +53,23 @@ export function modelLink(input: string): { reader: Reader; id: string; url: URL
   return null;
 }
 
+/** The print whose sources name the same model as `link` (on any of the sites), other than `except`; null when there is none. */
+export function printOfModel(rt: Runtime, link: string, except: string | null = null): Print | null {
+  const named = modelLink(link);
+  if (!named) return null;
+  const same = (u: string) => {
+    const l = modelLink(u);
+    return l !== null && l.reader === named.reader && l.id === named.id;
+  };
+  return listPrints(rt).find((p) => p.id !== except && p.sources.some((s) => same(s.url))) ?? null;
+}
+
 /** Creates a draft from the model page at `link`, with its photos. */
 export async function importFromLink(rt: Runtime, link: string): Promise<Outcome<Imported>> {
   const named = modelLink(link);
   if (!named) return invalid("url: a model's address on MakerWorld, Printables or Thingiverse, e.g. https://makerworld.com/de/models/123456");
   const { reader, id } = named;
-  const same = (u: string) => {
-    const l = modelLink(u);
-    return l !== null && l.reader === reader && l.id === id;
-  };
-  const before = listPrints(rt).find((p) => p.sources.some((s) => same(s.url)));
+  const before = printOfModel(rt, link);
   if (before) return conflict(`${reader.site} model ${id} is print ${before.id} ("${before.title}") already.`);
 
   const draft = await reader.read(rt, id, named.url);

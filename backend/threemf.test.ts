@@ -1,6 +1,6 @@
 import { zipSync, strToU8 } from "fflate";
 import { describe, expect, it } from "vitest";
-import { suggestedPrice } from "./pricing";
+import { priceParts, suggestedPrice } from "./pricing";
 import { bytesSource, plainText, readThreeMf, type ByteSource } from "./threemf";
 
 const MODEL = `<?xml version="1.0" encoding="UTF-8"?>
@@ -87,6 +87,16 @@ describe("readThreeMf", () => {
     expect(got.ok && "colors" in got.value).toBe(false);
   });
 
+  it("slicedForTheA1OrNot: an A1 file's time as it is, a P1S file's scaled for the A1 with the slicer's own kept", async () => {
+    const forPrinter = (code: string) =>
+      `<config><plate><metadata key="index" value="1"/><metadata key="printer_model_id" value="${code}"/><metadata key="prediction" value="6000"/><metadata key="weight" value="20"/><filament id="1" type="PLA" color="#000000" used_g="20"/></plate></config>`;
+    const a1 = await readThreeMf(bytesSource(threeMf({ "Metadata/slice_info.config": forPrinter("N2S") })));
+    expect(a1.ok && a1.value).toMatchObject({ slicedFor: "A1", printTimeMinutes: 100 });
+    expect(a1.ok && "slicerMinutes" in a1.value).toBe(false);
+    const p1s = await readThreeMf(bytesSource(threeMf({ "Metadata/slice_info.config": forPrinter("C12") })));
+    expect(p1s.ok && p1s.value).toMatchObject({ slicedFor: "P1S", slicerMinutes: 100, printTimeMinutes: 130 });
+  });
+
   it("refusesWhatIsNot3mf: a JPEG, an empty file and a zip without a model", async () => {
     expect(await readThreeMf(bytesSource(new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3])))).toEqual({ ok: false, reason: "not_3mf" });
     expect(await readThreeMf(bytesSource(new Uint8Array()))).toEqual({ ok: false, reason: "not_3mf" });
@@ -119,5 +129,11 @@ describe("suggestedPrice", () => {
     // 50 g PLA (2.25 €) + 2 h (2 €) + 2 € fee = 6.25 → 6; multi-colour: (4.25 × 1.1) + 2 = 6.675 → 7.
     expect(suggestedPrice({ weightGrams: 50, printTimeMinutes: 120, multicolor: false, material: "PLA" })).toBe(6);
     expect(suggestedPrice({ weightGrams: 50, printTimeMinutes: 120, multicolor: true, material: "PLA" })).toBe(7);
+  });
+  it("partsAddUp: material, time, surcharge and fee are the price before rounding", () => {
+    const parts = priceParts({ weightGrams: 50, printTimeMinutes: 120, multicolor: true, material: "PLA" });
+    expect(parts).toMatchObject({ material: 2.25, time: 2, fee: 2 });
+    expect(parts.multicolor).toBeCloseTo(0.425);
+    expect(Math.round(parts.material + parts.time + parts.multicolor + parts.fee)).toBe(7);
   });
 });

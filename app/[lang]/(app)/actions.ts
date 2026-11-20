@@ -15,6 +15,7 @@ import {
   deletePhoto,
   deletePrint,
   importFromLink,
+  printOfModel,
   movePrint,
   moveShowcase,
   publishPrint,
@@ -114,6 +115,13 @@ export async function importLink(url: string): Promise<{ ok: true; id: string } 
   if (got.message.startsWith("url:")) return { ok: false, error: e.link };
   if (got.message.startsWith("thingiverse:")) return { ok: false, error: e.thingiverse };
   return { ok: false, error: e.unreachable };
+}
+
+/** Another print made from the same model page as `link` (a 3MF's MakerWorld page), so the form can say so before a second one is saved. */
+export async function otherPrintOfModel(link: string, printId: string | null): Promise<{ id: string; title: string } | null> {
+  if (!(await actionPerson())) return null;
+  const p = printOfModel(runtime(), link, printId);
+  return p ? { id: p.id, title: p.title } : null;
 }
 
 export async function publish(id: string): Promise<Result> {

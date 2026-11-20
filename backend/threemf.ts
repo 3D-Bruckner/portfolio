@@ -8,6 +8,7 @@
 //   3D/3dmodel.model            <metadata name="Title">, "Description" (MakerWorld's, HTML), "Designer", "DesignModelId"
 import { inflateSync } from "fflate";
 import { suggestedPrice, type Material } from "./pricing";
+import { bambuPrinter, onOurPrinter } from "./sources/printer";
 
 /** The file, read by ranges: a browser File (slice) or bytes in memory. */
 export type ByteSource = { size: number; read(offset: number, length: number): Promise<Uint8Array> };
@@ -22,6 +23,10 @@ export type ThreeMfReading = {
   plates: number;
   printTimeMinutes?: number;
   weightGrams?: number;
+  /** The printer the file was sliced for (Bambu Studio's printer_model_id), e.g. "A1" or "P1S". */
+  slicedFor?: string;
+  /** When it was sliced for a faster printer: the slicer's own time, before printTimeMinutes was scaled for the A1 (sources/printer.ts). */
+  slicerMinutes?: number;
   /** The filaments the plates use, by colour; only set for two or more (the site leaves a single colour out). */
   colors?: number;
   filaments: Filament[];
@@ -131,7 +136,7 @@ export function plainText(html: string): string {
     .trim();
 }
 
-function sliceInfo(xml: string): Pick<ThreeMfReading, "plates" | "printTimeMinutes" | "weightGrams" | "filaments"> {
+function sliceInfo(xml: string): Pick<ThreeMfReading, "plates" | "printTimeMinutes" | "weightGrams" | "filaments" | "slicedFor"> {
   const plates = [...xml.matchAll(/<plate>([\s\S]*?)<\/plate>/g)].map((m) => m[1]!);
   let seconds = 0;
   let grams = 0;
@@ -159,8 +164,11 @@ function sliceInfo(xml: string): Pick<ThreeMfReading, "plates" | "printTimeMinut
     grams += plateGrams;
   }
   const filaments = [...byColor.values()].map((f) => ({ ...f, grams: Math.round(f.grams * 100) / 100 }));
+  const code = /<metadata[^>]*\bkey="printer_model_id"[^>]*>/.exec(xml)?.[0];
+  const printer = code ? attr(code, "value")?.trim() : undefined;
   return {
     plates: plates.length,
+    ...(printer ? { slicedFor: bambuPrinter(printer) } : {}),
     ...(seconds > 0 ? { printTimeMinutes: Math.max(1, Math.round(seconds / 60)) } : {}),
     ...(grams > 0 ? { weightGrams: Math.max(1, Math.round(grams)) } : {}),
     filaments,
@@ -221,6 +229,14 @@ export async function readThreeMf(src: ByteSource): Promise<ThreeMfResult> {
       ...(colors >= 2 ? { colors } : {}),
       ...(modelXml ? model(modelXml) : {}),
     };
+    // A file sliced for a faster printer than Marcel's A1: its time is scaled, and the slicer's own kept beside it.
+    if (reading.printTimeMinutes && reading.slicedFor) {
+      const onA1 = onOurPrinter(reading.printTimeMinutes, reading.slicedFor);
+      if (onA1.factor !== 1) {
+        reading.slicerMinutes = reading.printTimeMinutes;
+        reading.printTimeMinutes = onA1.minutes;
+      }
+    }
     if (reading.weightGrams && reading.printTimeMinutes)
       reading.price = suggestedPrice({
         weightGrams: reading.weightGrams,
