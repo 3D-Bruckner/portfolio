@@ -175,6 +175,19 @@ export const en = {
       address: "Address",
     },
     slugFixed: "Fixed since the print was first published.",
+    ai: {
+      button: "Enhance with AI",
+      busy: "Claude is writing…",
+      hint: "Claude writes the title, a short title and the description in German, and picks categories. It only fills the form: check it, then save.",
+      done: "Claude filled in the texts. Check them, then save.",
+      undo: "Undo",
+      undone: "Back to your texts.",
+      errors: {
+        off: "AI isn't set up on this server (UPLOAD_CLAUDE_URL).",
+        empty: "Give it a title or a description to start from.",
+        failed: "Claude didn't answer. Try again in a moment.",
+      },
+    },
     threeMf: {
       button: "Fill in from a 3MF file",
       hint: "A Bambu Studio file, sliced for time, weight, colours and price. It stays on your phone; only the numbers are filled in.",

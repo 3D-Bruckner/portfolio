@@ -4,7 +4,7 @@
 // save keeps what was typed.
 import Link from "next/link";
 import { startTransition, useActionState, useEffect, useRef, useState, type FormEvent } from "react";
-import { priceParts, suggestedPrice, type ThreeMfReading } from "@/backend/client";
+import { priceParts, suggestedPrice, type EnhanceInput, type Suggestion, type ThreeMfReading } from "@/backend/client";
 import { useCopy } from "@/components/CopyProvider";
 import { AddIcon, CloseIcon } from "@/components/icons";
 import { Notice } from "@/components/Notice";
@@ -12,6 +12,7 @@ import { useHydrated } from "@/components/useHydrated";
 import { ui } from "@/components/ui";
 import { savePrint } from "../actions";
 import { FORM_GROUPS, FORM_ORDER, type FieldSpec, type PrintFieldName } from "./fieldorder";
+import { AiEnhance } from "./AiEnhance";
 import { ThreeMfFill, type FillPart } from "./ThreeMfFill";
 
 export type FormValues = {
@@ -34,6 +35,8 @@ type Props = {
   categories: { id: string; name: string }[];
   values: FormValues | null;
   slugFixed: boolean;
+  /** Whether "Enhance with AI" is offered (the server has a Claude gateway). */
+  ai?: boolean;
 };
 
 /** Each field's posted entries (a source's label and url go under "sources"), as one string to compare. */
@@ -45,7 +48,7 @@ function snapshot(form: HTMLFormElement): Record<string, string> {
 /** 135 → "2 h 15 min". */
 const formatMinutes = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}` : `${m} min`);
 
-export function PrintForm({ printId, specs, categories, values, slugFixed }: Props) {
+export function PrintForm({ printId, specs, categories, values, slugFixed, ai = false }: Props) {
   const held = values?.categoryIds ?? [];
   const rank = (id: string) => (held.includes(id) ? held.indexOf(id) : held.length);
   const t = useCopy();
@@ -87,6 +90,50 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
       filled.push("sources");
     }
     return filled;
+  }
+
+  // "Enhance with AI": what the form shows now goes to Claude; its texts and categories come back into the fields, and the returned
+  // function puts the earlier ones back. Nothing is saved until the form is.
+  const named = (name: string) => form.current?.elements.namedItem(name);
+  const text = (name: string) => {
+    const el = named(name);
+    return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement ? el.value : "";
+  };
+  const boxes = () => [...(form.current?.querySelectorAll<HTMLInputElement>('input[type="checkbox"][name="categoryIds"]') ?? [])];
+  function readForAi(): EnhanceInput {
+    const urls = [...(form.current?.querySelectorAll<HTMLInputElement>('input[name="sources.url"]') ?? [])];
+    const labels = [...(form.current?.querySelectorAll<HTMLInputElement>('input[name="sources.label"]') ?? [])];
+    const num = (n: string) => (text(n).trim() && Number.isFinite(Number(text(n))) ? Number(text(n)) : null);
+    return {
+      printId,
+      title: text("title"),
+      shortTitle: text("shortTitle"),
+      description: text("description"),
+      categoryIds: boxes()
+        .filter((b) => b.checked)
+        .map((b) => b.value),
+      sources: urls.map((u, i) => ({ label: labels[i]?.value ?? "", url: u.value })).filter((s) => s.url.trim()),
+      weightGrams: num("weightGrams"),
+      printTimeMinutes: num("printTimeMinutes"),
+      colors: num("colors"),
+    };
+  }
+  function applyAi(s: Suggestion): () => void {
+    const set = (name: string, value: string) => {
+      const el = named(name);
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) el.value = value;
+    };
+    const before = { title: text("title"), shortTitle: text("shortTitle"), description: text("description"), checked: boxes().map((b) => b.checked) };
+    set("title", s.title);
+    set("shortTitle", s.shortTitle ?? "");
+    set("description", s.description);
+    if (s.categoryIds.length > 0) for (const b of boxes()) b.checked = s.categoryIds.includes(b.value);
+    return () => {
+      set("title", before.title);
+      set("shortTitle", before.shortTitle);
+      set("description", before.description);
+      boxes().forEach((b, i) => (b.checked = before.checked[i] ?? b.checked));
+    };
   }
 
   // The form's values as they were shown (and as last saved), per field: a save sends only the fields that differ, so what Claude or
@@ -310,6 +357,7 @@ export function PrintForm({ printId, specs, categories, values, slugFixed }: Pro
   return (
     <form ref={form} onSubmit={submit} className="mt-4 space-y-5">
       <ThreeMfFill printId={printId} onRead={fill} />
+      {ai && <AiEnhance read={readForAi} apply={applyAi} />}
       {groups.map(({ group, fields }) =>
         group === "numbers" ? (
           <section key={group} aria-labelledby={`group-${group}`} className={ui.card}>
