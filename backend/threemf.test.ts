@@ -1,6 +1,6 @@
 import { zipSync, strToU8 } from "fflate";
 import { describe, expect, it } from "vitest";
-import { priceParts, suggestedPrice } from "./pricing";
+import { exactPrice, priceParts, suggestedPrice } from "./pricing";
 import { bytesSource, plainText, readThreeMf, type ByteSource } from "./threemf";
 
 const MODEL = `<?xml version="1.0" encoding="UTF-8"?>
@@ -125,10 +125,19 @@ describe("plainText", () => {
 });
 
 describe("suggestedPrice", () => {
-  it("matchesTheSite: 3dbruckner's formula, rounded to whole euros", () => {
-    // 50 g PLA (2.25 €) + 2 h (2 €) + 2 € fee = 6.25 → 6; multi-colour: (4.25 × 1.1) + 2 = 6.675 → 7.
-    expect(suggestedPrice({ weightGrams: 50, printTimeMinutes: 120, multicolor: false, material: "PLA" })).toBe(6);
+  it("matchesTheSite: 3dbruckner's formula, rounded up to whole euros", () => {
+    // 50 g PLA (2.25 €) + 2 h (2 €) + 2 € fee = 6.25 → 7; multi-colour: (4.25 × 1.1) + 2 = 6.675 → 7.
+    expect(exactPrice({ weightGrams: 50, printTimeMinutes: 120, multicolor: false, material: "PLA" })).toBe(6.25);
+    expect(suggestedPrice({ weightGrams: 50, printTimeMinutes: 120, multicolor: false, material: "PLA" })).toBe(7);
     expect(suggestedPrice({ weightGrams: 50, printTimeMinutes: 120, multicolor: true, material: "PLA" })).toBe(7);
+    expect(suggestedPrice({ weightGrams: 40, printTimeMinutes: 159, multicolor: false, material: "PLA" })).toBe(7);
+  });
+  it("staysOnAWholeEuro: an exact price isn't pushed up by a float's last digits", () => {
+    // 100 g PLA (4.5 €) + 90 min (1.5 €) + 2 € fee = 8.
+    expect(suggestedPrice({ weightGrams: 100, printTimeMinutes: 90, multicolor: false, material: "PLA" })).toBe(8);
+    // (2.25 + 2.75) × 1.1 + 2 = 7.5 → 8, and 20 g + 60 min with the surcharge: (0.9 + 1) × 1.1 + 2 = 4.09 → 5.
+    expect(suggestedPrice({ weightGrams: 50, printTimeMinutes: 165, multicolor: true, material: "PLA" })).toBe(8);
+    expect(suggestedPrice({ weightGrams: 20, printTimeMinutes: 60, multicolor: true, material: "PLA" })).toBe(5);
   });
   it("partsAddUp: material, time, surcharge and fee are the price before rounding", () => {
     const parts = priceParts({ weightGrams: 50, printTimeMinutes: 120, multicolor: true, material: "PLA" });

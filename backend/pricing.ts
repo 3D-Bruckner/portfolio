@@ -9,11 +9,16 @@ export const MULTICOLOR_SURCHARGE = 0.1;
 
 export type Material = keyof typeof PRICE_PER_KG;
 
-/** The site's "ca." price in whole euros: the middle of its calculator's range, rounded. */
-export function suggestedPrice(input: { weightGrams: number; printTimeMinutes: number; multicolor: boolean; material: Material }): number {
+/** What the formula gives, to the cent, before the customer's price is rounded up. */
+export function exactPrice(input: { weightGrams: number; printTimeMinutes: number; multicolor: boolean; material: Material }): number {
   const single = (input.weightGrams / 1000) * PRICE_PER_KG[input.material] + (input.printTimeMinutes / 60) * PRICE_PER_HOUR + ORDER_FEE;
   const price = input.multicolor ? (single - ORDER_FEE) * (1 + MULTICOLOR_SURCHARGE) + ORDER_FEE : single;
-  return Math.max(1, Math.round(price));
+  return Math.round(price * 100) / 100;
+}
+
+/** The price customers see: the exact one rounded up to whole euros (from the cents, so a float's 6.0000001 stays 6). */
+export function suggestedPrice(input: { weightGrams: number; printTimeMinutes: number; multicolor: boolean; material: Material }): number {
+  return Math.max(1, Math.ceil(exactPrice(input)));
 }
 
 /** What the site's price is made of, in euros (unrounded): filament, machine time, the multi-colour surcharge and the order fee. */

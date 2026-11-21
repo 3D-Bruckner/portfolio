@@ -181,7 +181,7 @@ export const de: Copy = {
       },
     },
     onSite: "Auf der Website ansehen",
-    suggestedPrice: (euros: number) => `Nach Preisformel (PLA): ${euros} €`,
+    suggestedPrice: (euros: number, exact: number) => `Nach Preisformel (PLA): ${euro(exact)}${exact === euros ? "" : `, aufgerundet ${euros} €`}`,
     priceParts: (p: { material: number; time: number; multicolor: number; fee: number }) =>
       [
         `Material ${euro(p.material)}`,
