@@ -13,6 +13,7 @@ import { ui } from "@/components/ui";
 import { savePrint } from "../actions";
 import { FORM_GROUPS, FORM_ORDER, type FieldSpec, type PrintFieldName } from "./fieldorder";
 import { AiEnhance } from "./AiEnhance";
+import { NewCategory } from "./NewCategory";
 import { ThreeMfFill, type FillPart } from "./ThreeMfFill";
 
 export type FormValues = {
@@ -56,6 +57,9 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
   const [sources, setSources] = useState(() => (values?.sources ?? []).map((s, i) => ({ ...s, key: i })));
   const [nextKey, setNextKey] = useState(sources.length);
   const form = useRef<HTMLFormElement>(null);
+  // Categories made in this form stay last and ticked, also once the refreshed page lists them among the others.
+  const [added, setAdded] = useState<{ id: string; name: string }[]>([]);
+  const allCategories = [...categories.filter((c) => !added.some((a) => a.id === c.id)), ...added];
   // Saving needs the page's script (the form is sent by submit, not by the browser): before it runs, the button waits.
   const hydrated = useHydrated();
 
@@ -255,7 +259,7 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
           <fieldset key={name}>
             {/* The card's heading says it; the legend still names the group of checkboxes. */}
             <legend className="sr-only">{words.label}</legend>
-            {categories.length === 0 ? (
+            {allCategories.length === 0 ? (
               <p className={ui.hint}>
                 {t.print.noCategories}{" "}
                 <Link href="/categories" className="underline">
@@ -266,19 +270,26 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
               <div className="mt-2 flex flex-wrap gap-2">
                 {/* The print's own categories first, in their order (the first is its main one), then the rest: a save sends the ticked ones
                     in this order, so it keeps theirs and puts a newly ticked one last. */}
-                {[...categories]
+                {[...allCategories]
                   .sort((a, b) => rank(a.id) - rank(b.id))
                   .map((c) => (
                     <label
                       key={c.id}
                       className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line px-3 has-checked:border-2 has-checked:border-accent has-checked:font-semibold has-focus-visible:outline-3 has-focus-visible:outline-accent"
                     >
-                      <input type="checkbox" name={name} value={c.id} defaultChecked={values?.categoryIds.includes(c.id)} className="size-4 accent-accent" />
+                      <input
+                        type="checkbox"
+                        name={name}
+                        value={c.id}
+                        defaultChecked={values?.categoryIds.includes(c.id) || added.some((a) => a.id === c.id)}
+                        className="size-4 accent-accent"
+                      />
                       {c.name}
                     </label>
                   ))}
               </div>
             )}
+            <NewCategory onCreated={(c) => setAdded((list) => [...list, c])} />
           </fieldset>
         );
       case "sources":

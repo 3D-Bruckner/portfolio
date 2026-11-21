@@ -4,14 +4,14 @@
 //   title, summary (HTML), designExtension.design_pictures / real_pictures (the gallery), coverUrl, defaultInstanceId and instances[]: the
 //   print profiles, each with prediction (seconds), weight (grams), instanceFilaments[{type, color, usedG}], pictures, and
 //   extention.modelInfo.compatibility.devProductName, the printer it was sliced for.
-// The numbers come from one profile: the one the link names (#profileId-<n>), else one sliced for Marcel's A1, else the default, else
-// the first; a profile for a faster printer has its time scaled for the A1 (printer.ts). The 3MF itself needs a sign-in and isn't fetched.
+// The numbers come from one profile: the one the link names (#profileId-<n>), else the default, else the first. Not "any for the A1":
+// profiles are other makers' too, and the first for the A1 can be a different size. A profile for a faster printer has its time scaled
+// for the A1 (printer.ts). The 3MF itself needs a sign-in and isn't fetched.
 import * as z from "zod";
 import { ok } from "../outcome";
 import type { PrintInput } from "../printfields";
 import { materialOf } from "../threemf";
 import { descriptionOf, getJson, numbers, titleOf, type Draft, type Reader } from "./common";
-import { isOurPrinter } from "./printer";
 
 export const MAKERWORLD_API = "https://api.bambulab.com/v1/design-service/design";
 
@@ -52,7 +52,6 @@ export function draftFrom(design: Design, profileId: number | null): Draft {
   const instances = design.instances ?? [];
   const instance: Instance | undefined =
     (profileId !== null ? instances.find((i) => i.id === profileId || i.profileId === profileId) : undefined) ??
-    instances.find((i) => isOurPrinter(printerOf(i))) ??
     instances.find((i) => i.id === design.defaultInstanceId) ??
     instances.find((i) => i.isDefault) ??
     instances[0];
