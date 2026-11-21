@@ -218,6 +218,16 @@ export async function addCategory(_prev: Result | null, fd: FormData): Promise<R
   );
 }
 
+/** A category made from inside the print form, which ticks it: so the answer carries the new category. */
+export async function createCategoryInForm(name: string): Promise<{ ok: true; category: { id: string; name: string } } | { ok: false; error: string }> {
+  const t = await words();
+  if (!(await actionPerson())) return { ok: false, error: t.common.signedOut };
+  const out = createCategory(runtime(), name);
+  if (!out.ok) return { ok: false, error: categoryProblem(out, t) };
+  refresh();
+  return { ok: true, category: { id: out.value.id, name: out.value.name } };
+}
+
 export async function renameCategoryAction(id: string, _prev: Result | null, fd: FormData): Promise<Result> {
   return act(
     () => renameCategory(runtime(), id, String(fd.get("name") ?? "")),

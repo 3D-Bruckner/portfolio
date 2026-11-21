@@ -31,6 +31,29 @@ test("createDraftUploadPublish: a new print with its text, a category and a phot
   expect(exported?.photos).toHaveLength(1);
 });
 
+test("categoryFromTheForm: a category made while writing a new print is ticked, keeps what was typed and is saved with it", async ({ page, request }) => {
+  const category = unique("Neu im Formular");
+  const title = unique("Tannenbaum");
+  await signIn(page, "/prints/new");
+  await expect(page.getByRole("button", { name: "Kategorie anlegen" })).toBeEnabled();
+  await page.getByLabel("Titel", { exact: true }).fill(title);
+  await page.getByLabel("Neue Kategorie").fill(category);
+  await page.getByLabel("Neue Kategorie").press("Enter");
+  await expect(page.getByRole("checkbox", { name: category })).toBeChecked();
+  await expect(page.getByLabel("Titel", { exact: true })).toHaveValue(title);
+  await expect(page.getByLabel("Neue Kategorie")).toHaveValue("");
+  await expect(page).toHaveURL(/\/prints\/new$/);
+
+  await page.getByLabel("Beschreibung").fill("Ein Baum aus PLA.");
+  await page.getByRole("button", { name: "Speichern" }).click();
+  await expect(page).toHaveURL(/\/prints\/(?!new)[^/]+$/);
+  await expect(page.getByRole("checkbox", { name: category })).toBeChecked();
+  await addPhoto(page);
+  await publish(page);
+  const exported = (await siteExport(request, page)).prints.find((p) => p.title === title);
+  expect(exported).toMatchObject({ categories: [category] });
+});
+
 test("uploadRetryAfterFailure: a dropped upload fails alone and is sent again", async ({ page }) => {
   await newPrint(page, { title: unique("Wackelpudding") });
   let failed = false;

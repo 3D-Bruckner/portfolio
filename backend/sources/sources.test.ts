@@ -131,9 +131,13 @@ describe("MakerWorld", () => {
     expect(d.input.price).toBeGreaterThan(0);
     expect(d.pictures).toEqual([PIC("a.png"), PIC("b.gif"), "https://evil.example/x.jpg", PIC("cover.gif")]);
   });
-  it("prefersAProfileForTheA1: unless the link names one", () => {
-    const withA1 = { ...design, instances: [...design.instances, { ...design.instances[1]!, id: 3, title: "A1", prediction: 3000, extention: sliced("A1") }] };
-    expect(fromMakerWorld(withA1, null)).toMatchObject({ profile: "A1", factor: 1, input: { printTimeMinutes: 50 } });
+  it("keepsTheDesignersProfile: another maker's A1 profile (a model at three times the size) doesn't replace it; the link's profile wins", () => {
+    const withA1 = {
+      ...design,
+      instances: [...design.instances, { ...design.instances[1]!, id: 3, title: "3 x Size", prediction: 16020, weight: 72, extention: sliced("A1") }],
+    };
+    expect(fromMakerWorld(withA1, null)).toMatchObject({ profile: "0.2mm layer, 3 walls", factor: A1_FACTOR, input: { weightGrams: 9 } });
+    expect(fromMakerWorld(withA1, 3)).toMatchObject({ profile: "3 x Size", factor: 1, input: { weightGrams: 72, printTimeMinutes: 267 } });
     expect(fromMakerWorld(withA1, 101)).toMatchObject({ profile: "PETG", factor: A1_FACTOR });
   });
 });
