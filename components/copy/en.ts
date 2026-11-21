@@ -147,7 +147,7 @@ export const en = {
       slug: { label: "Address on the site", hint: "Follows the title until you change it yourself; fixed once the print is published." },
     },
     onSite: "See it on the website",
-    suggestedPrice: (euros: number) => `Price formula (PLA): ${euros} €`,
+    suggestedPrice: (euros: number, exact: number) => `Price formula (PLA): ${euro(exact)}${exact === euros ? "" : `, rounded up to ${euros} €`}`,
     priceParts: (p: { material: number; time: number; multicolor: number; fee: number }) =>
       [`Material ${euro(p.material)}`, `time ${euro(p.time)}`, ...(p.multicolor ? [`multi-colour ${euro(p.multicolor)}`] : []), `fee ${euro(p.fee)}`].join(
         " + ",

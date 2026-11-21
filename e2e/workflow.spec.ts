@@ -37,10 +37,10 @@ test("priceSuggestion: weight and time give the site's price, taken with one tap
   await newPrint(page, { title: unique("Vase") });
   await page.getByLabel("Gewicht (Gramm)").fill("50");
   await page.getByLabel("Druckzeit (Minuten)").fill("120");
-  // 50 g PLA 2.25 € + 2 h 2 € + 2 € fee = 6.25 → 6.
-  await expect(page.getByText("Nach Preisformel (PLA): 6 €")).toBeVisible();
+  // 50 g PLA 2.25 € + 2 h 2 € + 2 € fee = 6.25, rounded up for customers.
+  await expect(page.getByText("Nach Preisformel (PLA): 6,25 €, aufgerundet 7 €")).toBeVisible();
   await page.getByRole("button", { name: "Übernehmen" }).click();
-  await expect(page.getByLabel("Preis (Euro)")).toHaveValue("6");
+  await expect(page.getByLabel("Preis (Euro)")).toHaveValue("7");
 });
 
 test("saveKeepsOtherChanges: a save sends only what was changed in it, so a change made elsewhere meanwhile stays", async ({ page, context }) => {

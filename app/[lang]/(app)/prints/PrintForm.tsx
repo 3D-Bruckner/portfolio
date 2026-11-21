@@ -4,7 +4,7 @@
 // save keeps what was typed.
 import Link from "next/link";
 import { startTransition, useActionState, useEffect, useRef, useState, type FormEvent } from "react";
-import { priceParts, suggestedPrice, type EnhanceInput, type Suggestion, type ThreeMfReading } from "@/backend/client";
+import { exactPrice, priceParts, suggestedPrice, type EnhanceInput, type Suggestion, type ThreeMfReading } from "@/backend/client";
 import { useCopy } from "@/components/CopyProvider";
 import { AddIcon, CloseIcon } from "@/components/icons";
 import { Notice } from "@/components/Notice";
@@ -176,6 +176,7 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
       ? { weightGrams: nums.weightGrams, printTimeMinutes: nums.printTimeMinutes, multicolor: (nums.colors ?? 1) >= 2, material: "PLA" as const }
       : null;
   const suggestion = priceInput ? suggestedPrice(priceInput) : null;
+  const exact = priceInput ? exactPrice(priceInput) : null;
   const parts = priceInput ? priceParts(priceInput) : null;
   function takeSuggestion() {
     const el = form.current?.elements.namedItem("price");
@@ -378,10 +379,10 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
             <p className={`${ui.hint} mt-0.5`}>{t.print.groups.numbersHint}</p>
             <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-4">{fields.map(field)}</div>
             {/* From weight and time, the price the site's own formula gives (PLA), and what it is made of: one tap takes it. */}
-            {suggestion !== null && parts !== null && (
+            {suggestion !== null && exact !== null && parts !== null && (
               <div className="mt-3 rounded-lg border border-border bg-paper px-3 py-2 text-sm" aria-live="polite">
                 <p className="flex min-h-9 flex-wrap items-center justify-between gap-x-3">
-                  <span className="tabular text-muted">{t.print.suggestedPrice(suggestion)}</span>
+                  <span className="tabular text-muted">{t.print.suggestedPrice(suggestion, exact)}</span>
                   {suggestion !== nums.price && (
                     <button type="button" onClick={takeSuggestion} className="min-h-11 font-semibold text-ink underline underline-offset-2">
                       {t.print.takeSuggestion}
