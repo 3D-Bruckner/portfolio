@@ -323,6 +323,7 @@ export const de: Copy = {
   },
   settings: {
     title: "Einstellungen",
+    signOut: "Abmelden",
     tokens: {
       heading: "API-Tokens",
       intro: "Für Skripte und den Website-Build. Ein Token wird einmal gezeigt, direkt nach dem Erstellen.",

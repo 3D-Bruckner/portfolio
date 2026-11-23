@@ -18,6 +18,14 @@ test.describe("a browser that asks for German", () => {
     await expect(page.getByRole("heading", { name: "Drucke" })).toBeVisible();
   });
 
+  test("signs out from the settings, and the app asks to sign in again", async ({ page }) => {
+    await signIn(page, "/settings");
+    await page.getByRole("button", { name: "Abmelden" }).click();
+    await expect(page).toHaveURL(/\/signin/);
+    await page.goto("/settings");
+    expect(new URL(page.url()).pathname).toBe("/signin");
+  });
+
   test("shows why a sign-in was refused, in its own words", async ({ page }) => {
     await page.goto("/signin?error=email_not_allowed&next=%2F");
     await expect(page.getByRole("main").getByRole("alert")).toHaveText("Mit dieser Adresse kann man sich hier nicht anmelden.");

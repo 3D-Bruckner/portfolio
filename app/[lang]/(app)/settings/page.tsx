@@ -5,6 +5,7 @@ import { runtime } from "@/app/_lib/runtime";
 import { copyFor } from "@/components/copy";
 import { formatDay, formatWhen } from "@/components/format";
 import { ui } from "@/components/ui";
+import { SignOut } from "./SignOut";
 import { Tokens } from "./Tokens";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/settings">): Promise<Metadata> {
@@ -30,6 +31,8 @@ export default async function SettingsPage({ params }: PageProps<"/[lang]/settin
           expires: k.expires_at ? formatDay(lang, k.expires_at) : null,
         }))}
       />
+      {/* The dev user has no session to end. */}
+      {!person.id.startsWith("dev:") && <SignOut />}
     </>
   );
 }

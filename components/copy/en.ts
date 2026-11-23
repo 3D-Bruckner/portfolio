@@ -320,6 +320,7 @@ export const en = {
   },
   settings: {
     title: "Settings",
+    signOut: "Sign out",
     tokens: {
       heading: "API tokens",
       intro: "For scripts and the website build. A token is shown once, right after it is created.",
