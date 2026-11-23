@@ -9,6 +9,9 @@ import { createApiToken, revokeApiToken } from "next-app-kit/tokens";
 import { actionPerson } from "@/app/_lib/signin";
 import { runtime } from "@/app/_lib/runtime";
 import {
+  createAddOn,
+  deleteAddOn,
+  updateAddOn,
   createCategory,
   keepOriginalTexts,
   toGerman,
@@ -272,6 +275,47 @@ export async function removeCategory(id: string): Promise<Result> {
     () => deleteCategory(runtime(), id),
     (o, t) => (o.reason === "conflict" ? t.categories.inUse : t.common.failed),
     (t) => t.categories.deleted,
+  );
+}
+
+// ---- add-ons
+
+const addOnProblem = (o: { reason: string }, t: Copy) =>
+  o.reason === "conflict" ? t.addOns.exists : o.reason === "invalid" ? t.addOns.invalid : t.common.failed;
+
+/** An add-on's posted fields. The price is typed in euros and kept in cents; one that is no number goes on and is refused by the domain's check. */
+function addOnFields(fd: FormData) {
+  const euros = Number(String(fd.get("price") ?? "").replace(",", "."));
+  const product = String(fd.get("invoiceNinjaProduct") ?? "").trim();
+  return {
+    name: String(fd.get("name") ?? ""),
+    priceCents: Math.round(euros * 100),
+    available: fd.has("available"),
+    invoiceNinjaProduct: product === "" ? null : product,
+  };
+}
+
+export async function addAddOn(_prev: Result | null, fd: FormData): Promise<Result> {
+  return act(
+    () => createAddOn(runtime(), addOnFields(fd)),
+    addOnProblem,
+    (t) => t.addOns.created,
+  );
+}
+
+export async function saveAddOn(id: string, _prev: Result | null, fd: FormData): Promise<Result> {
+  return act(
+    () => updateAddOn(runtime(), id, addOnFields(fd)),
+    addOnProblem,
+    (t) => t.addOns.saved,
+  );
+}
+
+export async function removeAddOn(id: string): Promise<Result> {
+  return act(
+    () => deleteAddOn(runtime(), id),
+    (o, t) => (o.reason === "conflict" ? t.addOns.inUse : t.common.failed),
+    (t) => t.addOns.deleted,
   );
 }
 

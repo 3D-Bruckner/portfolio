@@ -2,12 +2,24 @@
 // that differs from the formula is an own price, so no existing print changes by itself.
 import { suggestedPrice } from "@/backend/client";
 
-export type PriceNumbers = { weightGrams?: number | null; printTimeMinutes?: number | null; colors?: number | null };
+export type PriceNumbers = {
+  weightGrams?: number | null;
+  printTimeMinutes?: number | null;
+  colors?: number | null;
+  /** The add-ons the print includes; one it only offers isn't part of its price. */
+  addOns?: readonly { pricePerPiece: number; quantity: number }[];
+};
 
 /** What the formula takes from the form's numbers (PLA), or null while weight or time is missing. */
 export function priceInputOf(n: PriceNumbers) {
   return n.weightGrams && n.printTimeMinutes
-    ? { weightGrams: n.weightGrams, printTimeMinutes: n.printTimeMinutes, multicolor: (n.colors ?? 1) >= 2, material: "PLA" as const }
+    ? {
+        weightGrams: n.weightGrams,
+        printTimeMinutes: n.printTimeMinutes,
+        multicolor: (n.colors ?? 1) >= 2,
+        material: "PLA" as const,
+        addOns: n.addOns ?? [],
+      }
     : null;
 }
 
@@ -26,4 +38,15 @@ export function followsFormula(price: number | null, formula: number | null): bo
 export function priceAfterNumbers(price: number | null, following: boolean, numbers: PriceNumbers): number | null {
   const formula = formulaPrice(numbers);
   return following && formula !== null ? formula : price;
+}
+
+/** The lines of the add-ons a print includes, from its choices and the add-ons' prices in cents. */
+export function includedLines(
+  choices: readonly { addOnId: string; quantity: number; mode: "included" | "optional" }[],
+  addOns: readonly { id: string; priceCents: number }[],
+): { pricePerPiece: number; quantity: number }[] {
+  return choices.flatMap((c) => {
+    const a = addOns.find((x) => x.id === c.addOnId);
+    return a && c.mode === "included" ? [{ pricePerPiece: a.priceCents / 100, quantity: c.quantity }] : [];
+  });
 }

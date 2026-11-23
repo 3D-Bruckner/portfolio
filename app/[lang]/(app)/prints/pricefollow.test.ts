@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { followsFormula, formulaPrice, priceAfterNumbers } from "./pricefollow";
+import { followsFormula, formulaPrice, includedLines, priceAfterNumbers } from "./pricefollow";
 
 // 50 g PLA 2.25 € + 2 h 2 € + 2 € fee = 6.25, rounded up.
 const numbers = { weightGrams: 50, printTimeMinutes: 120, colors: 1 };
@@ -25,6 +25,22 @@ describe("priceFollowsFormula", () => {
 
   it("an own price stays when the numbers change", () => {
     expect(priceAfterNumbers(12, false, { ...numbers, weightGrams: 200 })).toBe(12);
+  });
+
+  it("counts the add-ons a print includes, not the ones it only offers", () => {
+    const addOns = [
+      { id: "feet", priceCents: 25 },
+      { id: "ring", priceCents: 500 },
+    ];
+    const lines = includedLines(
+      [
+        { addOnId: "feet", quantity: 4, mode: "included" },
+        { addOnId: "ring", quantity: 1, mode: "optional" },
+      ],
+      addOns,
+    );
+    expect(lines).toEqual([{ pricePerPiece: 0.25, quantity: 4 }]);
+    expect(formulaPrice({ ...numbers, addOns: lines })).toBe(8); // 6.25 + 1.00 = 7.25
   });
 
   it("keeps the price while a number is being retyped", () => {

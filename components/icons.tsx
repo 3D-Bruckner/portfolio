@@ -32,6 +32,7 @@ export {
   Pin as ShowcaseIcon,
   PinOff as UnpinIcon,
   Plus as AddIcon,
+  Puzzle as AddOnsIcon,
   RefreshCw as BuildIcon,
   RotateCcw as RetryIcon,
   Settings as SettingsIcon,

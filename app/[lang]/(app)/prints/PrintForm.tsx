@@ -17,7 +17,7 @@ import type { ReviewResult, ReviewRow } from "./AiReview";
 import { FieldTip, type FormTip, type TipApply } from "./FieldTip";
 import { LinkRefresh } from "./LinkRefresh";
 import { NewCategory } from "./NewCategory";
-import { followsFormula, formulaPrice, priceAfterNumbers, priceInputOf } from "./pricefollow";
+import { followsFormula, formulaPrice, includedLines, priceAfterNumbers, priceInputOf, type PriceNumbers } from "./pricefollow";
 import { suggestionCache, type SuggestionPart } from "./suggestioncache";
 import { ThreeMfFill, type FillPart } from "./ThreeMfFill";
 
@@ -30,15 +30,20 @@ export type FormValues = {
   weightGrams: number | null;
   printTimeMinutes: number | null;
   colors: number | null;
+  addOns: AddOnChoice[];
   categoryIds: string[];
   sources: { label: string; url: string }[];
   slug: string;
 };
 
+type AddOnChoice = { addOnId: string; quantity: number; mode: "included" | "optional" };
+
 type Props = {
   printId: string | null;
   specs: Record<PrintFieldName, FieldSpec>;
   categories: { id: string; name: string }[];
+  /** The add-ons to pick from, with their prices per piece. */
+  addOns?: { id: string; name: string; priceCents: number; available: boolean }[];
   values: FormValues | null;
   slugFixed: boolean;
   /** Whether the blocks offer Claude (the server has a gateway). */
@@ -56,7 +61,7 @@ function snapshot(form: HTMLFormElement): Record<string, string> {
 /** 135 → "2 h 15 min". */
 const formatMinutes = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}` : `${m} min`);
 
-export function PrintForm({ printId, specs, categories, values, slugFixed, ai = false, tips = [] }: Props) {
+export function PrintForm({ printId, specs, categories, addOns = [], values, slugFixed, ai = false, tips = [] }: Props) {
   const held = values?.categoryIds ?? [];
   const rank = (id: string) => (held.includes(id) ? held.indexOf(id) : held.length);
   const t = useCopy();
@@ -90,9 +95,12 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
       colors: r.colors ?? nums.colors ?? null,
     };
     // The file's price counts its own material: one in PETG differs from the form's PLA formula, so it is an own price and stays.
-    const price = r.price ?? priceAfterNumbers(nums.price ?? null, following, read);
+    // A 3MF knows nothing of add-ons: a file priced like the form's PLA formula gets what the print includes added, and any other stays as it is.
+    const formula = formulaPrice({ ...read, addOns: lines });
+    const price =
+      r.price === undefined ? priceAfterNumbers(nums.price ?? null, following, { ...read, addOns: lines }) : r.price === formulaPrice(read) ? formula : r.price;
     setNums({ ...read, price });
-    setFollowing(followsFormula(price, formulaPrice(read)));
+    setFollowing(followsFormula(price, formula));
     put("weightGrams", r.weightGrams);
     put("colors", r.colors);
     put("price", price ?? undefined);
@@ -262,22 +270,42 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
     colors: values?.colors ?? null,
   });
   // Kept rather than compared on each change: clearing a number to retype it leaves no formula for a moment, and the price must keep following.
-  const [following, setFollowing] = useState(() => followsFormula(values?.price ?? null, formulaPrice(values ?? {})));
+  const [choices, setChoices] = useState<AddOnChoice[]>(values?.addOns ?? []);
+  const lines = includedLines(choices, addOns);
+  const [following, setFollowing] = useState(() => followsFormula(values?.price ?? null, formulaPrice({ ...values, addOns: lines })));
   const numOf = (name: string) => (text(name) === "" ? null : Number(text(name)));
+  const heldNums = () => ({ price: numOf("price"), weightGrams: numOf("weightGrams"), printTimeMinutes: numOf("printTimeMinutes"), colors: numOf("colors") });
+  const forPrice = (n: Record<string, number | null>, list = lines): PriceNumbers => ({
+    weightGrams: n.weightGrams,
+    printTimeMinutes: n.printTimeMinutes,
+    colors: n.colors,
+    addOns: list,
+  });
   const setNum = (name: string, value: string) => {
     // From the fields, not the last render: "Apply all" sets several numbers in one go.
-    const held = { price: numOf("price"), weightGrams: numOf("weightGrams"), printTimeMinutes: numOf("printTimeMinutes"), colors: numOf("colors") };
-    const next: Record<string, number | null> = { ...held, [name]: value === "" ? null : Number(value) };
-    if (name === "price") setFollowing(followsFormula(next.price ?? null, formulaPrice(next)));
+    const next: Record<string, number | null> = { ...heldNums(), [name]: value === "" ? null : Number(value) };
+    if (name === "price") setFollowing(followsFormula(next.price ?? null, formulaPrice(forPrice(next))));
     else {
-      next.price = priceAfterNumbers(next.price ?? null, following, next);
+      next.price = priceAfterNumbers(next.price ?? null, following, forPrice(next));
       if (following && next.price !== null) setText("price", String(next.price));
     }
     setNums(next);
   };
+  /** Sets how the print has an add-on; a print on the formula takes the new price at once, an own price stays. */
+  function choose(addOnId: string, mode: AddOnChoice["mode"] | "none", quantity: number) {
+    const rest = choices.filter((c) => c.addOnId !== addOnId);
+    const had = choices.some((c) => c.addOnId === addOnId);
+    const nextChoices =
+      mode === "none" ? rest : had ? choices.map((c) => (c.addOnId === addOnId ? { addOnId, mode, quantity } : c)) : [...choices, { addOnId, mode, quantity }];
+    setChoices(nextChoices);
+    const held = heldNums();
+    const price = priceAfterNumbers(held.price, following, forPrice(held, includedLines(nextChoices, addOns)));
+    if (following && price !== null) setText("price", String(price));
+    setNums({ ...held, price });
+  }
   const minutes = nums.printTimeMinutes ?? null;
-  const priceInput = priceInputOf(nums);
-  const suggestion = formulaPrice(nums);
+  const priceInput = priceInputOf(forPrice(nums));
+  const suggestion = formulaPrice(forPrice(nums));
   const ownPrice = !following && nums.price !== null;
   const exact = priceInput ? exactPrice(priceInput) : null;
   const parts = priceInput ? priceParts(priceInput) : null;
@@ -427,6 +455,66 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
             <span className="font-medium">{words.label}</span>
           </label>
         );
+      case "addOns": {
+        // An add-on no longer available stays listed on a print that has it, so it can be taken off.
+        const listed = addOns.filter((a) => a.available || choices.some((c) => c.addOnId === a.id));
+        return (
+          <fieldset key={name} className="col-span-2">
+            <legend className={ui.label}>{words.label}</legend>
+            {listed.length === 0 ? (
+              <p className={ui.hint}>
+                {t.print.addOn.noneYet}{" "}
+                <Link href="/add-ons" className="underline">
+                  {t.nav.addOns}
+                </Link>
+              </p>
+            ) : (
+              <ul className="mt-1 space-y-2">
+                {listed.map((a) => {
+                  const c = choices.find((x) => x.addOnId === a.id);
+                  return (
+                    <li key={a.id} className="grid grid-cols-[1fr_auto] items-end gap-2 rounded-lg border border-border p-2">
+                      <label className="min-w-0">
+                        <span className="block truncate text-sm font-medium">{t.print.addOn.line(a.name, a.priceCents / 100)}</span>
+                        <select
+                          aria-label={t.print.addOn.mode(a.name)}
+                          value={c?.mode ?? "none"}
+                          onChange={(e) => choose(a.id, e.currentTarget.value as AddOnChoice["mode"] | "none", c?.quantity ?? 1)}
+                          className={ui.input}
+                        >
+                          <option value="none">{t.print.addOn.none}</option>
+                          <option value="included">{t.print.addOn.included}</option>
+                          <option value="optional">{t.print.addOn.optional}</option>
+                        </select>
+                      </label>
+                      {c && (
+                        <label className="w-20">
+                          <span className="block text-sm font-medium">{t.print.addOn.quantity}</span>
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            aria-label={t.print.addOn.quantityOf(a.name)}
+                            min={1}
+                            max={1000}
+                            step={1}
+                            value={c.quantity}
+                            onChange={(e) => choose(a.id, c.mode, Math.min(1000, Math.max(1, Math.trunc(Number(e.currentTarget.value)) || 1)))}
+                            className={`${ui.input} tabular`}
+                          />
+                          <input type="hidden" name="addOns.id" value={a.id} />
+                          <input type="hidden" name="addOns.quantity" value={c.quantity} />
+                          <input type="hidden" name="addOns.mode" value={c.mode} />
+                        </label>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {hintEl}
+          </fieldset>
+        );
+      }
       case "ids":
         return (
           <fieldset key={name}>

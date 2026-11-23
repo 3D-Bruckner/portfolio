@@ -8,7 +8,7 @@ export type FormGroup = "text" | "numbers" | "categories" | "origin" | "address"
 export const FORM_GROUPS: readonly { group: FormGroup; fields: readonly PrintFieldName[] }[] = [
   { group: "text", fields: ["title", "shortTitle", "description"] },
   // The price and the slicer's totals, side by side; a 3MF fills them in.
-  { group: "numbers", fields: ["price", "weightGrams", "printTimeMinutes", "colors"] },
+  { group: "numbers", fields: ["price", "weightGrams", "printTimeMinutes", "colors", "addOns"] },
   { group: "categories", fields: ["categoryIds"] },
   { group: "origin", fields: ["sources", "selfDesigned"] },
   { group: "address", fields: ["slug"] },
@@ -18,7 +18,7 @@ export const FORM_ORDER: readonly PrintFieldName[] = FORM_GROUPS.flatMap((g) => 
 
 /** What the form needs to know of a field to draw it; fieldSpecs builds it from the table, on the server. */
 export type FieldSpec = {
-  kind: "text" | "integer" | "boolean" | "ids" | "sources" | "slug";
+  kind: "text" | "integer" | "boolean" | "ids" | "sources" | "addOns" | "slug";
   required: boolean;
   maxLength?: number;
   min?: number;

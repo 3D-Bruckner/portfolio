@@ -56,6 +56,32 @@ test("priceFollowsFormula: the price follows the numbers, an own price stays and
   await expect(price).toHaveValue("9");
 });
 
+test("addOnCountsInThePrice: an add-on made once is included in a print's price, and an offered one is not", async ({ page }) => {
+  const name = unique("Dämpferfuß");
+  await signIn(page, "/add-ons");
+  const made = page.getByRole("form", { name: "Neues Extra" });
+  await made.getByLabel("Name").fill(name);
+  await made.getByLabel("Preis pro Stück (Euro)").fill("0.25");
+  await made.getByRole("button", { name: "Extra anlegen" }).click();
+  await expect(page.getByRole("list", { name: "Extras" })).toContainText(name);
+  await newPrint(page, { title: unique("Halter") });
+  const price = page.locator("#field-price");
+  await page.getByLabel("Gewicht (Gramm)").fill("50");
+  await page.getByLabel("Druckzeit (Minuten)").fill("120");
+  await expect(price).toHaveValue("7");
+  await page.getByLabel(`Wie der Druck ${name} hat`).selectOption("included");
+  await page.getByLabel(`Stück von ${name}`).fill("4");
+  // 6.25 + 4 × 0.25 = 7.25, rounded up for customers.
+  await expect(price).toHaveValue("8");
+  await expect(page.getByText("Extras 1,00 €")).toBeVisible();
+  await page.getByRole("button", { name: "Speichern" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Gespeichert" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel(`Stück von ${name}`)).toHaveValue("4");
+  await page.getByLabel(`Wie der Druck ${name} hat`).selectOption("optional");
+  await expect(price).toHaveValue("7");
+});
+
 test("tipAtItsField: a tip shows at its field, fills it in, can be undone, and goes once saved", async ({ page }) => {
   await newPrint(page, { title: unique("Kabelhalter"), description: "Ein Halter für Kabel am Schreibtisch, geschraubt oder geklebt." });
   await page.getByLabel("Gewicht (Gramm)").fill("50");

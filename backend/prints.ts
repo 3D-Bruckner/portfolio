@@ -34,7 +34,7 @@ export type Print = PrintValues & {
 
 // ---- rows ↔ values
 
-function valuesOf(row: PrintRow, categoryIds: string[], sources: { label: string; url: string }[]): PrintValues {
+function valuesOf(row: PrintRow, categoryIds: string[], sources: { label: string; url: string }[], addOns: PrintValues["addOns"]): PrintValues {
   return {
     title: row.title,
     shortTitle: row.short_title,
@@ -44,6 +44,7 @@ function valuesOf(row: PrintRow, categoryIds: string[], sources: { label: string
     weightGrams: row.weight_grams,
     printTimeMinutes: row.print_time_minutes,
     colors: row.colors,
+    addOns,
     categoryIds,
     sources,
   };
@@ -71,7 +72,8 @@ function unchanged(current: PrintValues, fields: Partial<PrintValues>): boolean 
   // The order counts: the first category is the print's main one.
   const sameCategories = !fields.categoryIds || JSON.stringify(fields.categoryIds) === JSON.stringify(current.categoryIds);
   const sameSources = !fields.sources || JSON.stringify(fields.sources) === JSON.stringify(current.sources);
-  return sameColumns && sameCategories && sameSources;
+  const sameAddOns = !fields.addOns || JSON.stringify(fields.addOns) === JSON.stringify(current.addOns);
+  return sameColumns && sameCategories && sameSources && sameAddOns;
 }
 
 /** The prints of these rows, in the rows' order, with their categories, sources and photos. */
@@ -81,6 +83,7 @@ function assemble(rt: Runtime, rows: PrintRow[]): Print[] {
   const categories = new Map(rt.store.categoriesById([...new Set(links.map((l) => l.category_id))]).map((c) => [c.id, c]));
   const sources = rt.store.printSources(ids);
   const photos = rt.store.photosOf(ids);
+  const addOnLinks = rt.store.printAddOnLinks(ids);
   return rows.map((row) => {
     const cats = links.filter((l) => l.print_id === row.id).map((l) => categories.get(l.category_id)!);
     const srcs = sources.filter((s) => s.print_id === row.id).map((s) => ({ label: s.label, url: s.url }));
@@ -92,6 +95,7 @@ function assemble(rt: Runtime, rows: PrintRow[]): Print[] {
         row,
         cats.map((c) => c.id),
         srcs,
+        addOnLinks.filter((a) => a.print_id === row.id).map((a) => ({ addOnId: a.add_on_id, quantity: a.quantity, mode: a.mode })),
       ),
       showcase: row.showcase_position !== null,
       coverPhotoId: row.cover_photo_id,
@@ -117,6 +121,11 @@ function checkWrite(rt: Runtime, id: string | null, v: PrintValues & { slug: str
   const known = new Set(rt.store.categoriesById(v.categoryIds).map((c) => c.id));
   const unknown = v.categoryIds.filter((c) => !known.has(c));
   if (unknown.length > 0) return invalid(`categoryIds: no category ${unknown.join(", ")}; create a category before using it`);
+  const addOnIds = v.addOns.map((a) => a.addOnId);
+  if (new Set(addOnIds).size !== addOnIds.length) return invalid("addOns: each add-on once");
+  const knownAddOns = new Set(rt.store.addOnsById(addOnIds).map((a) => a.id));
+  const unknownAddOns = addOnIds.filter((a) => !knownAddOns.has(a));
+  if (unknownAddOns.length > 0) return invalid(`addOns: no add-on ${unknownAddOns.join(", ")}; create an add-on before using it`);
   if (v.slug === "") return invalid("title: needs a letter or digit, since the print's address (slug) is made from it");
   const other = rt.store.printBySlug(v.slug);
   if (other && other.id !== id)
@@ -167,6 +176,7 @@ export function createPrint(rt: Runtime, input: PrintInput): Outcome<Print> {
     weightGrams: null,
     printTimeMinutes: null,
     colors: null,
+    addOns: [],
     categoryIds: [],
     sources: [],
     // zod keeps a key that is present but undefined; it means "left out", so it must not overwrite a default.
@@ -192,6 +202,7 @@ export function createPrint(rt: Runtime, input: PrintInput): Outcome<Print> {
     });
     rt.store.setPrintCategories(id, v.categoryIds);
     rt.store.setPrintSources(id, v.sources);
+    rt.store.setPrintAddOns(id, v.addOns);
     return ok(load(rt, id));
   });
 }
@@ -253,6 +264,7 @@ export function updatePrint(rt: Runtime, id: string, patch: PrintPatch): Outcome
     rt.store.updatePrint(id, { ...columns(fields), ...(slugChanges ? { slug: nextSlug } : {}), updated_at: rt.clock().toISOString() });
     if (fields.categoryIds) rt.store.setPrintCategories(id, fields.categoryIds);
     if (fields.sources) rt.store.setPrintSources(id, fields.sources);
+    if (fields.addOns) rt.store.setPrintAddOns(id, fields.addOns);
     if (row.status === "published") siteChange();
     return ok(load(rt, id));
   });

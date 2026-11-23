@@ -12,7 +12,17 @@ describe("openDatabase", () => {
       expect(raw.pragma("foreign_keys", { simple: true })).toBe(1);
       expect(raw.pragma("user_version", { simple: true })).toBe(MIGRATIONS.length);
       const tables = raw.prepare("select name from sqlite_master where type = 'table' order by name").pluck().all();
-      expect(tables).toEqual(["categories", "photos", "print_categories", "print_sources", "prints", "reserved_slugs", "site_state"]);
+      expect(tables).toEqual([
+        "add_ons",
+        "categories",
+        "photos",
+        "print_add_ons",
+        "print_categories",
+        "print_sources",
+        "prints",
+        "reserved_slugs",
+        "site_state",
+      ]);
     } finally {
       raw.close();
     }

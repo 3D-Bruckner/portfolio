@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requirePerson } from "@/app/_lib/signin";
 import { runtime } from "@/app/_lib/runtime";
-import { listCategories } from "@/backend";
+import { listAddOns, listCategories } from "@/backend";
 import { copyFor } from "@/components/copy";
 import { BackIcon } from "@/components/icons";
 import { ui } from "@/components/ui";
@@ -24,7 +24,15 @@ export default async function NewPrintPage({ params }: PageProps<"/[lang]/prints
         {t.common.back}
       </Link>
       <h1 className={`${ui.h1} mt-2`}>{t.print.newTitle}</h1>
-      <PrintForm ai={runtime().askClaude !== null} printId={null} specs={fieldSpecs()} categories={listCategories(runtime())} values={null} slugFixed={false} />
+      <PrintForm
+        ai={runtime().askClaude !== null}
+        printId={null}
+        specs={fieldSpecs()}
+        categories={listCategories(runtime())}
+        addOns={listAddOns(runtime())}
+        values={null}
+        slugFixed={false}
+      />
     </>
   );
 }

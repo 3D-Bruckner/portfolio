@@ -1,5 +1,6 @@
 // The Store: every query portfolio makes, bound to one connection. Domain code gets it as rt.store and never sees kysely or better-sqlite3.
 import { databaseAnswers, openDatabase } from "./connection";
+import { addOnQueries } from "./addons";
 import { categoryQueries } from "./categories";
 import { photoQueries } from "./photos";
 import { printQueries } from "./prints";
@@ -7,6 +8,7 @@ import { siteStateQueries } from "./site";
 
 export type Store = ReturnType<typeof printQueries> &
   ReturnType<typeof categoryQueries> &
+  ReturnType<typeof addOnQueries> &
   ReturnType<typeof photoQueries> &
   ReturnType<typeof siteStateQueries> & {
     /** Runs `fn` in one transaction (a savepoint when nested): all its writes or none. */
@@ -22,6 +24,7 @@ export function openStore(dataDir: string): Store {
   return {
     ...printQueries(exec),
     ...categoryQueries(exec),
+    ...addOnQueries(exec),
     ...photoQueries(exec),
     ...siteStateQueries(exec),
     transaction: (fn) => raw.transaction(fn)(),

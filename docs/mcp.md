@@ -13,7 +13,7 @@ portfolio's MCP server is at `<PUBLIC_URL>/mcp` (Streamable HTTP, POST only), fo
 
 A print in a result is its fields (`title`, `shortTitle`, `description`, `price`, `selfDesigned`, `weightGrams`, `printTimeMinutes`, `colors`, `categoryIds`, `sources`, `slug`), plus `id`, `status` (`draft` or `published`), `showcase`, `coverPhotoId`, `photos`, `categories`, `firstPublishedAt`, `createdAt`, `updatedAt` and `url`. A photo is its `id`, `printId`, the cutout's `width`, `height`, `bytes` and `sha256`, `original` (the original's size as shown, the space a crop is given in) and `crop` (null: the whole photo).
 
-## The 24 tools
+## The 28 tools
 
 ### Prints
 
@@ -56,6 +56,15 @@ Photos are uploaded only in the web app (a picture in a chat doesn't reach a too
 | `create_category` | `name`       | the category                                   | its slug stays through renames; how to give prints the category                          |
 | `rename_category` | `id`, `name` | the category                                   | the slug stays; whether published prints show the new name with the next build           |
 | `delete_category` | `id`         | `deleted`: the id                              | that no print used it. Refused, naming the prints, while any print (a draft too) uses it |
+
+### Add-ons
+
+| Tool            | Input                                                      | Returns                                    | Guidance says                                                                                     |
+| --------------- | ---------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `list_add_ons`  | none                                                       | `addOns`, each with how many prints use it | that a print gets them with `addOns`, each `included` in its price or `optional` for the customer |
+| `create_add_on` | `name`, `priceCents`, `available?`, `invoiceNinjaProduct?` | the add-on                                 | how to put it on a print                                                                          |
+| `update_add_on` | `id` and the fields to change                              | the add-on                                 | that published prints show it with the next build and saved prices stay until edited              |
+| `delete_add_on` | `id`                                                       | `deleted`: the id                          | that no print used it. Refused, naming the prints, while any print (a draft too) uses it          |
 
 ### The site build
 
