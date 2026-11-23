@@ -50,3 +50,10 @@ export function includedLines(
     return a && c.mode === "included" ? [{ pricePerPiece: a.priceCents / 100, quantity: c.quantity }] : [];
   });
 }
+
+/** What the filament of a print costs and what is left of its price; null while the weight, the price or the cost is missing. */
+export function marginOf(price: number | null, weightGrams: number | null | undefined, costPerKg: number | undefined) {
+  if (price === null || !weightGrams || costPerKg === undefined) return null;
+  const cost = Math.round((weightGrams / 1000) * costPerKg * 100) / 100;
+  return { cost, margin: Math.round((price - cost) * 100) / 100 };
+}

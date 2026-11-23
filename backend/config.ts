@@ -25,6 +25,10 @@ export type Config = {
   siteUrl: string;
   /** PORTFOLIO_THINGIVERSE_TOKEN: an app token for Thingiverse's API; without it a Thingiverse link can't be imported. */
   thingiverseToken?: string;
+  /** PORTFOLIO_BAMBUDDY_URL: Bambuddy, where the filaments and their costs are; without it and its key the form shows no cost. */
+  bambuddyUrl?: string;
+  /** PORTFOLIO_BAMBUDDY_KEY: portfolio's own limited API key there. */
+  bambuddyKey?: string;
   /** PORTFOLIO_CLAUDE_URL: Marcel's Claude gateway (backend/claude.ts) for "Enhance with AI"; without it and its token the button isn't shown. */
   claudeUrl?: string;
   /** PORTFOLIO_CLAUDE_TOKEN: portfolio's bearer token at the gateway. */
@@ -50,6 +54,11 @@ const schema = z.object({
   PORTFOLIO_SMTP_FROM: optional,
   PORTFOLIO_GITHUB_TOKEN: optional,
   PORTFOLIO_THINGIVERSE_TOKEN: optional,
+  PORTFOLIO_BAMBUDDY_URL: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.url({ protocol: /^https?$/, error: "PORTFOLIO_BAMBUDDY_URL must be an http(s) URL" }).optional(),
+  ),
+  PORTFOLIO_BAMBUDDY_KEY: optional,
   PORTFOLIO_CLAUDE_URL: z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.url({ protocol: /^https?$/ }).optional()),
   PORTFOLIO_CLAUDE_TOKEN: optional,
   PORTFOLIO_SITE_REPO: optional,
@@ -111,6 +120,8 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
   if (e.PORTFOLIO_SMTP_FROM) config.smtpFrom = e.PORTFOLIO_SMTP_FROM;
   if (e.PORTFOLIO_GITHUB_TOKEN) config.githubToken = e.PORTFOLIO_GITHUB_TOKEN;
   if (e.PORTFOLIO_THINGIVERSE_TOKEN) config.thingiverseToken = e.PORTFOLIO_THINGIVERSE_TOKEN;
+  if (e.PORTFOLIO_BAMBUDDY_URL) config.bambuddyUrl = e.PORTFOLIO_BAMBUDDY_URL.replace(/\/+$/, "");
+  if (e.PORTFOLIO_BAMBUDDY_KEY) config.bambuddyKey = e.PORTFOLIO_BAMBUDDY_KEY;
   if (e.PORTFOLIO_CLAUDE_URL) config.claudeUrl = e.PORTFOLIO_CLAUDE_URL.replace(/\/$/, "");
   if (e.PORTFOLIO_CLAUDE_TOKEN) config.claudeToken = e.PORTFOLIO_CLAUDE_TOKEN;
   if (e.PORTFOLIO_DEV_USER) config.devUser = e.PORTFOLIO_DEV_USER;
