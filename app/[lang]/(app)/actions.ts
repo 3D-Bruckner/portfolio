@@ -10,6 +10,8 @@ import { actionPerson } from "@/app/_lib/signin";
 import { runtime } from "@/app/_lib/runtime";
 import {
   createCategory,
+  toGerman,
+  type Texts,
   createPrint,
   deleteCategory,
   deletePhoto,
@@ -203,6 +205,12 @@ export async function pin(id: string, on: boolean): Promise<Result> {
     generic,
     (t) => t.order.saved,
   );
+}
+
+/** A 3MF's title and description in German; as they came when Claude can't. */
+export async function translateTexts(texts: Texts): Promise<Texts> {
+  if (!(await actionPerson())) return texts;
+  return toGerman(runtime(), texts);
 }
 
 // ---- categories

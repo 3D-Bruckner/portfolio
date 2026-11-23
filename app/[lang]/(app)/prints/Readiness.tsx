@@ -15,9 +15,9 @@ const ANCHOR: Record<string, string> = {
   sources: "group-origin",
 };
 
-export function Readiness({ print, lang }: { print: Print; lang: string }) {
+/** The print's tips in words, for the checklist and for the fields they belong to. */
+export function tipsFor(print: Print, lang: string): { code: string; field: string; words: string }[] {
   const t = copyFor(lang).print.readiness;
-  const tips = readiness(print).filter((h) => h.level === "tip");
   const words = (code: string): string => {
     switch (code) {
       case "cardTitle":
@@ -28,6 +28,14 @@ export function Readiness({ print, lang }: { print: Print; lang: string }) {
         return t[code as "price" | "category" | "slicer" | "longerDescription" | "origin"];
     }
   };
+  return readiness(print)
+    .filter((h) => h.level === "tip")
+    .map((h) => ({ code: h.code, field: h.field, words: words(h.code) }));
+}
+
+export function Readiness({ print, lang }: { print: Print; lang: string }) {
+  const t = copyFor(lang).print.readiness;
+  const tips = tipsFor(print, lang);
   return (
     <section aria-labelledby="readiness-heading" className={`${ui.card} mt-4`}>
       <h2 id="readiness-heading" className={`${ui.h2} flex items-center justify-between gap-2`}>
@@ -45,7 +53,7 @@ export function Readiness({ print, lang }: { print: Print; lang: string }) {
             <li key={h.code}>
               <a href={`#${ANCHOR[h.field] ?? `field-${h.field}`}`} className="flex min-h-11 items-start gap-2 py-2 text-sm hover:underline">
                 <TipIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted" />
-                <span className="flex-1">{words(h.code)}</span>
+                <span className="flex-1">{h.words}</span>
                 <span className="sr-only">{t.go}</span>
               </a>
             </li>

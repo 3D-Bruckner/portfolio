@@ -3,17 +3,20 @@
 // posts to savePrint, whose parse is the table's (printform.ts). Submitted by hand (startTransition), not as <form action>, so a refused
 // save keeps what was typed.
 import Link from "next/link";
-import { startTransition, useActionState, useEffect, useRef, useState, type FormEvent } from "react";
+import { Fragment, startTransition, useActionState, useEffect, useRef, useState, type FormEvent } from "react";
 import { exactPrice, priceParts, suggestedPrice, type EnhanceInput, type Suggestion, type ThreeMfReading } from "@/backend/client";
 import { useCopy } from "@/components/CopyProvider";
 import { AddIcon, CloseIcon } from "@/components/icons";
 import { Notice } from "@/components/Notice";
 import { useHydrated } from "@/components/useHydrated";
 import { ui } from "@/components/ui";
-import { savePrint } from "../actions";
+import { enhanceWithAi, savePrint, translateTexts } from "../actions";
 import { FORM_GROUPS, FORM_ORDER, type FieldSpec, type PrintFieldName } from "./fieldorder";
-import { AiEnhance } from "./AiEnhance";
+import { AiBlockHeading } from "./AiBlockHeading";
+import type { ReviewResult, ReviewRow } from "./AiReview";
+import { FieldTip, type FormTip, type TipApply } from "./FieldTip";
 import { NewCategory } from "./NewCategory";
+import { suggestionCache, type SuggestionPart } from "./suggestioncache";
 import { ThreeMfFill, type FillPart } from "./ThreeMfFill";
 
 export type FormValues = {
@@ -36,8 +39,10 @@ type Props = {
   categories: { id: string; name: string }[];
   values: FormValues | null;
   slugFixed: boolean;
-  /** Whether "Enhance with AI" is offered (the server has a Claude gateway). */
+  /** Whether the blocks offer Claude (the server has a gateway). */
   ai?: boolean;
+  /** "For the website"'s tips, shown again at the fields they belong to. */
+  tips?: FormTip[];
 };
 
 /** Each field's posted entries (a source's label and url go under "sources"), as one string to compare. */
@@ -49,7 +54,7 @@ function snapshot(form: HTMLFormElement): Record<string, string> {
 /** 135 → "2 h 15 min". */
 const formatMinutes = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}` : `${m} min`);
 
-export function PrintForm({ printId, specs, categories, values, slugFixed, ai = false }: Props) {
+export function PrintForm({ printId, specs, categories, values, slugFixed, ai = false, tips = [] }: Props) {
   const held = values?.categoryIds ?? [];
   const rank = (id: string) => (held.includes(id) ? held.indexOf(id) : held.length);
   const t = useCopy();
@@ -93,11 +98,25 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
       setNextKey(nextKey + 1);
       filled.push("sources");
     }
+    if (ai && (filled.includes("title") || filled.includes("description"))) translate();
     return filled;
   }
 
-  // "Enhance with AI": what the form shows now goes to Claude; its texts and categories come back into the fields, and the returned
-  // function puts the earlier ones back. Nothing is saved until the form is.
+  // A 3MF's words are mostly English and the site is German. Each field takes the translation only if it still holds what was sent.
+  const [translating, setTranslating] = useState(false);
+  async function translate() {
+    const sent = { title: text("title"), description: text("description") };
+    setTranslating(true);
+    try {
+      const german = await translateTexts(sent);
+      if (text("title") === sent.title) setText("title", german.title);
+      if (text("description") === sent.description) setText("description", german.description);
+    } finally {
+      setTranslating(false);
+    }
+  }
+
+  // What the form shows now is what Claude reads; nothing it suggests is saved until the form is.
   const named = (name: string) => form.current?.elements.namedItem(name);
   const text = (name: string) => {
     const el = named(name);
@@ -122,22 +141,81 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
       colors: num("colors"),
     };
   }
-  function applyAi(s: Suggestion): () => void {
-    const set = (name: string, value: string) => {
-      const el = named(name);
-      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) el.value = value;
-    };
-    const before = { title: text("title"), shortTitle: text("shortTitle"), description: text("description"), checked: boxes().map((b) => b.checked) };
-    set("title", s.title);
-    set("shortTitle", s.shortTitle ?? "");
-    set("description", s.description);
-    if (s.categoryIds.length > 0) for (const b of boxes()) b.checked = s.categoryIds.includes(b.value);
+  const setText = (name: string, value: string) => {
+    const el = named(name);
+    if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) el.value = value;
+  };
+  // Claude's answer for one block or field, as a review: the form changes only by what is taken. One answer covers them all, so the next
+  // block shows its part of it without asking again (suggestioncache.ts); asking for a part already shown means another version.
+  const answers = useRef(suggestionCache<Suggestion>());
+  const noted = useRef<Suggestion | null>(null);
+  const formKey = () => JSON.stringify(readForAi());
+  async function reviewOf(parts: readonly SuggestionPart[], rowsOf: (s: Suggestion) => ReviewRow[]): Promise<ReviewResult> {
+    const key = formKey();
+    const got = await answers.current.ask(key, parts, () => enhanceWithAi(readForAi()));
+    if (!got.ok) return got;
+    answers.current.applied(parts, key, formKey());
+    // What Claude says to check is said once, at the block that showed the answer first.
+    const notes = noted.current === got.value ? [] : got.value.notes;
+    noted.current = got.value;
+    return { ok: true, rows: rowsOf(got.value), notes };
+  }
+  /** A change taken from a review: the kept answer follows the form, so another block can still use it. */
+  function taking(change: () => () => void): () => () => void {
     return () => {
-      set("title", before.title);
-      set("shortTitle", before.shortTitle);
-      set("description", before.description);
-      boxes().forEach((b, i) => (b.checked = before.checked[i] ?? b.checked));
+      const before = formKey();
+      const back = change();
+      answers.current.applied([], before, formKey());
+      return () => {
+        const taken = formKey();
+        back();
+        answers.current.applied([], taken, formKey());
+      };
     };
+  }
+  const textRow = (name: "title" | "shortTitle" | "description", value: string | null): ReviewRow[] =>
+    value
+      ? [
+          {
+            key: name,
+            label: t.print.fields[name].label,
+            now: () => text(name),
+            next: value,
+            take: taking(() => {
+              const was = text(name);
+              setText(name, value);
+              return () => setText(name, was);
+            }),
+          },
+        ]
+      : [];
+  const textRows = (s: Suggestion) => [...textRow("title", s.title), ...textRow("shortTitle", s.shortTitle), ...textRow("description", s.description)];
+  function categoryRows(s: Suggestion): ReviewRow[] {
+    if (s.categoryIds.length === 0) return [];
+    const nameOf = (id: string) => allCategories.find((c) => c.id === id)?.name ?? "";
+    const names = (ids: string[]) =>
+      boxes()
+        .filter((b) => ids.includes(b.value))
+        .map((b) => nameOf(b.value))
+        .join(", ");
+    return [
+      {
+        key: "categories",
+        label: t.print.groups.categories,
+        now: () =>
+          names(
+            boxes()
+              .filter((b) => b.checked)
+              .map((b) => b.value),
+          ),
+        next: names(s.categoryIds),
+        take: taking(() => {
+          const was = boxes().map((b) => b.checked);
+          for (const b of boxes()) b.checked = s.categoryIds.includes(b.value);
+          return () => boxes().forEach((b, i) => (b.checked = was[i] ?? b.checked));
+        }),
+      },
+    ];
   }
 
   // The form's values as they were shown (and as last saved), per field: a save sends only the fields that differ, so what Claude or
@@ -184,6 +262,33 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
     el.value = String(suggestion);
     setNum("price", el.value);
   }
+
+  // A tip's button, where the app can help: the formula's price at once, or Claude's words for this one field as a review.
+  const reviewFor = (code: string): Promise<ReviewResult> =>
+    code === "category"
+      ? reviewOf(["categories"], categoryRows)
+      : code === "cardTitle"
+        ? reviewOf(["shortTitle"], (s) => textRow("shortTitle", s.shortTitle))
+        : reviewOf(["description"], (s) => textRow("description", s.description));
+  function tipApply(code: string): TipApply | undefined {
+    if (code === "price" && suggestion !== null)
+      return {
+        label: t.print.readiness.takePrice,
+        fill: () => {
+          const before = text("price");
+          takeSuggestion();
+          return () => {
+            setText("price", before);
+            setNum("price", before);
+          };
+        },
+      };
+    if (ai && (code === "category" || code === "cardTitle" || code === "longerDescription"))
+      return { label: t.print.readiness.suggest, review: () => reviewFor(code) };
+    return undefined;
+  }
+  const tipsAt = (...names: string[]) =>
+    tips.filter((h) => names.includes(h.field)).map((h) => <FieldTip key={`${h.code}:${h.words}`} words={h.words} apply={tipApply(h.code)} form={form} />);
 
   function field(name: PrintFieldName) {
     const spec = specs[name];
@@ -369,7 +474,11 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
   return (
     <form ref={form} onSubmit={submit} className="mt-4 space-y-5">
       <ThreeMfFill printId={printId} onRead={fill} />
-      {ai && <AiEnhance read={readForAi} apply={applyAi} />}
+      {translating && (
+        <p role="status" className={ui.status}>
+          {t.print.ai.translating}
+        </p>
+      )}
       {groups.map(({ group, fields }) =>
         group === "numbers" ? (
           <section key={group} aria-labelledby={`group-${group}`} className={ui.card}>
@@ -392,13 +501,30 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
                 <p className="tabular text-xs text-muted">{t.print.priceParts(parts)}</p>
               </div>
             )}
+            <div className="mt-3 space-y-2 empty:hidden">{tipsAt("price", "weightGrams")}</div>
           </section>
         ) : (
           <section key={group} aria-labelledby={`group-${group}`} className={`${ui.card} space-y-4`}>
-            <h3 id={`group-${group}`} className={ui.h2}>
-              {t.print.groups[group]}
-            </h3>
-            {fields.map(field)}
+            {ai && (group === "text" || group === "categories") ? (
+              <AiBlockHeading
+                id={`group-${group}`}
+                heading={t.print.groups[group]}
+                label={group === "text" ? t.print.ai.improve : t.print.ai.suggest}
+                name={group === "text" ? t.print.ai.improveName : t.print.ai.suggestName}
+                form={form}
+                run={() => (group === "text" ? reviewOf(["title", "shortTitle", "description"], textRows) : reviewOf(["categories"], categoryRows))}
+              />
+            ) : (
+              <h3 id={`group-${group}`} className={ui.h2}>
+                {t.print.groups[group]}
+              </h3>
+            )}
+            {fields.map((n) => (
+              <Fragment key={n}>
+                {field(n)}
+                {tipsAt(n)}
+              </Fragment>
+            ))}
           </section>
         ),
       )}

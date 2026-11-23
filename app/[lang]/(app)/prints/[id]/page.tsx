@@ -13,7 +13,8 @@ import { PhotoUploader } from "../PhotoUploader";
 import { fieldSpecs } from "../printform";
 import { PrintForm, type FormValues } from "../PrintForm";
 import { DeletePrint, PublishBar } from "../PublishBar";
-import { Readiness } from "../Readiness";
+import { FieldTip } from "../FieldTip";
+import { Readiness, tipsFor } from "../Readiness";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/prints/[id]">): Promise<Metadata> {
   const { lang, id } = await params;
@@ -36,6 +37,7 @@ export default async function PrintPage({ params }: PageProps<"/[lang]/prints/[i
     ...(p.description.trim() === "" ? [t.print.missingParts.description] : []),
     ...(p.photos.length === 0 ? [t.print.missingParts.photo] : []),
   ];
+  const tips = tipsFor(p, lang);
   return (
     <>
       <Link href={`/?tab=${p.status === "published" ? "published" : "drafts"}`} className="-ml-1 inline-flex min-h-11 items-center gap-1 font-semibold">
@@ -51,6 +53,13 @@ export default async function PrintPage({ params }: PageProps<"/[lang]/prints/[i
           {t.photoGrid.label}
         </h2>
         <PhotoUploader printId={p.id} />
+        {tips
+          .filter((h) => h.field === "photos")
+          .map((h) => (
+            <div key={h.code} className="mt-3">
+              <FieldTip words={h.words} />
+            </div>
+          ))}
         <PhotoGrid
           printId={p.id}
           published={p.status === "published"}
@@ -66,6 +75,7 @@ export default async function PrintPage({ params }: PageProps<"/[lang]/prints/[i
         <PrintForm
           ai={runtime().askClaude !== null}
           printId={p.id}
+          tips={tips}
           specs={fieldSpecs()}
           categories={listCategories(rt)}
           values={Object.fromEntries(FORM_ORDER.map((n) => [n, p[n]])) as FormValues}
