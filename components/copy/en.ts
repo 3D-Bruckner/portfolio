@@ -151,6 +151,8 @@ export const en = {
         " + ",
       ),
     takeSuggestion: "Use it",
+    ownPrice: (euros: number) => `Own price, formula: ${euros} €`,
+    backToFormula: "Back to formula",
     readiness: {
       heading: "For the website",
       ready: "Everything the website shows is there.",

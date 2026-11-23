@@ -1,0 +1,29 @@
+// Whether a print's price follows the formula. Pure, so the form's rule is tested without a browser. Nothing is stored: a saved price
+// that differs from the formula is an own price, so no existing print changes by itself.
+import { suggestedPrice } from "@/backend/client";
+
+export type PriceNumbers = { weightGrams?: number | null; printTimeMinutes?: number | null; colors?: number | null };
+
+/** What the formula takes from the form's numbers (PLA), or null while weight or time is missing. */
+export function priceInputOf(n: PriceNumbers) {
+  return n.weightGrams && n.printTimeMinutes
+    ? { weightGrams: n.weightGrams, printTimeMinutes: n.printTimeMinutes, multicolor: (n.colors ?? 1) >= 2, material: "PLA" as const }
+    : null;
+}
+
+/** The customer price the formula gives for these numbers, or null while it can't say. */
+export function formulaPrice(n: PriceNumbers): number | null {
+  const input = priceInputOf(n);
+  return input ? suggestedPrice(input) : null;
+}
+
+/** An empty price, or one equal to the formula's, follows the formula; any other is an own price. */
+export function followsFormula(price: number | null, formula: number | null): boolean {
+  return price === null || price === formula;
+}
+
+/** The price after the numbers changed: the new formula price while following, else unchanged (also while the numbers are incomplete). */
+export function priceAfterNumbers(price: number | null, following: boolean, numbers: PriceNumbers): number | null {
+  const formula = formulaPrice(numbers);
+  return following && formula !== null ? formula : price;
+}

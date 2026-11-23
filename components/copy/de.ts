@@ -200,6 +200,8 @@ export const de: Copy = {
         `Grundgebühr ${euro(p.fee)}`,
       ].join(" + "),
     takeSuggestion: "Übernehmen",
+    ownPrice: (euros: number) => `Eigener Preis, Formel: ${euros} €`,
+    backToFormula: "Zurück zur Formel",
     readiness: {
       heading: "Für die Website",
       ready: "Alles da, was die Website zeigt.",
