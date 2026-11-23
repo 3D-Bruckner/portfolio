@@ -8,7 +8,7 @@ import { invalid, ok, type Outcome } from "./outcome";
 import { SLUG_PATTERN } from "./slug";
 
 type Field = {
-  kind: "text" | "integer" | "boolean" | "ids" | "sources" | "slug";
+  kind: "text" | "integer" | "boolean" | "ids" | "sources" | "addOns" | "slug";
   /** The most characters, the highest number or the most entries; null for a boolean. */
   limit: number | null;
   rule: string;
@@ -118,6 +118,20 @@ export const PRINT_FIELDS = {
     onEdit: "Left out: unchanged. null: removed.",
     nullable: true,
     value: z.number().int().min(1).max(100),
+  }),
+  addOns: field({
+    kind: "addOns",
+    limit: 20,
+    rule: "Existing add-ons, each once, with a quantity from 1 and whether the print includes or offers it.",
+    description:
+      "The print's extra parts: [{addOnId, quantity, mode}]. mode 'included' is part of the print's price; 'optional' is offered to the customer when ordering (list them with list_add_ons).",
+    onCreate: "Left out: none.",
+    required: false,
+    onEdit: "Left out: unchanged. A list replaces them all; [] removes them.",
+    nullable: false,
+    value: z
+      .array(z.strictObject({ addOnId: z.string().min(1).max(100), quantity: z.number().int().min(1).max(1000), mode: z.enum(["included", "optional"]) }))
+      .max(20),
   }),
   categoryIds: field({
     kind: "ids",

@@ -11,6 +11,7 @@
     { "name": "Order", "description": "The portfolio's order and the showcases pinned above it." },
     { "name": "Photos", "description": "A print's photos: order, cover, cutout, delete. Photos are uploaded in the web app." },
     { "name": "Categories", "description": "The categories prints are filed under." },
+    { "name": "Add-ons", "description": "The extra parts a print includes or offers." },
     { "name": "Site", "description": "What the site build reads, and whether one is pending or running." },
     { "name": "Tokens", "description": "The caller's own API tokens." }
   ],
@@ -79,6 +80,21 @@
                           "colors": {
                             "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
                             "description": "How many filament colours the print uses."
+                          },
+                          "addOns": {
+                            "maxItems": 20,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "addOnId": { "type": "string", "minLength": 1, "maxLength": 100 },
+                                "quantity": { "type": "integer", "minimum": 1, "maximum": 1000 },
+                                "mode": { "type": "string", "enum": ["included", "optional"] }
+                              },
+                              "required": ["addOnId", "quantity", "mode"],
+                              "additionalProperties": false
+                            },
+                            "description": "The print's extra parts: [{addOnId, quantity, mode}]. mode 'included' is part of the print's price; 'optional' is offered to the customer when ordering (list them with list_add_ons)."
                           },
                           "categoryIds": {
                             "maxItems": 20,
@@ -201,6 +217,7 @@
                           "weightGrams",
                           "printTimeMinutes",
                           "colors",
+                          "addOns",
                           "categoryIds",
                           "sources",
                           "slug",
@@ -275,6 +292,21 @@
                     "description": "How many filament colours the print uses.",
                     "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }]
                   },
+                  "addOns": {
+                    "description": "The print's extra parts: [{addOnId, quantity, mode}]. mode 'included' is part of the print's price; 'optional' is offered to the customer when ordering (list them with list_add_ons).",
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "addOnId": { "type": "string", "minLength": 1, "maxLength": 100 },
+                        "quantity": { "type": "integer", "minimum": 1, "maximum": 1000 },
+                        "mode": { "type": "string", "enum": ["included", "optional"] }
+                      },
+                      "required": ["addOnId", "quantity", "mode"],
+                      "additionalProperties": false
+                    }
+                  },
                   "categoryIds": {
                     "description": "The ids of the print's categories, in order: the first is its main one (list them with the categories' list).",
                     "maxItems": 20,
@@ -342,6 +374,21 @@
                     "colors": {
                       "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
                       "description": "How many filament colours the print uses."
+                    },
+                    "addOns": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "addOnId": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "quantity": { "type": "integer", "minimum": 1, "maximum": 1000 },
+                          "mode": { "type": "string", "enum": ["included", "optional"] }
+                        },
+                        "required": ["addOnId", "quantity", "mode"],
+                        "additionalProperties": false
+                      },
+                      "description": "The print's extra parts: [{addOnId, quantity, mode}]. mode 'included' is part of the print's price; 'optional' is offered to the customer when ordering (list them with list_add_ons)."
                     },
                     "categoryIds": {
                       "maxItems": 20,
@@ -459,6 +506,7 @@
                     "weightGrams",
                     "printTimeMinutes",
                     "colors",
+                    "addOns",
                     "categoryIds",
                     "sources",
                     "slug",
@@ -549,6 +597,21 @@
                       "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
                       "description": "How many filament colours the print uses."
                     },
+                    "addOns": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "addOnId": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "quantity": { "type": "integer", "minimum": 1, "maximum": 1000 },
+                          "mode": { "type": "string", "enum": ["included", "optional"] }
+                        },
+                        "required": ["addOnId", "quantity", "mode"],
+                        "additionalProperties": false
+                      },
+                      "description": "The print's extra parts: [{addOnId, quantity, mode}]. mode 'included' is part of the print's price; 'optional' is offered to the customer when ordering (list them with list_add_ons)."
+                    },
                     "categoryIds": {
                       "maxItems": 20,
                       "type": "array",
@@ -665,6 +728,7 @@
                     "weightGrams",
                     "printTimeMinutes",
                     "colors",
+                    "addOns",
                     "categoryIds",
                     "sources",
                     "slug",
@@ -731,6 +795,21 @@
                   "colors": {
                     "description": "How many filament colours the print uses.",
                     "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }]
+                  },
+                  "addOns": {
+                    "description": "The print's extra parts: [{addOnId, quantity, mode}]. mode 'included' is part of the print's price; 'optional' is offered to the customer when ordering (list them with list_add_ons).",
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "addOnId": { "type": "string", "minLength": 1, "maxLength": 100 },
+                        "quantity": { "type": "integer", "minimum": 1, "maximum": 1000 },
+                        "mode": { "type": "string", "enum": ["included", "optional"] }
+                      },
+                      "required": ["addOnId", "quantity", "mode"],
+                      "additionalProperties": false
+                    }
                   },
                   "categoryIds": {
                     "description": "The ids of the print's categories, in order: the first is its main one (list them with the categories' list).",
@@ -805,6 +884,21 @@
                       "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
                       "description": "How many filament colours the print uses."
                     },
+                    "addOns": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "addOnId": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "quantity": { "type": "integer", "minimum": 1, "maximum": 1000 },
+                          "mode": { "type": "string", "enum": ["included", "optional"] }
+                        },
+                        "required": ["addOnId", "quantity", "mode"],
+                        "additionalProperties": false
+                      },
+                      "description": "The print's extra parts: [{addOnId, quantity, mode}]. mode 'included' is part of the print's price; 'optional' is offered to the customer when ordering (list them with list_add_ons)."
+                    },
                     "categoryIds": {
                       "maxItems": 20,
                       "type": "array",
@@ -921,6 +1015,7 @@
                     "weightGrams",
                     "printTimeMinutes",
                     "colors",
+                    "addOns",
                     "categoryIds",
                     "sources",
                     "slug",
@@ -1045,6 +1140,21 @@
                       "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
                       "description": "How many filament colours the print uses."
                     },
+                    "addOns": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "addOnId": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "quantity": { "type": "integer", "minimum": 1, "maximum": 1000 },
+                          "mode": { "type": "string", "enum": ["included", "optional"] }
+                        },
+                        "required": ["addOnId", "quantity", "mode"],
+                        "additionalProperties": false
+                      },
+                      "description": "The print's extra parts: [{addOnId, quantity, mode}]. mode 'included' is part of the print's price; 'optional' is offered to the customer when ordering (list them with list_add_ons)."
+                    },
                     "categoryIds": {
                       "maxItems": 20,
                       "type": "array",
@@ -1161,6 +1271,7 @@
                     "weightGrams",
                     "printTimeMinutes",
                     "colors",
+                    "addOns",
                     "categoryIds",
                     "sources",
                     "slug",
@@ -1348,6 +1459,21 @@
                       "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
                       "description": "How many filament colours the print uses."
                     },
+                    "addOns": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "addOnId": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "quantity": { "type": "integer", "minimum": 1, "maximum": 1000 },
+                          "mode": { "type": "string", "enum": ["included", "optional"] }
+                        },
+                        "required": ["addOnId", "quantity", "mode"],
+                        "additionalProperties": false
+                      },
+                      "description": "The print's extra parts: [{addOnId, quantity, mode}]. mode 'included' is part of the print's price; 'optional' is offered to the customer when ordering (list them with list_add_ons)."
+                    },
                     "categoryIds": {
                       "maxItems": 20,
                       "type": "array",
@@ -1464,6 +1590,7 @@
                     "weightGrams",
                     "printTimeMinutes",
                     "colors",
+                    "addOns",
                     "categoryIds",
                     "sources",
                     "slug",
@@ -1551,6 +1678,21 @@
                       "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
                       "description": "How many filament colours the print uses."
                     },
+                    "addOns": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "addOnId": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "quantity": { "type": "integer", "minimum": 1, "maximum": 1000 },
+                          "mode": { "type": "string", "enum": ["included", "optional"] }
+                        },
+                        "required": ["addOnId", "quantity", "mode"],
+                        "additionalProperties": false
+                      },
+                      "description": "The print's extra parts: [{addOnId, quantity, mode}]. mode 'included' is part of the print's price; 'optional' is offered to the customer when ordering (list them with list_add_ons)."
+                    },
                     "categoryIds": {
                       "maxItems": 20,
                       "type": "array",
@@ -1667,6 +1809,7 @@
                     "weightGrams",
                     "printTimeMinutes",
                     "colors",
+                    "addOns",
                     "categoryIds",
                     "sources",
                     "slug",
@@ -1763,6 +1906,21 @@
                       "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
                       "description": "How many filament colours the print uses."
                     },
+                    "addOns": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "addOnId": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "quantity": { "type": "integer", "minimum": 1, "maximum": 1000 },
+                          "mode": { "type": "string", "enum": ["included", "optional"] }
+                        },
+                        "required": ["addOnId", "quantity", "mode"],
+                        "additionalProperties": false
+                      },
+                      "description": "The print's extra parts: [{addOnId, quantity, mode}]. mode 'included' is part of the print's price; 'optional' is offered to the customer when ordering (list them with list_add_ons)."
+                    },
                     "categoryIds": {
                       "maxItems": 20,
                       "type": "array",
@@ -1879,6 +2037,7 @@
                     "weightGrams",
                     "printTimeMinutes",
                     "colors",
+                    "addOns",
                     "categoryIds",
                     "sources",
                     "slug",
@@ -1974,6 +2133,21 @@
                       "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
                       "description": "How many filament colours the print uses."
                     },
+                    "addOns": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "addOnId": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "quantity": { "type": "integer", "minimum": 1, "maximum": 1000 },
+                          "mode": { "type": "string", "enum": ["included", "optional"] }
+                        },
+                        "required": ["addOnId", "quantity", "mode"],
+                        "additionalProperties": false
+                      },
+                      "description": "The print's extra parts: [{addOnId, quantity, mode}]. mode 'included' is part of the print's price; 'optional' is offered to the customer when ordering (list them with list_add_ons)."
+                    },
                     "categoryIds": {
                       "maxItems": 20,
                       "type": "array",
@@ -2090,6 +2264,7 @@
                     "weightGrams",
                     "printTimeMinutes",
                     "colors",
+                    "addOns",
                     "categoryIds",
                     "sources",
                     "slug",
@@ -2194,6 +2369,21 @@
                       "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
                       "description": "How many filament colours the print uses."
                     },
+                    "addOns": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "addOnId": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "quantity": { "type": "integer", "minimum": 1, "maximum": 1000 },
+                          "mode": { "type": "string", "enum": ["included", "optional"] }
+                        },
+                        "required": ["addOnId", "quantity", "mode"],
+                        "additionalProperties": false
+                      },
+                      "description": "The print's extra parts: [{addOnId, quantity, mode}]. mode 'included' is part of the print's price; 'optional' is offered to the customer when ordering (list them with list_add_ons)."
+                    },
                     "categoryIds": {
                       "maxItems": 20,
                       "type": "array",
@@ -2310,6 +2500,7 @@
                     "weightGrams",
                     "printTimeMinutes",
                     "colors",
+                    "addOns",
                     "categoryIds",
                     "sources",
                     "slug",
@@ -2416,6 +2607,21 @@
                       "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
                       "description": "How many filament colours the print uses."
                     },
+                    "addOns": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "addOnId": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "quantity": { "type": "integer", "minimum": 1, "maximum": 1000 },
+                          "mode": { "type": "string", "enum": ["included", "optional"] }
+                        },
+                        "required": ["addOnId", "quantity", "mode"],
+                        "additionalProperties": false
+                      },
+                      "description": "The print's extra parts: [{addOnId, quantity, mode}]. mode 'included' is part of the print's price; 'optional' is offered to the customer when ordering (list them with list_add_ons)."
+                    },
                     "categoryIds": {
                       "maxItems": 20,
                       "type": "array",
@@ -2532,6 +2738,7 @@
                     "weightGrams",
                     "printTimeMinutes",
                     "colors",
+                    "addOns",
                     "categoryIds",
                     "sources",
                     "slug",
@@ -2625,6 +2832,21 @@
                       "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 100 }, { "type": "null" }],
                       "description": "How many filament colours the print uses."
                     },
+                    "addOns": {
+                      "maxItems": 20,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "addOnId": { "type": "string", "minLength": 1, "maxLength": 100 },
+                          "quantity": { "type": "integer", "minimum": 1, "maximum": 1000 },
+                          "mode": { "type": "string", "enum": ["included", "optional"] }
+                        },
+                        "required": ["addOnId", "quantity", "mode"],
+                        "additionalProperties": false
+                      },
+                      "description": "The print's extra parts: [{addOnId, quantity, mode}]. mode 'included' is part of the print's price; 'optional' is offered to the customer when ordering (list them with list_add_ons)."
+                    },
                     "categoryIds": {
                       "maxItems": 20,
                       "type": "array",
@@ -2741,6 +2963,7 @@
                     "weightGrams",
                     "printTimeMinutes",
                     "colors",
+                    "addOns",
                     "categoryIds",
                     "sources",
                     "slug",
@@ -3156,6 +3379,280 @@
         }
       }
     },
+    "/add-ons": {
+      "get": {
+        "operationId": "listAddOns",
+        "summary": "List the extra parts that can go with a print, with how many prints use each",
+        "description": "The REST counterpart of the MCP tool `list_add_ons`.",
+        "tags": ["Add-ons"],
+        "security": [{ "bearer": [] }],
+        "responses": {
+          "200": {
+            "description": "The add-ons",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "addOns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 60,
+                            "description": "The add-on's name, e.g. 'Schlüsselring'; at most 60 characters."
+                          },
+                          "priceCents": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 100000,
+                            "description": "The price per piece in whole cents, e.g. 25 for 0.25 €."
+                          },
+                          "available": { "type": "boolean", "description": "Whether it can be picked for a print and offered to customers." },
+                          "invoiceNinjaProduct": {
+                            "anyOf": [{ "type": "string", "minLength": 1, "maxLength": 100 }, { "type": "null" }],
+                            "description": "The product key of the matching product in Invoice Ninja; null: none yet."
+                          },
+                          "prints": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "Prints using it, drafts included."
+                          }
+                        },
+                        "required": ["id", "name", "priceCents", "available", "invoiceNinjaProduct", "prints"],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["addOns"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createAddOn",
+        "summary": "Create an add-on, priced per piece in whole cents",
+        "description": "The REST counterpart of the MCP tool `create_add_on`.",
+        "tags": ["Add-ons"],
+        "security": [{ "bearer": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60,
+                    "description": "The add-on's name, e.g. 'Schlüsselring'; at most 60 characters."
+                  },
+                  "priceCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000,
+                    "description": "The price per piece in whole cents, e.g. 25 for 0.25 €."
+                  },
+                  "available": { "type": "boolean", "description": "Whether it can be picked for a print and offered to customers." },
+                  "invoiceNinjaProduct": {
+                    "anyOf": [{ "type": "string", "minLength": 1, "maxLength": 100 }, { "type": "null" }],
+                    "description": "The product key of the matching product in Invoice Ninja; null: none yet."
+                  }
+                },
+                "required": ["name", "priceCents"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new add-on",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 60,
+                      "description": "The add-on's name, e.g. 'Schlüsselring'; at most 60 characters."
+                    },
+                    "priceCents": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000,
+                      "description": "The price per piece in whole cents, e.g. 25 for 0.25 €."
+                    },
+                    "available": { "type": "boolean", "description": "Whether it can be picked for a print and offered to customers." },
+                    "invoiceNinjaProduct": {
+                      "anyOf": [{ "type": "string", "minLength": 1, "maxLength": 100 }, { "type": "null" }],
+                      "description": "The product key of the matching product in Invoice Ninja; null: none yet."
+                    }
+                  },
+                  "required": ["id", "name", "priceCents", "available", "invoiceNinjaProduct"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request can't be read, or a value in it is not acceptable (`invalid_input`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "409": {
+            "description": "The request conflicts with the current state of the thing, such as a name that is taken (`conflict`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "413": {
+            "description": "The request body is larger than 256 KiB (`too_large`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/add-ons/{id}": {
+      "patch": {
+        "operationId": "updateAddOn",
+        "summary": "Change an add-on's name, price, availability or Invoice Ninja product",
+        "description": "The REST counterpart of the MCP tool `update_add_on`.",
+        "tags": ["Add-ons"],
+        "security": [{ "bearer": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The add-on's id", "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60,
+                    "description": "The add-on's name, e.g. 'Schlüsselring'; at most 60 characters."
+                  },
+                  "priceCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000,
+                    "description": "The price per piece in whole cents, e.g. 25 for 0.25 €."
+                  },
+                  "available": { "type": "boolean", "description": "Whether it can be picked for a print and offered to customers." },
+                  "invoiceNinjaProduct": {
+                    "anyOf": [{ "type": "string", "minLength": 1, "maxLength": 100 }, { "type": "null" }],
+                    "description": "The product key of the matching product in Invoice Ninja; null: none yet."
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The add-on",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 60,
+                      "description": "The add-on's name, e.g. 'Schlüsselring'; at most 60 characters."
+                    },
+                    "priceCents": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000,
+                      "description": "The price per piece in whole cents, e.g. 25 for 0.25 €."
+                    },
+                    "available": { "type": "boolean", "description": "Whether it can be picked for a print and offered to customers." },
+                    "invoiceNinjaProduct": {
+                      "anyOf": [{ "type": "string", "minLength": 1, "maxLength": 100 }, { "type": "null" }],
+                      "description": "The product key of the matching product in Invoice Ninja; null: none yet."
+                    }
+                  },
+                  "required": ["id", "name", "priceCents", "available", "invoiceNinjaProduct"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request can't be read, or a value in it is not acceptable (`invalid_input`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "409": {
+            "description": "The request conflicts with the current state of the thing, such as a name that is taken (`conflict`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "413": {
+            "description": "The request body is larger than 256 KiB (`too_large`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteAddOn",
+        "summary": "Delete an add-on no print uses (refused, naming the prints, while any does)",
+        "description": "The REST counterpart of the MCP tool `delete_add_on`.",
+        "tags": ["Add-ons"],
+        "security": [{ "bearer": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The add-on's id", "schema": { "type": "string" } }],
+        "responses": {
+          "204": { "description": "Deleted" },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "403": {
+            "description": "The token's scope is `read`, and this changes something (`forbidden`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "409": {
+            "description": "The request conflicts with the current state of the thing, such as a name that is taken (`conflict`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
     "/export": {
       "get": {
         "operationId": "getSiteExport",
@@ -3239,6 +3736,26 @@
                             "maximum": 100000
                           },
                           "colors": { "description": "How many filament colours the print uses.", "type": "integer", "minimum": 1, "maximum": 100 },
+                          "addOns": {
+                            "description": "The print's extra parts; an optional one that is no longer available is left out.",
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": { "type": "string" },
+                                "pricePerPiece": { "type": "number", "description": "In euros." },
+                                "quantity": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+                                "mode": {
+                                  "type": "string",
+                                  "enum": ["included", "optional"],
+                                  "description": "included: already in the print's price. optional: the customer can choose it when ordering."
+                                },
+                                "invoiceNinjaProduct": { "description": "The matching product's key in Invoice Ninja.", "type": "string" }
+                              },
+                              "required": ["name", "pricePerPiece", "quantity", "mode"],
+                              "additionalProperties": false
+                            }
+                          },
                           "categories": { "type": "array", "items": { "type": "string" }, "description": "The print's categories' names." },
                           "showcase": { "type": "boolean", "description": "Pinned above the rest of the portfolio and shown on the start page." },
                           "cover": { "type": "string", "description": "The cover photo's id." },

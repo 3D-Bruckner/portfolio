@@ -8,6 +8,18 @@ import { etagMatches, fail, openApiDocument, type OpenApiInfo, type Op, type Rep
 import { createApiToken, listApiTokens, revokeApiToken, type RestCaller } from "next-app-kit/tokens";
 import * as z from "zod";
 import { API_TOKEN_PREFIX } from "./accounts";
+import {
+  addOnInputSchema,
+  addOnPatchSchema,
+  addOnSchema,
+  addOnWithCountSchema,
+  createAddOn,
+  deleteAddOn,
+  listAddOns,
+  updateAddOn,
+  type AddOnInput,
+  type AddOnPatch,
+} from "./addons";
 import { createCategory, deleteCategory, listCategories, renameCategory } from "./categories";
 import { siteExport, siteExportSchema } from "./export";
 import { movePrint, moveShowcase, setShowcase } from "./order";
@@ -50,6 +62,7 @@ export const OPEN_API: OpenApiInfo = {
     { name: "Order", description: "The portfolio's order and the showcases pinned above it." },
     { name: "Photos", description: "A print's photos: order, cover, cutout, delete. Photos are uploaded in the web app." },
     { name: "Categories", description: "The categories prints are filed under." },
+    { name: "Add-ons", description: "The extra parts a print includes or offers." },
     { name: "Site", description: "What the site build reads, and whether one is pending or running." },
     { name: "Tokens", description: "The caller's own API tokens." },
   ],
@@ -84,6 +97,7 @@ const ID = { id: "The print's id" };
 const PRINT_ID_OR_SLUG = { id: "The print's id or slug" };
 const PHOTO_ID = { id: "The photo's id" };
 const CATEGORY_ID = { id: "The category's id" };
+const ADD_ON_ID = { id: "The add-on's id" };
 const PRINT_OK = { status: 200, description: "The print as it is now", schema: printSchema };
 
 // ---- the table
@@ -380,6 +394,55 @@ export const REST_OPS: Op<Runtime>[] = [
     ok: { status: 204, description: "Deleted" },
     errors: [401, 403, 404, 409],
     handle: ({ ctx, params }) => answer(deleteCategory(ctx, params.id!), 204),
+  },
+  // Add-ons
+  {
+    method: "GET",
+    path: "/add-ons",
+    operationId: "listAddOns",
+    tool: "list_add_ons",
+    summary: "List the extra parts that can go with a print, with how many prints use each",
+    tag: "Add-ons",
+    ok: { status: 200, description: "The add-ons", schema: z.object({ addOns: z.array(addOnWithCountSchema) }) },
+    errors: [401],
+    handle: ({ ctx }) => ({ status: 200, body: { addOns: listAddOns(ctx) } }),
+  },
+  {
+    method: "POST",
+    path: "/add-ons",
+    operationId: "createAddOn",
+    tool: "create_add_on",
+    summary: "Create an add-on, priced per piece in whole cents",
+    tag: "Add-ons",
+    body: addOnInputSchema,
+    ok: { status: 201, description: "The new add-on", schema: addOnSchema },
+    errors: [400, 401, 403, 409],
+    handle: ({ ctx, body }) => answer(createAddOn(ctx, body as AddOnInput), 201, (a) => a),
+  },
+  {
+    method: "PATCH",
+    path: "/add-ons/{id}",
+    operationId: "updateAddOn",
+    tool: "update_add_on",
+    summary: "Change an add-on's name, price, availability or Invoice Ninja product",
+    tag: "Add-ons",
+    params: ADD_ON_ID,
+    body: addOnPatchSchema,
+    ok: { status: 200, description: "The add-on", schema: addOnSchema },
+    errors: [400, 401, 403, 404, 409],
+    handle: ({ ctx, params, body }) => answer(updateAddOn(ctx, params.id!, body as AddOnPatch), 200, (a) => a),
+  },
+  {
+    method: "DELETE",
+    path: "/add-ons/{id}",
+    operationId: "deleteAddOn",
+    tool: "delete_add_on",
+    summary: "Delete an add-on no print uses (refused, naming the prints, while any does)",
+    tag: "Add-ons",
+    params: ADD_ON_ID,
+    ok: { status: 204, description: "Deleted" },
+    errors: [401, 403, 404, 409],
+    handle: ({ ctx, params }) => answer(deleteAddOn(ctx, params.id!), 204),
   },
   // Site
   {

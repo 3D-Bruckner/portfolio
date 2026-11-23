@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requirePerson } from "@/app/_lib/signin";
 import { runtime } from "@/app/_lib/runtime";
-import { getPrint, listCategories } from "@/backend";
+import { getPrint, listAddOns, listCategories } from "@/backend";
 import { copyFor } from "@/components/copy";
 import { BackIcon } from "@/components/icons";
 import { ui } from "@/components/ui";
@@ -78,6 +78,7 @@ export default async function PrintPage({ params }: PageProps<"/[lang]/prints/[i
           tips={tips}
           specs={fieldSpecs()}
           categories={listCategories(rt)}
+          addOns={listAddOns(rt)}
           values={Object.fromEntries(FORM_ORDER.map((n) => [n, p[n]])) as FormValues}
           slugFixed={p.firstPublishedAt !== null}
         />

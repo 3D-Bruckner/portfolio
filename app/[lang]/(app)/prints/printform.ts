@@ -20,6 +20,16 @@ function read(fd: FormData, name: PrintFieldName): unknown {
       const urls = fd.getAll(`${name}.url`).map(String);
       return labels.map((label, i) => ({ label, url: urls[i] ?? "" })).filter((s) => s.label.trim() !== "" || s.url.trim() !== "");
     }
+    case "addOns": {
+      const ids = fd.getAll(`${name}.id`).map(String);
+      const quantities = fd.getAll(`${name}.quantity`).map(String);
+      const modes = fd.getAll(`${name}.mode`).map(String);
+      // A quantity that is no whole number goes on as it is, and the table's check names the field.
+      return ids.map((addOnId, i) => {
+        const q = (quantities[i] ?? "").trim();
+        return { addOnId, quantity: /^\d+$/.test(q) ? Number(q) : q, mode: modes[i] };
+      });
+    }
     case "integer": {
       const t = text.trim();
       if (t === "") return null;

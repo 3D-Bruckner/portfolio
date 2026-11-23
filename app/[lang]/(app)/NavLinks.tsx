@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCopy } from "@/components/CopyProvider";
-import { CategoriesIcon, OrderIcon, PrintsIcon, SettingsIcon } from "@/components/icons";
+import { AddOnsIcon, CategoriesIcon, OrderIcon, PrintsIcon, SettingsIcon } from "@/components/icons";
 
 // The menu, a tab bar at the bottom of the screen where the thumb is (its height is --tabbar in globals.css). The current part is marked by
 // aria-current, by its weight and a bar above it, not by colour alone.
@@ -10,6 +10,7 @@ const PARTS = [
   { href: "/", key: "prints", Icon: PrintsIcon, matches: (p: string) => p === "/" || p.startsWith("/prints") },
   { href: "/order", key: "order", Icon: OrderIcon, matches: (p: string) => p.startsWith("/order") },
   { href: "/categories", key: "categories", Icon: CategoriesIcon, matches: (p: string) => p.startsWith("/categories") },
+  { href: "/add-ons", key: "addOns", Icon: AddOnsIcon, matches: (p: string) => p.startsWith("/add-ons") },
   { href: "/settings", key: "settings", Icon: SettingsIcon, matches: (p: string) => p.startsWith("/settings") },
 ] as const;
 
@@ -22,7 +23,7 @@ export function NavLinks() {
       aria-label={t.label}
       className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-paper/85"
     >
-      <ul className="mx-auto grid h-[3.75rem] max-w-3xl grid-cols-4 pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)]">
+      <ul className="mx-auto grid h-[3.75rem] max-w-3xl grid-cols-5 pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)]">
         {PARTS.map(({ href, key, Icon, matches }) => {
           const current = matches(path);
           return (

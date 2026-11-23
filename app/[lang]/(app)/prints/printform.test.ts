@@ -44,6 +44,7 @@ describe("formTakesEveryPrintField", () => {
         weightGrams: 42,
         printTimeMinutes: 95,
         colors: 2,
+        addOns: [],
         categoryIds: ["c1", "c2"],
         sources: [{ label: "MakerWorld", url: "https://makerworld.com/x" }],
         slug: "beyblade-dragoon",
@@ -73,9 +74,18 @@ describe("formTakesEveryPrintField", () => {
       weightGrams: null,
       printTimeMinutes: null,
       colors: null,
+      addOns: [],
       categoryIds: [],
       sources: [],
     });
+  });
+
+  it("an add-on is read with its quantity and whether it is included or offered", () => {
+    const fd = filled();
+    fd.append("addOns.id", "a1");
+    fd.append("addOns.quantity", "4");
+    fd.append("addOns.mode", "included");
+    expect(formValues(fd, "edit").addOns).toEqual([{ addOnId: "a1", quantity: 4, mode: "included" }]);
   });
 
   it("a number that isn't one reaches the table's check, which names the field", () => {

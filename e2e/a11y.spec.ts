@@ -70,6 +70,7 @@ test("a11y: the crop frame", async ({ page }) => {
 for (const [path, heading] of [
   ["/order", "Reihenfolge"],
   ["/categories", "Kategorien"],
+  ["/add-ons", "Extras"],
   ["/settings", "Einstellungen"],
 ]) {
   test(`a11y: ${path}`, async ({ page }) => {

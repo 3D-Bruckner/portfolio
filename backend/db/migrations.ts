@@ -113,4 +113,28 @@ export const MIGRATIONS: Migration[] = [
       alter table prints add column original_description text;
     `,
   },
+  {
+    // Extra parts sold with a print. A print includes an add-on (part of its price) or offers it (the customer chooses). An add-on in use
+    // can't be deleted, so the link has no cascade on that side.
+    name: "add_ons",
+    sql: `
+      create table add_ons (
+        id text primary key,
+        name text not null collate nocase unique,
+        price_cents integer not null check (price_cents >= 0),
+        available integer not null default 1 check (available in (0, 1)),
+        invoice_ninja_product text,
+        created_at text not null
+      );
+      create table print_add_ons (
+        print_id text not null references prints(id) on delete cascade,
+        add_on_id text not null references add_ons(id),
+        idx integer not null,
+        quantity integer not null check (quantity >= 1),
+        mode text not null check (mode in ('included', 'optional')),
+        primary key (print_id, add_on_id)
+      );
+      create index print_add_ons_add_on on print_add_ons(add_on_id);
+    `,
+  },
 ];

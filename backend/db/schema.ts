@@ -80,7 +80,28 @@ export interface SiteStateTable {
   value: string;
 }
 
+export interface AddOnsTable {
+  id: string;
+  name: string;
+  price_cents: number;
+  /** 0 or 1. */
+  available: number;
+  invoice_ninja_product: string | null;
+  created_at: string;
+}
+
+export interface PrintAddOnsTable {
+  print_id: string;
+  add_on_id: string;
+  /** The add-on's place among the print's. */
+  idx: number;
+  quantity: number;
+  mode: "included" | "optional";
+}
+
 export interface DB {
+  add_ons: AddOnsTable;
+  print_add_ons: PrintAddOnsTable;
   categories: CategoriesTable;
   prints: PrintsTable;
   print_categories: PrintCategoriesTable;
@@ -90,6 +111,9 @@ export interface DB {
   site_state: SiteStateTable;
 }
 
+export type AddOnRow = Selectable<AddOnsTable>;
+export type AddOnRowPatch = Updateable<AddOnsTable>;
+export type PrintAddOnRow = Selectable<PrintAddOnsTable>;
 export type CategoryRow = Selectable<CategoriesTable>;
 export type PrintRow = Selectable<PrintsTable>;
 export type NewPrintRow = Insertable<PrintsTable>;

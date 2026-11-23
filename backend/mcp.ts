@@ -7,6 +7,7 @@
 import { defineTool, refuse, type McpContext, type Refused, type Tool, type Who } from "next-app-kit/mcp";
 import { createApiToken, listApiTokens, revokeApiToken } from "next-app-kit/tokens";
 import * as z from "zod";
+import { addOnInputSchema, addOnPatchSchema, addOnSchema, addOnWithCountSchema, createAddOn, deleteAddOn, listAddOns, updateAddOn } from "./addons";
 import { createCategory, deleteCategory, listCategories, renameCategory } from "./categories";
 import { movePrint, moveShowcase, setShowcase } from "./order";
 import type { Outcome } from "./outcome";
@@ -494,6 +495,61 @@ export function mcpTools(rt: Runtime): Tool[] {
       annotations: DELETE,
       handle: async ({ id }) => {
         const o = deleteCategory(rt, id);
+        if (!o.ok) return refused(o);
+        return { deleted: id, guidance: ["Deleted. No print used it, so the site doesn't change."] };
+      },
+    }),
+    // Add-ons
+    defineTool({
+      name: "list_add_ons",
+      description:
+        "List the extra parts that can go with a print (keychain rings, screws, damping feet), with their prices in cents and how many prints use each.",
+      input: z.object({}),
+      output: z.object({ addOns: z.array(addOnWithCountSchema) }),
+      annotations: READ,
+      handle: async () => ({
+        addOns: listAddOns(rt),
+        guidance: ["A print gets them with update_print's addOns: mode 'included' is part of its price, 'optional' is the customer's choice when ordering."],
+      }),
+    }),
+    defineTool({
+      name: "create_add_on",
+      description: "Create an extra part once, to use on several prints. Its price is per piece in whole cents. No stock is tracked.",
+      input: addOnInputSchema,
+      output: addOnSchema,
+      annotations: WRITE,
+      handle: async (input) => {
+        const a = createAddOn(rt, input);
+        if (!a.ok) return refused(a);
+        return {
+          ...a.value,
+          guidance: ["Created. Put it on a print with update_print's addOns; a print on the formula then includes it in its price in the web form."],
+        };
+      },
+    }),
+    defineTool({
+      name: "update_add_on",
+      description: "Change an add-on's name, price, availability or Invoice Ninja product. A print's saved price doesn't change by itself.",
+      input: addOnPatchSchema.extend({ id: z.string().min(1).describe("The add-on's id (list_add_ons).") }),
+      output: addOnSchema,
+      annotations: WRITE,
+      handle: async ({ id, ...patch }) => {
+        const a = updateAddOn(rt, id, patch);
+        if (!a.ok) return refused(a);
+        return {
+          ...a.value,
+          guidance: ["Saved. Published prints using it show the change with the next build; their saved prices stay until they are edited."],
+        };
+      },
+    }),
+    defineTool({
+      name: "delete_add_on",
+      description: "Delete an add-on no print uses. Refused, naming the prints, while any print (a draft too) uses it.",
+      input: z.object({ id: z.string().min(1).describe("The add-on's id (list_add_ons).") }),
+      output: z.object({ deleted: z.string().describe("The deleted add-on's id.") }),
+      annotations: DELETE,
+      handle: async ({ id }) => {
+        const o = deleteAddOn(rt, id);
         if (!o.ok) return refused(o);
         return { deleted: id, guidance: ["Deleted. No print used it, so the site doesn't change."] };
       },

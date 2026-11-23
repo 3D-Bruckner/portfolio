@@ -3,6 +3,7 @@
 // and download URLs, and the categories the published prints use. A field a print hasn't is left out, never null. Its print fields'
 // schemas come from the field table (printfields.ts), so a field's limit and description are written once.
 import * as z from "zod";
+import { addOnOf } from "./addons";
 import { PRINT_FIELDS } from "./printfields";
 import { siteOrder } from "./prints";
 import type { Runtime } from "./runtime";
@@ -30,6 +31,18 @@ export const siteExportSchema = z.object({
       z.object({
         slug: z.string().describe(PRINT_FIELDS.slug.description),
         ...fields,
+        addOns: z
+          .array(
+            z.object({
+              name: z.string(),
+              pricePerPiece: z.number().describe("In euros."),
+              quantity: z.number().int(),
+              mode: z.enum(["included", "optional"]).describe("included: already in the print's price. optional: the customer can choose it when ordering."),
+              invoiceNinjaProduct: z.string().optional().describe("The matching product's key in Invoice Ninja."),
+            }),
+          )
+          .optional()
+          .describe("The print's extra parts; an optional one that is no longer available is left out."),
         categories: z.array(z.string()).describe("The print's categories' names."),
         showcase: z.boolean().describe("Pinned above the rest of the portfolio and shown on the start page."),
         cover: z.string().describe("The cover photo's id."),
@@ -57,6 +70,21 @@ const present = <T extends object>(o: T): T => Object.fromEntries(Object.entries
 export function siteExport(rt: Runtime): SiteExport {
   const prints = siteOrder(rt);
   const used = new Map(prints.flatMap((p) => p.categories).map((c) => [c.id, c]));
+  const addOns = new Map(rt.store.addOnsById([...new Set(prints.flatMap((p) => p.addOns.map((a) => a.addOnId)))]).map((a) => [a.id, addOnOf(a)]));
+  const addOnsOf = (p: (typeof prints)[number]) =>
+    p.addOns.flatMap((link) => {
+      const a = addOns.get(link.addOnId)!;
+      if (link.mode === "optional" && !a.available) return [];
+      return [
+        {
+          name: a.name,
+          pricePerPiece: a.priceCents / 100,
+          quantity: link.quantity,
+          mode: link.mode,
+          ...(a.invoiceNinjaProduct ? { invoiceNinjaProduct: a.invoiceNinjaProduct } : {}),
+        },
+      ];
+    });
   return {
     version: 1,
     generatedAt: rt.clock().toISOString(),
@@ -64,6 +92,7 @@ export function siteExport(rt: Runtime): SiteExport {
     prints: prints.map((p) => ({
       slug: p.slug,
       ...(present(Object.fromEntries(EXPORTED.map((n) => [n, p[n]]))) as Pick<SiteExport["prints"][number], (typeof EXPORTED)[number]>),
+      ...(addOnsOf(p).length > 0 ? { addOns: addOnsOf(p) } : {}),
       categories: p.categories.map((c) => c.name),
       showcase: p.showcase,
       // A published print has a photo (publishing needs one, deleting the last unpublishes), so it has a cover.
