@@ -23,7 +23,6 @@ export {
   Image as PhotoIcon,
   KeyRound as TokenIcon,
   ListOrdered as OrderIcon,
-  Fingerprint as PasskeyIcon,
   Globe as PublishIcon,
   EyeOff as UnpublishIcon,
   LayoutGrid as PrintsIcon,

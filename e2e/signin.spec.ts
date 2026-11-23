@@ -13,7 +13,7 @@ test.describe("a browser that asks for German", () => {
     await expect(page.getByRole("heading", { name: "Anmelden" })).toBeVisible();
     await expect(page.getByLabel("E-Mail-Adresse")).toBeVisible();
     await expect(page.getByRole("button", { name: "Code zuschicken" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Mit Passkey anmelden" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Passkey/ })).toHaveCount(0);
     await signIn(page);
     await expect(page.getByRole("heading", { name: "Drucke" })).toBeVisible();
   });

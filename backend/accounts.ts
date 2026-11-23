@@ -1,6 +1,6 @@
 // Sign-in, API tokens and MCP's OAuth: next-app-kit's (next-app-kit/signin), wired with portfolio's env prefix, name, API-token prefix and
 // pages; nothing of it is copied here. Who may sign in is PORTFOLIO_ALLOWED_EMAILS (empty: nobody); the ways in are a code or link by mail
-// (PORTFOLIO_SMTP_*), passkeys and any PORTFOLIO_OIDC_<NAME>_* provider. The sign-in mail's words and its language pick are the UI's
+// (PORTFOLIO_SMTP_*, off when unset) and any PORTFOLIO_OIDC_<NAME>_* provider. The sign-in mail's words and its language pick are the UI's
 // (components/copy), which backend/ never imports: the frontend hands them in as MailWording (app/_lib/runtime.ts), and the mail then
 // speaks the language the sign-in page did (the switch's cookie, then Accept-Language).
 import { join } from "node:path";

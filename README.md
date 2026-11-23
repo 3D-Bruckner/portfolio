@@ -19,7 +19,7 @@ ENV
 npm run dev            # http://localhost:3000, signed in as PORTFOLIO_DEV_USER
 ```
 
-`PORTFOLIO_DEV_USER` skips the sign-in in development (refused in production; it can't make API tokens, passkeys or MCP connections); set `PORTFOLIO_SMTP_URL` instead to sign in by mail. Without `PORTFOLIO_GITHUB_TOKEN` nothing starts the site build. The checks CI runs:
+`PORTFOLIO_DEV_USER` skips the sign-in in development (refused in production; it can't make API tokens or MCP connections); set `PORTFOLIO_SMTP_URL` instead to sign in by mail. Without `PORTFOLIO_GITHUB_TOKEN` nothing starts the site build. The checks CI runs:
 
 ```sh
 npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:e2e && npm run build && npm run generate -- --check

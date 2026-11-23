@@ -5,14 +5,13 @@ import { runtime } from "@/app/_lib/runtime";
 import { copyFor } from "@/components/copy";
 import { formatDay, formatWhen } from "@/components/format";
 import { ui } from "@/components/ui";
-import { Passkeys } from "./Passkeys";
 import { Tokens } from "./Tokens";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/settings">): Promise<Metadata> {
   return { title: copyFor((await params).lang).settings.title };
 }
 
-// API tokens (made, listed with their last use, revoked; a new one shown once) and passkeys (added, listed, removed), both the kit's.
+// API tokens (made, listed with their last use, revoked; a new one shown once), the kit's.
 export default async function SettingsPage({ params }: PageProps<"/[lang]/settings">) {
   const person = await requirePerson("/settings");
   const lang = (await params).lang;
@@ -31,7 +30,6 @@ export default async function SettingsPage({ params }: PageProps<"/[lang]/settin
           expires: k.expires_at ? formatDay(lang, k.expires_at) : null,
         }))}
       />
-      <Passkeys />
     </>
   );
 }

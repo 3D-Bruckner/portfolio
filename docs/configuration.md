@@ -60,7 +60,7 @@ Everything portfolio keeps is in `DATA_DIR`:
 ```text
 DATA_DIR/
   portfolio.sqlite                     prints, photos' rows, categories, the order, reserved slugs, the site build's state
-  auth.sqlite                       next-app-kit's: people, sessions, passkeys, API tokens, MCP clients and grants
+  auth.sqlite                       next-app-kit's: people, sessions, API tokens, MCP clients and grants
   photos/<printId>/<photoId>.jpg              the cutout: the part the site shows, long edge ≤ 2400 px, JPEG quality 85, no metadata
   photos/<printId>/<photoId>.orig.<jpg|png|webp>   the original as taken, without its metadata (orientation and colour profile kept)
   photos/<printId>/<photoId>.thumb.<sha>.jpg  the cutout's thumbnail for the lists (256 px), made on first ask; can be deleted
