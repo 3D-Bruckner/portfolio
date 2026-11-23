@@ -226,6 +226,19 @@ describe("importFromLink", () => {
     expect(p.ok && p.value).toMatchObject({ status: "draft", weightGrams: 9 });
     expect(p.ok && p.value.photos).toHaveLength(2);
   });
+  it("translatesTheTexts: the draft is German, and a failed translation still makes the draft", async () => {
+    const { rt } = await withSites({ [MAKERWORLD_API]: { body: design } });
+    rt.askClaude = async () => ({ title: "Flugradar", description: "Zeigt Flugzeuge." });
+    const got = await importFromLink(rt, "https://makerworld.com/en/models/2872376");
+    expect(got.ok && got.value.print).toMatchObject({ title: "Flugradar", description: "Zeigt Flugzeuge.", weightGrams: 9 });
+
+    const failing = await withSites({ [MAKERWORLD_API]: { body: design } });
+    failing.rt.askClaude = async () => {
+      throw new Error("down");
+    };
+    const kept = await importFromLink(failing.rt, "https://makerworld.com/en/models/2872376");
+    expect(kept.ok && kept.value.print.title).toBe(design.title);
+  });
   it("printOfModel: the same model on any address, but not the print itself", async () => {
     const { rt } = await withSites({ [MAKERWORLD_API]: { body: design } });
     const got = await importFromLink(rt, "https://makerworld.com/en/models/2872376");

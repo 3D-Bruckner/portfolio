@@ -15,6 +15,7 @@ import { conflict, invalid, ok, type Outcome } from "../outcome";
 import { addPhoto } from "../photos";
 import { createPrint, getPrint, listPrints, type Print } from "../prints";
 import type { Runtime } from "../runtime";
+import { toGerman } from "../translate";
 import { TIMEOUT_MS, USER_AGENT, type Reader } from "./common";
 import { makerWorld } from "./makerworld";
 import { printables } from "./printables";
@@ -74,7 +75,9 @@ export async function importFromLink(rt: Runtime, link: string): Promise<Outcome
 
   const draft = await reader.read(rt, id, named.url);
   if (!draft.ok) return draft;
-  const made = createPrint(rt, draft.value.input);
+  // The site is German; a model page mostly isn't. A failed translation leaves the text as it came.
+  const german = await toGerman(rt, { title: draft.value.input.title, description: draft.value.input.description ?? "" });
+  const made = createPrint(rt, { ...draft.value.input, ...german });
   if (!made.ok) return made;
   const printId = made.value.id;
 

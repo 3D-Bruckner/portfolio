@@ -43,6 +43,26 @@ test("priceSuggestion: weight and time give the site's price, taken with one tap
   await expect(page.getByLabel("Preis (Euro)")).toHaveValue("7");
 });
 
+test("tipAtItsField: a tip shows at its field, fills it in, can be undone, and goes once saved", async ({ page }) => {
+  await newPrint(page, { title: unique("Kabelhalter"), description: "Ein Halter für Kabel am Schreibtisch, geschraubt oder geklebt." });
+  await page.getByLabel("Gewicht (Gramm)").fill("50");
+  await page.getByLabel("Druckzeit (Minuten)").fill("120");
+  // The list stays at the top, each tip linking to its field, and the same tip is at the field.
+  const list = page.getByRole("region", { name: "Für die Website" });
+  await expect(list.getByRole("link", { name: /Kein Preis/ })).toHaveAttribute("href", "#field-price");
+  await expect(page.locator("form").getByText("Kein Preis")).toBeVisible();
+  const take = page.getByRole("button", { name: "Formelpreis eintragen" });
+  await take.click();
+  await expect(page.getByLabel("Preis (Euro)")).toHaveValue("7");
+  await page.getByRole("button", { name: "Rückgängig" }).click();
+  await expect(page.getByLabel("Preis (Euro)")).toHaveValue("");
+  await take.click();
+  await page.getByRole("button", { name: "Speichern" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Gespeichert" })).toBeVisible();
+  await expect(take).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Für die Website" })).not.toContainText("Kein Preis");
+});
+
 test("saveKeepsOtherChanges: a save sends only what was changed in it, so a change made elsewhere meanwhile stays", async ({ page, context }) => {
   const id = await newPrint(page, { title: unique("Schale"), description: "Erste Beschreibung." });
   // Elsewhere (another tab, as Claude would through MCP): the description changes.
