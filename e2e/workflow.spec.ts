@@ -33,14 +33,27 @@ test("forTheWebsite: tips say what the site would miss, and go once it's there",
   await expect(tips).not.toContainText("Kein Preis");
 });
 
-test("priceSuggestion: weight and time give the site's price, taken with one tap", async ({ page }) => {
+test("priceFollowsFormula: the price follows the numbers, an own price stays and can return to the formula", async ({ page }) => {
   await newPrint(page, { title: unique("Vase") });
-  await page.getByLabel("Gewicht (Gramm)").fill("50");
+  const price = page.getByLabel("Preis (Euro)");
+  const weight = page.getByLabel("Gewicht (Gramm)");
+  await weight.fill("50");
   await page.getByLabel("Druckzeit (Minuten)").fill("120");
   // 50 g PLA 2.25 € + 2 h 2 € + 2 € fee = 6.25, rounded up for customers.
   await expect(page.getByText("Nach Preisformel (PLA): 6,25 €, aufgerundet 7 €")).toBeVisible();
-  await page.getByRole("button", { name: "Übernehmen" }).click();
-  await expect(page.getByLabel("Preis (Euro)")).toHaveValue("7");
+  await expect(price).toHaveValue("7");
+  // Clearing a number to retype it doesn't turn the price into an own price. 100 g: 4.50 + 2 + 2 = 8.50.
+  await weight.fill("");
+  await weight.fill("100");
+  await expect(price).toHaveValue("9");
+  await price.fill("12");
+  await expect(page.getByText("Eigener Preis, Formel: 9 €")).toBeVisible();
+  await weight.fill("50");
+  await expect(price).toHaveValue("12");
+  await page.getByRole("button", { name: "Zurück zur Formel" }).click();
+  await expect(price).toHaveValue("7");
+  await weight.fill("100");
+  await expect(price).toHaveValue("9");
 });
 
 test("tipAtItsField: a tip shows at its field, fills it in, can be undone, and goes once saved", async ({ page }) => {
@@ -51,6 +64,9 @@ test("tipAtItsField: a tip shows at its field, fills it in, can be undone, and g
   const list = page.getByRole("region", { name: "Für die Website" });
   await expect(list.getByRole("link", { name: /Kein Preis/ })).toHaveAttribute("href", "#field-price");
   await expect(page.locator("form").getByText("Kein Preis")).toBeVisible();
+  // The numbers already filled the price; emptied again, the tip is what brings it back.
+  await expect(page.getByLabel("Preis (Euro)")).toHaveValue("7");
+  await page.getByLabel("Preis (Euro)").fill("");
   const take = page.getByRole("button", { name: "Formelpreis eintragen" });
   await take.click();
   await expect(page.getByLabel("Preis (Euro)")).toHaveValue("7");

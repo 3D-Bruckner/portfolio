@@ -4,7 +4,7 @@
 // save keeps what was typed.
 import Link from "next/link";
 import { Fragment, startTransition, useActionState, useEffect, useRef, useState, type FormEvent } from "react";
-import { exactPrice, priceParts, suggestedPrice, type EnhanceInput, type Suggestion, type ThreeMfReading } from "@/backend/client";
+import { exactPrice, priceParts, type EnhanceInput, type Suggestion, type ThreeMfReading } from "@/backend/client";
 import { useCopy } from "@/components/CopyProvider";
 import { AddIcon, CloseIcon } from "@/components/icons";
 import { Notice } from "@/components/Notice";
@@ -16,6 +16,7 @@ import { AiBlockHeading } from "./AiBlockHeading";
 import type { ReviewResult, ReviewRow } from "./AiReview";
 import { FieldTip, type FormTip, type TipApply } from "./FieldTip";
 import { NewCategory } from "./NewCategory";
+import { followsFormula, formulaPrice, priceAfterNumbers, priceInputOf } from "./pricefollow";
 import { suggestionCache, type SuggestionPart } from "./suggestioncache";
 import { ThreeMfFill, type FillPart } from "./ThreeMfFill";
 
@@ -82,15 +83,18 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
       filled.push(name);
     };
     put("printTimeMinutes", r.printTimeMinutes);
-    setNums((n) => ({
-      price: r.price ?? n.price ?? null,
-      weightGrams: r.weightGrams ?? n.weightGrams ?? null,
-      printTimeMinutes: r.printTimeMinutes ?? n.printTimeMinutes ?? null,
-      colors: r.colors ?? n.colors ?? null,
-    }));
+    const read = {
+      weightGrams: r.weightGrams ?? nums.weightGrams ?? null,
+      printTimeMinutes: r.printTimeMinutes ?? nums.printTimeMinutes ?? null,
+      colors: r.colors ?? nums.colors ?? null,
+    };
+    // The file's price counts its own material: one in PETG differs from the form's PLA formula, so it is an own price and stays.
+    const price = r.price ?? priceAfterNumbers(nums.price ?? null, following, read);
+    setNums({ ...read, price });
+    setFollowing(followsFormula(price, formulaPrice(read)));
     put("weightGrams", r.weightGrams);
     put("colors", r.colors);
-    put("price", r.price);
+    put("price", price ?? undefined);
     put("title", r.title, true);
     put("description", r.description, true);
     // A source counts as there when its address field holds something now (typed, not only the one the page came with).
@@ -256,13 +260,21 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
     printTimeMinutes: values?.printTimeMinutes ?? null,
     colors: values?.colors ?? null,
   });
-  const setNum = (name: string, value: string) => setNums((n) => ({ ...n, [name]: value === "" ? null : Number(value) }));
+  // Kept rather than compared on each change: clearing a number to retype it leaves no formula for a moment, and the price must keep following.
+  const [following, setFollowing] = useState(() => followsFormula(values?.price ?? null, formulaPrice(values ?? {})));
+  const setNum = (name: string, value: string) => {
+    const next = { ...nums, [name]: value === "" ? null : Number(value) };
+    if (name === "price") setFollowing(followsFormula(next.price ?? null, formulaPrice(next)));
+    else {
+      next.price = priceAfterNumbers(next.price ?? null, following, next);
+      if (following && next.price !== null) setText("price", String(next.price));
+    }
+    setNums(next);
+  };
   const minutes = nums.printTimeMinutes ?? null;
-  const priceInput =
-    nums.weightGrams && nums.printTimeMinutes
-      ? { weightGrams: nums.weightGrams, printTimeMinutes: nums.printTimeMinutes, multicolor: (nums.colors ?? 1) >= 2, material: "PLA" as const }
-      : null;
-  const suggestion = priceInput ? suggestedPrice(priceInput) : null;
+  const priceInput = priceInputOf(nums);
+  const suggestion = formulaPrice(nums);
+  const ownPrice = !following && nums.price !== null;
   const exact = priceInput ? exactPrice(priceInput) : null;
   const parts = priceInput ? priceParts(priceInput) : null;
   function takeSuggestion() {
@@ -496,14 +508,15 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
             </h3>
             <p className={`${ui.hint} mt-0.5`}>{t.print.groups.numbersHint}</p>
             <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-4">{fields.map(field)}</div>
-            {/* From weight and time, the price the site's own formula gives (PLA), and what it is made of: one tap takes it. */}
+            {/* From weight and time, the price the site's own formula gives (PLA) and what it is made of. The price follows it unless it is an own price. */}
             {suggestion !== null && exact !== null && parts !== null && (
               <div className="mt-3 rounded-lg border border-border bg-paper px-3 py-2 text-sm" aria-live="polite">
+                {ownPrice && <p className="tabular font-semibold text-ink">{t.print.ownPrice(suggestion)}</p>}
                 <p className="flex min-h-9 flex-wrap items-center justify-between gap-x-3">
                   <span className="tabular text-muted">{t.print.suggestedPrice(suggestion, exact)}</span>
                   {suggestion !== nums.price && (
                     <button type="button" onClick={takeSuggestion} className="min-h-11 font-semibold text-ink underline underline-offset-2">
-                      {t.print.takeSuggestion}
+                      {ownPrice ? t.print.backToFormula : t.print.takeSuggestion}
                     </button>
                   )}
                 </p>
