@@ -62,6 +62,8 @@ export function draftFrom(p: PrintablesPrint): Draft {
     input,
     pictures: (p.images ?? []).map((i) => MEDIA + i.filePath.replace(/^\//, "")),
     profile: g?.name ?? null,
+    profileId: null,
+    profiles: [],
     slicedFor: printer,
     factor: n.factor,
   };

@@ -3,7 +3,7 @@ import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import { getPrint, keepOriginalTexts, listPrints, originalTexts } from "../prints";
 import { testRuntime } from "../testing/runtime";
-import { importFromLink, modelLink, printOfModel } from ".";
+import { importFromLink, modelLink, printOfModel, readModel } from ".";
 import { draftFrom as fromMakerWorld, MAKERWORLD_API } from "./makerworld";
 import { draftFrom as fromPrintables, PRINTABLES_API } from "./printables";
 import { A1_FACTOR, onOurPrinter } from "./printer";
@@ -211,6 +211,32 @@ describe("Thingiverse", () => {
     const { rt, asked } = await withSites(pages, { PORTFOLIO_THINGIVERSE_TOKEN: "tv-token" });
     expect(await importFromLink(rt, "https://www.thingiverse.com/thing:763622")).toMatchObject({ ok: true, value: { photos: 1 } });
     expect(new Headers(asked[0]!.init?.headers).get("authorization")).toBe("Bearer tv-token");
+  });
+});
+
+describe("readModel", () => {
+  it("readsOnly: the default profile's numbers and all profiles, with no print made and no picture fetched", async () => {
+    const { rt, asked } = await withSites({ [MAKERWORLD_API]: { body: design } });
+    const got = await readModel(rt, "https://makerworld.com/de/models/2872376");
+    if (!got.ok) throw new Error(got.message);
+    expect(got.value).toMatchObject({ site: "MakerWorld", profile: "0.2mm layer, 3 walls", profileId: 102, weightGrams: 9, colors: 2 });
+    expect(got.value.profiles.map((p) => p.id)).toEqual([101, 102]);
+    expect(listPrints(rt)).toHaveLength(0);
+    expect(asked).toHaveLength(1);
+  });
+
+  it("profileFromLink: #profileId picks the profile", async () => {
+    const { rt } = await withSites({ [MAKERWORLD_API]: { body: design } });
+    const got = await readModel(rt, "https://makerworld.com/de/models/2872376#profileId-101");
+    if (!got.ok) throw new Error(got.message);
+    // One filament: one colour, so a print that held two doesn't keep them beside a single-colour price.
+    expect(got.value).toMatchObject({ profile: "PETG", profileId: 101, weightGrams: 100, colors: 1 });
+  });
+
+  it("refusesOtherLinks: an address that is no model page", async () => {
+    const { rt, asked } = await withSites({});
+    expect((await readModel(rt, "https://www.example.com/model/1")).ok).toBe(false);
+    expect(asked).toHaveLength(0);
   });
 });
 

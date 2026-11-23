@@ -35,7 +35,7 @@ import {
   tokenSchema,
 } from "./shapes";
 import { buildStatus } from "./site";
-import { importFromLink } from "./sources";
+import { importFromLink, modelReadingSchema, readModel } from "./sources";
 
 /** Where the committed openapi.json says the API is; a running instance serves its own at <PUBLIC_URL>/api/v1/openapi.json. */
 export const PRODUCTION_URL = "https://portfolio.3dbruckner.de";
@@ -140,6 +140,18 @@ export const REST_OPS: Op<Runtime>[] = [
     ok: { status: 201, description: "The new draft", schema: printSchema },
     errors: [400, 401, 403, 404, 409],
     handle: async ({ ctx, base, body }) => answer(await importFromLink(ctx, (body as { url: string }).url), 201, (i) => printJson(base, i.print)),
+  },
+  {
+    method: "GET",
+    path: "/model-link",
+    operationId: "readModelLink",
+    tool: "read_model_link",
+    summary: "Read what a model page says now (words, slicer numbers, price, profiles), without changing anything",
+    tag: "Prints",
+    query: z.object({ url: z.string().min(1).describe("The model page's address; a MakerWorld link's #profileId-<n> picks the profile (encoded as %23).") }),
+    ok: { status: 200, description: "What the page says", schema: modelReadingSchema },
+    errors: [400, 401, 404],
+    handle: async ({ ctx, query }) => answer(await readModel(ctx, query.url as string), 200, (r) => r),
   },
   {
     method: "PATCH",

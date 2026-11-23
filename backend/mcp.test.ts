@@ -76,6 +76,7 @@ const TOOLS = [
   "get_print",
   "create_print",
   "import_from_link",
+  "read_model_link",
   "update_print",
   "publish_print",
   "unpublish_print",

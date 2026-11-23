@@ -12,6 +12,7 @@ import { ok } from "../outcome";
 import type { PrintInput } from "../printfields";
 import { materialOf } from "../threemf";
 import { descriptionOf, getJson, numbers, titleOf, type Draft, type Reader } from "./common";
+import { onOurPrinter } from "./printer";
 
 export const MAKERWORLD_API = "https://api.bambulab.com/v1/design-service/design";
 
@@ -79,7 +80,22 @@ export function draftFrom(design: Design, profileId: number | null): Draft {
     ...(instance?.pictures ?? []),
     ...(design.coverUrl ? [{ url: design.coverUrl }] : []),
   ].map((p) => p.url);
-  return { input, pictures: [...new Set(all)], profile: instance?.title ?? null, slicedFor: printer, factor: n.factor };
+  const profiles = instances.map((i) => ({
+    id: i.profileId ?? i.id,
+    name: i.title?.trim() || `#${i.profileId ?? i.id}`,
+    printer: printerOf(i),
+    printTimeMinutes: i.prediction ? onOurPrinter(i.prediction / 60, printerOf(i)).minutes : null,
+    weightGrams: i.weight ? Math.max(1, Math.round(i.weight)) : null,
+  }));
+  return {
+    input,
+    pictures: [...new Set(all)],
+    profile: instance?.title ?? null,
+    profileId: instance ? (instance.profileId ?? instance.id) : null,
+    profiles,
+    slicedFor: printer,
+    factor: n.factor,
+  };
 }
 
 export const makerWorld: Reader = {
