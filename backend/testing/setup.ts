@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeEach } from "vitest";
 
-const dir = mkdtempSync(join(tmpdir(), "upload-test-"));
+const dir = mkdtempSync(join(tmpdir(), "portfolio-test-"));
 process.env.DATA_DIR = dir;
 beforeEach(() => {
   process.env.DATA_DIR = dir;

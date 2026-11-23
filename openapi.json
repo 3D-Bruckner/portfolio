@@ -1,11 +1,11 @@
 {
   "openapi": "3.1.1",
   "info": {
-    "title": "3D Bruckner Upload API",
+    "title": "3D Bruckner Portfolio API",
     "version": "1",
     "description": "3dbruckner.de's prints: their fields, photos, categories and order, and the export the site build reads. Every operation but the export and a photo's bytes mirrors an MCP tool of /mcp, named in its description.\n\nEvery error is JSON, `{\"error\": \"...\", \"code\": \"...\"}`. Besides the responses listed per operation, an unknown path answers 404, a method an operation doesn't have 405 with `Allow`, and a failure on the server's side 500 (`internal`) without details."
   },
-  "servers": [{ "url": "https://upload.3dbruckner.de/api/v1" }],
+  "servers": [{ "url": "https://portfolio.3dbruckner.de/api/v1" }],
   "tags": [
     { "name": "Prints", "description": "Drafts and published prints, their fields and publishing." },
     { "name": "Order", "description": "The portfolio's order and the showcases pinned above it." },

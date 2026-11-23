@@ -1,4 +1,4 @@
-// Thingiverse (MakerBot's model site), through its official API with an app token of Marcel's (UPLOAD_THINGIVERSE_TOKEN, made at
+// Thingiverse (MakerBot's model site), through its official API with an app token of Marcel's (PORTFOLIO_THINGIVERSE_TOKEN, made at
 // thingiverse.com/developers); without the token a Thingiverse link is refused.
 //   GET https://api.thingiverse.com/things/<id>          name, description_html (or description)
 //   GET https://api.thingiverse.com/things/<id>/images   [{ sizes: [{ type, size, url }] }]: the "display"/"large" one of each
@@ -43,7 +43,7 @@ export const thingiverse: Reader = {
   isPicture: (u) => u.hostname === "cdn.thingiverse.com" || u.hostname.endsWith(".thingiverse.com"),
   async read(rt, id) {
     const token = rt.config.thingiverseToken;
-    if (!token) return invalid("thingiverse: Thingiverse needs UPLOAD_THINGIVERSE_TOKEN, an app token from thingiverse.com/developers.");
+    if (!token) return invalid("thingiverse: Thingiverse needs PORTFOLIO_THINGIVERSE_TOKEN, an app token from thingiverse.com/developers.");
     const auth = { headers: { authorization: `Bearer ${token}` } };
     const thing = await getJson(rt, "Thingiverse", `${THINGIVERSE_API}/things/${id}`, auth, thingSchema);
     if (!thing.ok) return thing;

@@ -10,7 +10,13 @@ import { TEST_MAIL } from "./testing/runtime";
 describe("openRuntime", () => {
   it("opens DATA_DIR/upload.sqlite, creating the directory, and runs the migrations; sign-in opens auth.sqlite beside it at first use", async () => {
     const dataDir = join(process.env.DATA_DIR!, "nested", "data");
-    const env = { NODE_ENV: "test", PUBLIC_URL: "https://upload.example.com", UPLOAD_SECRET: "s".repeat(32), DATA_DIR: dataDir, UPLOAD_SMTP_URL: "smtp://x" };
+    const env = {
+      NODE_ENV: "test",
+      PUBLIC_URL: "https://portfolio.example.com",
+      PORTFOLIO_SECRET: "s".repeat(32),
+      DATA_DIR: dataDir,
+      PORTFOLIO_SMTP_URL: "smtp://x",
+    };
     const rt = openRuntime(loadConfig(env), signInSettings(env, dataDir, log), TEST_MAIL);
     try {
       expect(existsSync(join(dataDir, "upload.sqlite"))).toBe(true);

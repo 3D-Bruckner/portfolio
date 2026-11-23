@@ -92,11 +92,11 @@ describe("suggestForPrint", () => {
 
 describe("claudeAsker", () => {
   const config = (env: Record<string, string>) =>
-    loadConfig({ NODE_ENV: "test", PUBLIC_URL: "https://upload.example.com", UPLOAD_SECRET: "s".repeat(32), DATA_DIR: "/tmp", ...env });
+    loadConfig({ NODE_ENV: "test", PUBLIC_URL: "https://portfolio.example.com", PORTFOLIO_SECRET: "s".repeat(32), DATA_DIR: "/tmp", ...env });
 
   it("isOffWithoutUrlAndToken", () => {
     expect(claudeAsker(config({}), log)).toBeNull();
-    expect(claudeAsker(config({ UPLOAD_CLAUDE_URL: "https://claude.example.org" }), log)).toBeNull();
+    expect(claudeAsker(config({ PORTFOLIO_CLAUDE_URL: "https://claude.example.org" }), log)).toBeNull();
   });
 
   it("asksTheGateway: OpenAI chat completions with the bearer token and a JSON schema, the parsed JSON back", async () => {
@@ -105,7 +105,7 @@ describe("claudeAsker", () => {
       seen.push({ url, auth: new Headers(init.headers).get("authorization"), body: JSON.parse(String(init.body)) });
       return new Response(JSON.stringify({ choices: [{ message: { role: "assistant", content: '{"ok":1}' } }] }));
     }) as unknown as typeof fetch;
-    const ask = claudeAsker(config({ UPLOAD_CLAUDE_URL: "https://claude.example.org/", UPLOAD_CLAUDE_TOKEN: "t0k" }), log, fake)!;
+    const ask = claudeAsker(config({ PORTFOLIO_CLAUDE_URL: "https://claude.example.org/", PORTFOLIO_CLAUDE_TOKEN: "t0k" }), log, fake)!;
     expect(await ask({ system: "s", prompt: "p", schema: { type: "object" } })).toEqual({ ok: 1 });
     expect(seen).toHaveLength(1);
     expect(seen[0]!.url).toBe("https://claude.example.org/v1/chat/completions");
@@ -121,7 +121,7 @@ describe("claudeAsker", () => {
 
   it("throwsWhenTheGatewayRefuses", async () => {
     const fake = (async () => new Response("no", { status: 401 })) as unknown as typeof fetch;
-    const ask = claudeAsker(config({ UPLOAD_CLAUDE_URL: "https://claude.example.org", UPLOAD_CLAUDE_TOKEN: "t" }), log, fake)!;
+    const ask = claudeAsker(config({ PORTFOLIO_CLAUDE_URL: "https://claude.example.org", PORTFOLIO_CLAUDE_TOKEN: "t" }), log, fake)!;
     await expect(ask({ system: "s", prompt: "p", schema: {} })).rejects.toThrow("401");
   });
 });

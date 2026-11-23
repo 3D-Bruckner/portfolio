@@ -1,4 +1,4 @@
-// The Store: every query upload makes, bound to one connection. Domain code gets it as rt.store and never sees kysely or better-sqlite3.
+// The Store: every query portfolio makes, bound to one connection. Domain code gets it as rt.store and never sees kysely or better-sqlite3.
 import { databaseAnswers, openDatabase } from "./connection";
 import { categoryQueries } from "./categories";
 import { photoQueries } from "./photos";

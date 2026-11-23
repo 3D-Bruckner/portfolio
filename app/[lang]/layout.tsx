@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Prom
     robots: { index: false, follow: false },
     // Added to the Home Screen it runs full-screen (the manifest says so too). Next writes mobile-web-app-capable for `capable`; older iOS
     // reads only the apple- name, so that one is added by hand.
-    appleWebApp: { capable: true, title: "Upload", statusBarStyle: "default" },
+    appleWebApp: { capable: true, title: "Portfolio", statusBarStyle: "default" },
     other: { "apple-mobile-web-app-capable": "yes" },
   };
 }

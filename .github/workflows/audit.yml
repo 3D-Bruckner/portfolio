@@ -41,7 +41,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: anchore/scan-action@v7
         with:
-          image: ghcr.io/3d-bruckner/upload:main
+          image: ghcr.io/3d-bruckner/portfolio:main
           fail-build: true
           severity-cutoff: high
           only-fixed: true

@@ -1,5 +1,5 @@
 // The price formula of 3dbruckner.de (its src/lib/pricing.ts, where the numbers are kept in step with Invoice Ninja): a print's rough
-// price from the slicer's weight and time. upload uses it only to suggest the price field from a sliced 3MF; Marcel can change it. Change
+// price from the slicer's weight and time. portfolio uses it only to suggest the price field from a sliced 3MF; Marcel can change it. Change
 // the numbers there first, then here.
 export const PRICE_PER_KG = { PLA: 45, PETG: 50 } as const;
 export const PRICE_PER_HOUR = 1;

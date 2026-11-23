@@ -6,14 +6,14 @@ import { loadConfig, VARIABLES } from "./config";
 const ROOT = join(import.meta.dirname, "..");
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
 
-/** The variable names a text mentions; a provider's own name (GITHUB in UPLOAD_OIDC_GITHUB_CLIENT_ID) counts as <NAME>. */
+/** The variable names a text mentions; a provider's own name (GITHUB in PORTFOLIO_OIDC_GITHUB_CLIENT_ID) counts as <NAME>. */
 function named(text: string): string[] {
-  const names = text.match(/\b(?:UPLOAD_(?:[A-Z0-9]|<NAME>)(?:[A-Z0-9_]|<NAME>)*|PUBLIC_URL|DATA_DIR|PORT|TZ|PUID|PGID|NODE_EXTRA_CA_CERTS)\b/g) ?? [];
+  const names = text.match(/\b(?:PORTFOLIO_(?:[A-Z0-9]|<NAME>)(?:[A-Z0-9_]|<NAME>)*|PUBLIC_URL|DATA_DIR|PORT|TZ|PUID|PGID|NODE_EXTRA_CA_CERTS)\b/g) ?? [];
   return [
     ...new Set(
       names
         .filter((n) => !n.endsWith("_"))
-        .map((n) => n.replace(/^UPLOAD_OIDC_(?!<NAME>)[A-Z0-9]+_(CLIENT_ID|CLIENT_SECRET|ISSUER|LABEL)$/, "UPLOAD_OIDC_<NAME>_$1")),
+        .map((n) => n.replace(/^PORTFOLIO_OIDC_(?!<NAME>)[A-Z0-9]+_(CLIENT_ID|CLIENT_SECRET|ISSUER|LABEL)$/, "PORTFOLIO_OIDC_<NAME>_$1")),
     ),
   ].sort();
 }
@@ -45,31 +45,33 @@ function sources(dir: string): string[] {
 const SECRET = "s".repeat(32);
 const env = (extra: Record<string, string | undefined> = {}): NodeJS.ProcessEnv => ({
   NODE_ENV: "test",
-  PUBLIC_URL: "https://upload.example.com",
-  UPLOAD_SECRET: SECRET,
+  PUBLIC_URL: "https://portfolio.example.com",
+  PORTFOLIO_SECRET: SECRET,
   ...extra,
 });
 
 describe("loadConfig", () => {
   it("refuses a secret shorter than 32 characters", () => {
-    expect(() => loadConfig(env({ UPLOAD_SECRET: "short" }))).toThrow("UPLOAD_SECRET must be at least 32 characters");
+    expect(() => loadConfig(env({ PORTFOLIO_SECRET: "short" }))).toThrow("PORTFOLIO_SECRET must be at least 32 characters");
   });
 
   it("refuses a missing secret with the same message", () => {
-    expect(() => loadConfig(env({ UPLOAD_SECRET: undefined }))).toThrow("UPLOAD_SECRET must be at least 32 characters");
+    expect(() => loadConfig(env({ PORTFOLIO_SECRET: undefined }))).toThrow("PORTFOLIO_SECRET must be at least 32 characters");
   });
 
   it("refuses a dev user in production", () => {
-    expect(() => loadConfig(env({ NODE_ENV: "production", UPLOAD_DEV_USER: "marcel@example.com" }))).toThrow("UPLOAD_DEV_USER is not allowed in production");
+    expect(() => loadConfig(env({ NODE_ENV: "production", PORTFOLIO_DEV_USER: "marcel@example.com" }))).toThrow(
+      "PORTFOLIO_DEV_USER is not allowed in production",
+    );
   });
 
   it("takes a dev user outside production", () => {
-    expect(loadConfig(env({ UPLOAD_DEV_USER: "marcel@example.com" })).devUser).toBe("marcel@example.com");
+    expect(loadConfig(env({ PORTFOLIO_DEV_USER: "marcel@example.com" })).devUser).toBe("marcel@example.com");
   });
 
   it("parses the allowlist: trimmed, empty entries dropped", () => {
-    expect(loadConfig(env({ UPLOAD_ALLOWED_EMAILS: " a@x.de, @y.de " })).allowedEmails).toEqual(["a@x.de", "@y.de"]);
-    expect(loadConfig(env({ UPLOAD_ALLOWED_EMAILS: " , " })).allowedEmails).toEqual([]);
+    expect(loadConfig(env({ PORTFOLIO_ALLOWED_EMAILS: " a@x.de, @y.de " })).allowedEmails).toEqual(["a@x.de", "@y.de"]);
+    expect(loadConfig(env({ PORTFOLIO_ALLOWED_EMAILS: " , " })).allowedEmails).toEqual([]);
   });
 
   it("lets nobody in when the allowlist is unset", () => {
@@ -78,8 +80,8 @@ describe("loadConfig", () => {
 
   it("requires PUBLIC_URL as a URL and drops a trailing slash", () => {
     expect(() => loadConfig(env({ PUBLIC_URL: undefined }))).toThrow("PUBLIC_URL");
-    expect(() => loadConfig(env({ PUBLIC_URL: "upload.example.com" }))).toThrow("PUBLIC_URL");
-    expect(loadConfig(env({ PUBLIC_URL: "https://upload.example.com/" })).publicUrl).toBe("https://upload.example.com");
+    expect(() => loadConfig(env({ PUBLIC_URL: "portfolio.example.com" }))).toThrow("PUBLIC_URL");
+    expect(loadConfig(env({ PUBLIC_URL: "https://portfolio.example.com/" })).publicUrl).toBe("https://portfolio.example.com");
   });
 
   it("has the defaults: /data, the site's repository and workflow, no SMTP, no GitHub token", () => {
@@ -94,19 +96,19 @@ describe("loadConfig", () => {
   it("takes every setting from the environment", () => {
     const c = loadConfig(
       env({
-        DATA_DIR: "/srv/upload",
-        UPLOAD_SMTP_URL: "smtps://user:pw@mail.example.com:465",
-        UPLOAD_SMTP_FROM: "3D Bruckner <noreply@3dbruckner.de>",
-        UPLOAD_GITHUB_TOKEN: "github_pat_x",
-        UPLOAD_SITE_REPO: "someone/site",
-        UPLOAD_SITE_WORKFLOW: "build.yml",
-        UPLOAD_SITE_URL: "https://example.org/",
-        UPLOAD_MAX_PHOTO_MB: "25",
+        DATA_DIR: "/srv/portfolio",
+        PORTFOLIO_SMTP_URL: "smtps://user:pw@mail.example.com:465",
+        PORTFOLIO_SMTP_FROM: "3D Bruckner <noreply@3dbruckner.de>",
+        PORTFOLIO_GITHUB_TOKEN: "github_pat_x",
+        PORTFOLIO_SITE_REPO: "someone/site",
+        PORTFOLIO_SITE_WORKFLOW: "build.yml",
+        PORTFOLIO_SITE_URL: "https://example.org/",
+        PORTFOLIO_MAX_PHOTO_MB: "25",
       }),
     );
     expect(c).toEqual({
-      publicUrl: "https://upload.example.com",
-      dataDir: "/srv/upload",
+      publicUrl: "https://portfolio.example.com",
+      dataDir: "/srv/portfolio",
       secret: SECRET,
       allowedEmails: [],
       smtpUrl: "smtps://user:pw@mail.example.com:465",
@@ -120,11 +122,13 @@ describe("loadConfig", () => {
   });
 
   it("refuses a photo limit that isn't a whole number of megabytes, at least 1", () => {
-    for (const v of ["0", "-5", "2.5", "lots"]) expect(() => loadConfig(env({ UPLOAD_MAX_PHOTO_MB: v })), v).toThrow("UPLOAD_MAX_PHOTO_MB");
+    for (const v of ["0", "-5", "2.5", "lots"]) expect(() => loadConfig(env({ PORTFOLIO_MAX_PHOTO_MB: v })), v).toThrow("PORTFOLIO_MAX_PHOTO_MB");
   });
 
   it("treats an empty value as unset", () => {
-    const c = loadConfig(env({ UPLOAD_SMTP_URL: "", UPLOAD_GITHUB_TOKEN: "", UPLOAD_SITE_REPO: "", UPLOAD_DEV_USER: "", UPLOAD_MAX_PHOTO_MB: "" }));
+    const c = loadConfig(
+      env({ PORTFOLIO_SMTP_URL: "", PORTFOLIO_GITHUB_TOKEN: "", PORTFOLIO_SITE_REPO: "", PORTFOLIO_DEV_USER: "", PORTFOLIO_MAX_PHOTO_MB: "" }),
+    );
     expect(c.maxPhotoMb).toBe(40);
     expect(c.smtpUrl).toBeUndefined();
     expect(c.githubToken).toBeUndefined();
@@ -134,12 +138,12 @@ describe("loadConfig", () => {
 
   it("envReads: every way of reading a variable counts, dotted, bracketed and destructured", () => {
     const src = [
-      "const a = process.env.UPLOAD_A;",
-      "const b = process.env[\"UPLOAD_B\"] ?? process.env['UPLOAD_C'];",
-      'const { UPLOAD_D, UPLOAD_E: e, UPLOAD_F = "x", ...rest } = process.env;',
-      "const {\n  UPLOAD_G,\n} = process.env;",
+      "const a = process.env.PORTFOLIO_A;",
+      "const b = process.env[\"PORTFOLIO_B\"] ?? process.env['PORTFOLIO_C'];",
+      'const { PORTFOLIO_D, PORTFOLIO_E: e, PORTFOLIO_F = "x", ...rest } = process.env;',
+      "const {\n  PORTFOLIO_G,\n} = process.env;",
     ].join("\n");
-    expect(envReads(src).sort()).toEqual(["UPLOAD_A", "UPLOAD_B", "UPLOAD_C", "UPLOAD_D", "UPLOAD_E", "UPLOAD_F", "UPLOAD_G"]);
+    expect(envReads(src).sort()).toEqual(["PORTFOLIO_A", "PORTFOLIO_B", "PORTFOLIO_C", "PORTFOLIO_D", "PORTFOLIO_E", "PORTFOLIO_F", "PORTFOLIO_G"]);
   });
 
   it("envExampleListsEveryVariable: .env.example and docs/configuration.md name exactly the variables the app reads", () => {

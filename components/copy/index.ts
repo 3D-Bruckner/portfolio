@@ -15,9 +15,9 @@ export const isLocale = (v: unknown): v is Locale => typeof v === "string" && Ob
 export const copyFor = (lang: string): Copy => COPIES[isLocale(lang) ? lang : DEFAULT_LOCALE];
 
 /** The cookie the language switch sets, which wins over the browser's languages. */
-export const LANG_COOKIE = "upload_lang";
+export const LANG_COOKIE = "portfolio_lang";
 /** The request header proxy.ts sets to the page's language, for server components without a `lang` param. */
-export const LANG_HEADER = "x-upload-lang";
+export const LANG_HEADER = "x-portfolio-lang";
 
 /** The value of the cookie `name` in a Cookie header, if it is there. */
 export function cookieValue(cookieHeader: string | null, name: string): string | undefined {

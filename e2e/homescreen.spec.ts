@@ -9,7 +9,7 @@ test("manifestServed: the manifest says standalone and its icons are reachable w
   const r = await request.get("/manifest.webmanifest");
   expect(r.status()).toBe(200);
   const m = await r.json();
-  expect(m).toMatchObject({ name: "3D Bruckner Upload", short_name: "Upload", display: "standalone", start_url: "/", scope: "/" });
+  expect(m).toMatchObject({ name: "3D Bruckner Portfolio", short_name: "Portfolio", display: "standalone", start_url: "/", scope: "/" });
   expect(m.icons.some((i: { purpose: string }) => i.purpose === "maskable")).toBe(true);
   for (const src of [...m.icons.map((i: { src: string }) => i.src), "/apple-icon.png", "/icon.svg"]) {
     const icon = await request.get(src, { maxRedirects: 0 });
@@ -26,7 +26,7 @@ test.describe("on a phone", () => {
     const meta = (name: string) => page.locator(`meta[name="${name}"]`).getAttribute("content");
     expect(await meta("apple-mobile-web-app-capable")).toBe("yes");
     expect(await meta("mobile-web-app-capable")).toBe("yes");
-    expect(await meta("apple-mobile-web-app-title")).toBe("Upload");
+    expect(await meta("apple-mobile-web-app-title")).toBe("Portfolio");
     expect(await meta("viewport")).toContain("viewport-fit=cover");
     await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute("href", /apple-icon\.png/);
     await expect(page.locator('link[rel="manifest"]')).toHaveAttribute("href", "/manifest.webmanifest");

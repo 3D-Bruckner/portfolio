@@ -1,14 +1,14 @@
-# upload: one container; upload.sqlite, auth.sqlite and the photos in ./data. Every setting is in .env (a filled-in copy of
-# .env.example); nothing is listed here, so a new setting never touches this file. upload signs people in itself: the reverse proxy in
+# portfolio: one container; upload.sqlite, auth.sqlite and the photos in ./data. Every setting is in .env (a filled-in copy of
+# .env.example); nothing is listed here, so a new setting never touches this file. portfolio signs people in itself: the reverse proxy in
 # front only terminates TLS and passes everything through.
 #
 #   cp .env.example .env && chmod 600 .env   # then fill it in
 #   docker compose pull && docker compose up -d
 services:
-  upload:
+  portfolio:
     # :main follows main once CI passed.
-    image: ghcr.io/3d-bruckner/upload:main
-    container_name: upload
+    image: ghcr.io/3d-bruckner/portfolio:main
+    container_name: portfolio
     restart: unless-stopped
     env_file: .env
     volumes:

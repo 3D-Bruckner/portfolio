@@ -1,6 +1,6 @@
-// upload's wiring of next-app-kit's sign-in (backend/accounts.ts, the runtime's auth, person and apiCaller): who gets in, which token
+// portfolio's wiring of next-app-kit's sign-in (backend/accounts.ts, the runtime's auth, person and apiCaller): who gets in, which token
 // works where, the dev user, passkeys and the sign-in mail's language. The behaviour itself is the kit's and tested there; these tests
-// check that upload passes it what it needs. Better Auth runs for real behind a local HTTP server (an MCP client's OAuth sign-in and the
+// check that portfolio passes it what it needs. Better Auth runs for real behind a local HTTP server (an MCP client's OAuth sign-in and the
 // key set /mcp checks tokens against need one), with auth.sqlite in the test's temporary DATA_DIR and the mail caught.
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -16,7 +16,7 @@ import { API_TOKEN_PREFIX, signInSettings } from "./accounts";
 import { log } from "./log";
 import { MARCEL, testRuntime, type TestRuntime } from "./testing/runtime";
 
-// /mcp needs a tool to list; upload's own come with its MCP task.
+// /mcp needs a tool to list; portfolio's own come with its MCP task.
 const ping = defineTool({
   name: "ping",
   description: "Answers pong.",
@@ -25,7 +25,7 @@ const ping = defineTool({
   handle: async () => ({ pong: true, guidance: [] }),
 });
 
-/** upload's runtime behind a local HTTP server at `base`: Better Auth's routes, the OAuth metadata and /mcp, as the route files serve them. */
+/** portfolio's runtime behind a local HTTP server at `base`: Better Auth's routes, the OAuth metadata and /mcp, as the route files serve them. */
 async function serve(env: Record<string, string> = {}): Promise<{ rt: TestRuntime; base: string; mcp: McpContext; close: () => Promise<void> }> {
   let handle: (req: Request) => Promise<Response> = async () => new Response(null, { status: 503 });
   const server: Server = createServer(async (req, res) => {
@@ -55,7 +55,7 @@ async function serve(env: Record<string, string> = {}): Promise<{ rt: TestRuntim
     auth: await rt.auth(),
     signIn: rt.signIn,
     tools: [ping],
-    serverInfo: { name: "upload", version: "0" },
+    serverInfo: { name: "portfolio", version: "0" },
     instructions: "",
     log: () => {},
   };
@@ -131,7 +131,7 @@ describe("sign-in, wired from next-app-kit", () => {
     expect(await s.rt.person(new Headers())).toBeNull();
   });
 
-  it("mails the sign-in code in the language upload's languageOf picks, with a link to the sign-in page's next", async () => {
+  it("mails the sign-in code in the language portfolio's languageOf picks, with a link to the sign-in page's next", async () => {
     for (const lang of ["de", "en"]) {
       const r = await fetch(`${s.base}/api/auth/email-otp/send-verification-otp`, {
         method: "POST",
@@ -187,7 +187,7 @@ describe("sign-in, wired from next-app-kit", () => {
     }))
       authorize.searchParams.set(k, v);
     const where = async (r: Response) => new URL(r.status === 302 ? r.headers.get("location")! : ((await r.json()) as { url: string }).url, s.base);
-    // Nobody signed in: upload's sign-in page. Signed in: upload's consent page.
+    // Nobody signed in: portfolio's sign-in page. Signed in: portfolio's consent page.
     expect((await where(await fetch(authorize, { redirect: "manual", headers: { accept: "text/html" } }))).pathname).toBe("/signin");
     const consent = await where(await fetch(authorize, { redirect: "manual", headers: { accept: "text/html", cookie } }));
     expect(consent.pathname).toBe("/consent");
@@ -258,13 +258,13 @@ describe("sign-in, wired from next-app-kit", () => {
     expect(r.status).toBe(200);
     const options = (await r.json()) as { challenge: string; rp: { name: string; id: string } };
     expect(options.challenge).toBeTruthy();
-    expect(options.rp).toEqual({ name: "3D Bruckner Upload", id: "localhost" });
+    expect(options.rp).toEqual({ name: "3D Bruckner Portfolio", id: "localhost" });
   });
 });
 
 describe("who may sign in", () => {
   it("emptyAllowlistLetsNobodyIn", async () => {
-    const rt = testRuntime({ UPLOAD_ALLOWED_EMAILS: "" });
+    const rt = testRuntime({ PORTFOLIO_ALLOWED_EMAILS: "" });
     try {
       expect(rt.signIn.allowed).toEqual([]);
       await expect(signedInCookie(await rt.auth(), MARCEL)).rejects.toBeInstanceOf(SignInRefused);
@@ -274,10 +274,10 @@ describe("who may sign in", () => {
   });
 
   it("devUserRefusedInProduction", async () => {
-    const env = { PUBLIC_URL: "https://upload.example.com", UPLOAD_SECRET: "s".repeat(32), UPLOAD_DEV_USER: MARCEL, UPLOAD_SMTP_URL: "smtp://x" };
-    expect(() => signInSettings({ ...env, NODE_ENV: "production" }, process.env.DATA_DIR!, log)).toThrow(/UPLOAD_DEV_USER/);
+    const env = { PUBLIC_URL: "https://portfolio.example.com", PORTFOLIO_SECRET: "s".repeat(32), PORTFOLIO_DEV_USER: MARCEL, PORTFOLIO_SMTP_URL: "smtp://x" };
+    expect(() => signInSettings({ ...env, NODE_ENV: "production" }, process.env.DATA_DIR!, log)).toThrow(/PORTFOLIO_DEV_USER/);
     // Outside production the dev user is everyone, without a session.
-    const rt = testRuntime({ UPLOAD_DEV_USER: MARCEL });
+    const rt = testRuntime({ PORTFOLIO_DEV_USER: MARCEL });
     try {
       expect(await rt.person(new Headers())).toEqual({ id: `dev:${MARCEL}`, email: MARCEL });
     } finally {
@@ -285,11 +285,11 @@ describe("who may sign in", () => {
     }
   });
 
-  it("names upload's sign-in: auth.sqlite in DATA_DIR, the app's name, upload's prefix", async () => {
+  it("names portfolio's sign-in: auth.sqlite in DATA_DIR, the app's name, portfolio's prefix", async () => {
     const rt = testRuntime();
     try {
-      expect(rt.signIn.prefix).toBe("UPLOAD");
-      expect(rt.signIn.appName).toBe("3D Bruckner Upload");
+      expect(rt.signIn.prefix).toBe("PORTFOLIO");
+      expect(rt.signIn.appName).toBe("3D Bruckner Portfolio");
       expect(rt.signIn.file).toBe(`${rt.config.dataDir}/auth.sqlite`);
     } finally {
       rt.store.close();

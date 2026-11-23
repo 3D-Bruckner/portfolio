@@ -1,6 +1,6 @@
 # Architecture
 
-How upload is put together: where each part lives and the rules between them. Why it is built this way is in [ADR 0001](adr/0001-own-app-for-the-portfolio.md); the settings and the data directory are in [configuration](configuration.md).
+How portfolio is put together: where each part lives and the rules between them. Why it is built this way is in [ADR 0001](adr/0001-own-app-for-the-portfolio.md); the settings and the data directory are in [configuration](configuration.md).
 
 ```mermaid
 flowchart LR
@@ -24,7 +24,7 @@ flowchart LR
 
 ## The site build's trigger
 
-`backend/site.ts`: `onSiteChange` marks the build pending in `site_state` (`backend/db/site.ts`). A 10 s timer (started in `instrumentation.ts`, not during `next build`) dispatches the site's `pages.yml` with `UPLOAD_GITHUB_TOKEN` once nothing changed for 60 s; a failure is retried after 1, 2, 4 … minutes, at most 30. Without the token nothing is dispatched (logged once). `GET /api/v1/site/build` (tool `site_build_status`) tells whether a build is pending and the latest run; GitHub is asked at most every 20 s. The web app's header shows it in a line that streams in (`components/BuildLine.tsx`), so no page waits for GitHub. Tests never reach GitHub: a fake `rt.fetch` and clock.
+`backend/site.ts`: `onSiteChange` marks the build pending in `site_state` (`backend/db/site.ts`). A 10 s timer (started in `instrumentation.ts`, not during `next build`) dispatches the site's `pages.yml` with `PORTFOLIO_GITHUB_TOKEN` once nothing changed for 60 s; a failure is retried after 1, 2, 4 … minutes, at most 30. Without the token nothing is dispatched (logged once). `GET /api/v1/site/build` (tool `site_build_status`) tells whether a build is pending and the latest run; GitHub is asked at most every 20 s. The web app's header shows it in a line that streams in (`components/BuildLine.tsx`), so no page waits for GitHub. Tests never reach GitHub: a fake `rt.fetch` and clock.
 
 ## Photos
 

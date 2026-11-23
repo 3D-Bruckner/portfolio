@@ -23,7 +23,7 @@ afterEach(() => {
 });
 
 /** A runtime whose clock reads `at(seconds after T0)` and whose fetch answers from `answers` in turn (204 when they run out). */
-function fake(env: Record<string, string> = { UPLOAD_GITHUB_TOKEN: TOKEN }, answers: (() => Response)[] = []) {
+function fake(env: Record<string, string> = { PORTFOLIO_GITHUB_TOKEN: TOKEN }, answers: (() => Response)[] = []) {
   const rt = testRuntime(env);
   opened.push(rt);
   let now = T0;
@@ -59,7 +59,7 @@ describe("the site build's trigger", () => {
     const [call] = calls;
     expect(call!.url).toBe(DISPATCH);
     expect(call!.init.method).toBe("POST");
-    expect(JSON.parse(call!.init.body as string)).toEqual({ ref: "main", inputs: { source: "upload" } });
+    expect(JSON.parse(call!.init.body as string)).toEqual({ ref: "main", inputs: { source: "portfolio" } });
     const headers = new Headers(call!.init.headers);
     expect(headers.get("authorization")).toBe(`Bearer ${TOKEN}`);
     expect(headers.get("accept")).toBe("application/vnd.github+json");
@@ -126,7 +126,7 @@ describe("the site build's trigger", () => {
     markSiteChanged(first.rt);
     first.rt.store.close();
     opened.splice(opened.indexOf(first.rt), 1);
-    const again = fake({ UPLOAD_GITHUB_TOKEN: TOKEN, DATA_DIR: first.rt.config.dataDir });
+    const again = fake({ PORTFOLIO_GITHUB_TOKEN: TOKEN, DATA_DIR: first.rt.config.dataDir });
     again.at(59);
     await tick(again.rt);
     expect(again.calls).toHaveLength(0);
@@ -139,7 +139,7 @@ describe("the site build's trigger", () => {
   it("failureRetriesWithBackoff: a failed dispatch stays pending and is tried again after 1, 2, 4 … minutes, at most 30", async () => {
     const error = () => new Response(JSON.stringify({ message: "Server Error" }), { status: 500 });
     const { rt, dispatches, at } = fake(
-      { UPLOAD_GITHUB_TOKEN: TOKEN },
+      { PORTFOLIO_GITHUB_TOKEN: TOKEN },
       Array.from({ length: 20 }, () => error),
     );
     markSiteChanged(rt);
@@ -169,7 +169,7 @@ describe("the site build's trigger", () => {
       t += minutes * 60;
     }
     // A request that never comes back counts as a failure too; the retry that works clears the error.
-    const thrown = fake({ UPLOAD_GITHUB_TOKEN: TOKEN }, [
+    const thrown = fake({ PORTFOLIO_GITHUB_TOKEN: TOKEN }, [
       () => {
         throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
       },
@@ -186,7 +186,7 @@ describe("the site build's trigger", () => {
     expect(after.lastError).toBeUndefined();
   });
 
-  it("noTokenNoDispatch: without UPLOAD_GITHUB_TOKEN nothing is dispatched and it says so once", async () => {
+  it("noTokenNoDispatch: without PORTFOLIO_GITHUB_TOKEN nothing is dispatched and it says so once", async () => {
     const { rt, calls, at } = fake({});
     const info = vi.spyOn(rt.log, "info");
     markSiteChanged(rt);
@@ -195,7 +195,7 @@ describe("the site build's trigger", () => {
     at(120);
     await tick(rt);
     expect(calls).toHaveLength(0);
-    expect(info.mock.calls.filter((args) => args.some((a) => typeof a === "string" && a.includes("UPLOAD_GITHUB_TOKEN")))).toHaveLength(1);
+    expect(info.mock.calls.filter((args) => args.some((a) => typeof a === "string" && a.includes("PORTFOLIO_GITHUB_TOKEN")))).toHaveLength(1);
     expect(await buildStatus(rt)).toEqual({ pending: true });
     expect(calls).toHaveLength(0);
   });
@@ -208,7 +208,7 @@ describe("the site build's trigger", () => {
       run_started_at: "2026-11-19T09:58:00Z",
       created_at: "2026-11-19T09:57:59Z",
     };
-    const { rt, calls } = fake({ UPLOAD_GITHUB_TOKEN: TOKEN }, [() => Response.json({ total_count: 1, workflow_runs: [run] })]);
+    const { rt, calls } = fake({ PORTFOLIO_GITHUB_TOKEN: TOKEN }, [() => Response.json({ total_count: 1, workflow_runs: [run] })]);
     expect(await buildStatus(rt)).toEqual({
       pending: false,
       run: { status: "completed", conclusion: "success", url: run.html_url, startedAt: run.run_started_at },
@@ -218,7 +218,7 @@ describe("the site build's trigger", () => {
     expect(calls[0]!.init.method ?? "GET").toBe("GET");
     expect(new Headers(calls[0]!.init.headers).get("authorization")).toBe(`Bearer ${TOKEN}`);
     // No run yet, or GitHub not answering: no run, and the rest still answered.
-    const none = fake({ UPLOAD_GITHUB_TOKEN: TOKEN }, [() => Response.json({ total_count: 0, workflow_runs: [] }), () => new Response("", { status: 502 })]);
+    const none = fake({ PORTFOLIO_GITHUB_TOKEN: TOKEN }, [() => Response.json({ total_count: 0, workflow_runs: [] }), () => new Response("", { status: 502 })]);
     expect(await buildStatus(none.rt)).toEqual({ pending: false });
     none.at(21);
     expect(await buildStatus(none.rt)).toEqual({ pending: false });
@@ -228,7 +228,7 @@ describe("the site build's trigger", () => {
   it("asks GitHub for the latest run at most every 20 s (REST and the MCP tool both poll it)", async () => {
     const run = { status: "in_progress", conclusion: null, html_url: "https://github.com/x/y/actions/runs/1", created_at: "2026-11-19T09:59:00Z" };
     const answer = () => Response.json({ total_count: 1, workflow_runs: [run] });
-    const { rt, calls, at } = fake({ UPLOAD_GITHUB_TOKEN: TOKEN }, [answer, answer]);
+    const { rt, calls, at } = fake({ PORTFOLIO_GITHUB_TOKEN: TOKEN }, [answer, answer]);
     expect((await buildStatus(rt)).run?.status).toBe("in_progress");
     at(19);
     expect((await buildStatus(rt)).run?.status).toBe("in_progress");
@@ -240,7 +240,7 @@ describe("the site build's trigger", () => {
 
   it("failedLookupKept: a failed ask is kept for 20 s too, so a GitHub outage costs one request per 20 s, not one per page", async () => {
     const run = { status: "completed", conclusion: "success", html_url: "https://github.com/x/y/actions/runs/1", created_at: "2026-11-19T09:59:00Z" };
-    const { rt, calls, at } = fake({ UPLOAD_GITHUB_TOKEN: TOKEN }, [
+    const { rt, calls, at } = fake({ PORTFOLIO_GITHUB_TOKEN: TOKEN }, [
       () => new Response("", { status: 401 }),
       () => Response.json({ total_count: 1, workflow_runs: [run] }),
     ]);
@@ -256,7 +256,7 @@ describe("the site build's trigger", () => {
   });
 
   it("asks that arrive while GitHub is still answering share the one request", async () => {
-    const { rt, calls } = fake({ UPLOAD_GITHUB_TOKEN: TOKEN });
+    const { rt, calls } = fake({ PORTFOLIO_GITHUB_TOKEN: TOKEN });
     let answer!: (r: Response) => void;
     rt.fetch = ((url: string | URL | Request, init?: RequestInit) => {
       calls.push({ url: String(url), init: init ?? {} });
@@ -270,7 +270,7 @@ describe("the site build's trigger", () => {
   });
 
   it("an answer is kept 20 s from when it came, not from when the ask started", async () => {
-    const { rt, calls, at } = fake({ UPLOAD_GITHUB_TOKEN: TOKEN });
+    const { rt, calls, at } = fake({ PORTFOLIO_GITHUB_TOKEN: TOKEN });
     let answer!: (r: Response) => void;
     rt.fetch = ((url: string | URL | Request, init?: RequestInit) => {
       calls.push({ url: String(url), init: init ?? {} });

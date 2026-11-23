@@ -25,7 +25,7 @@ beforeEach(async () => {
 });
 afterEach(() => rt.store.close());
 
-const BASE = "https://upload.example.com";
+const BASE = "https://portfolio.example.com";
 const urlOf = (id: string) => `${BASE}/prints/${id}`;
 
 function value<T>(o: Outcome<T>): T {

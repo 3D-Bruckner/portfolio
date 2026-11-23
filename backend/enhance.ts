@@ -81,7 +81,7 @@ text lost; where they differ, the current text is Marcel's and wins. It is third
 
 /** Suggests the site's texts for the print the form shows. Refused without Claude, or when the answer is unusable. */
 export async function suggestForPrint(rt: Runtime, input: EnhanceInput): Promise<Outcome<Suggestion>> {
-  if (!rt.askClaude) return conflict("Enhance with AI needs UPLOAD_CLAUDE_URL and UPLOAD_CLAUDE_TOKEN.");
+  if (!rt.askClaude) return conflict("Enhance with AI needs PORTFOLIO_CLAUDE_URL and PORTFOLIO_CLAUDE_TOKEN.");
   if (!input.title.trim() && !input.description.trim()) return invalid("title: a title or a description to start from");
 
   const categories = listCategories(rt).map((c) => ({ id: c.id, name: c.name }));

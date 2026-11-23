@@ -2,9 +2,9 @@
 
 ## Reporting a vulnerability
 
-Report it privately through [**Report a vulnerability**](https://github.com/3D-Bruckner/upload/security/advisories/new) on this repository's Security tab. Please do not open a public issue for it.
+Report it privately through [**Report a vulnerability**](https://github.com/3D-Bruckner/portfolio/security/advisories/new) on this repository's Security tab. Please do not open a public issue for it.
 
-This covers the server, the image `ghcr.io/3d-bruckner/upload`, and the instance at upload.3dbruckner.de.
+This covers the server, the image `ghcr.io/3d-bruckner/portfolio`, and the instance at portfolio.3dbruckner.de.
 
 Helpful in a report: the commit or image tag, how the instance is configured as far as it matters, and the steps that show the problem.
 
@@ -12,7 +12,7 @@ You get an answer within seven days. Once a fix is deployed, the advisory is pub
 
 ## Supported versions
 
-Only `main` (the image `ghcr.io/3d-bruckner/upload:main`) gets security fixes; there are no releases yet.
+Only `main` (the image `ghcr.io/3d-bruckner/portfolio:main`) gets security fixes; there are no releases yet.
 
 ## How this repository watches for vulnerabilities
 

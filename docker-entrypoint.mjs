@@ -1,4 +1,4 @@
-// Runs upload as the owner of DATA_DIR (default /data), so the database and the photos on a bind mount belong to the host user. PUID/PGID
+// Runs portfolio as the owner of DATA_DIR (default /data), so the database and the photos on a bind mount belong to the host user. PUID/PGID
 // override that. A root-owned DATA_DIR (Docker created the bind-mount folder) falls back to uid/gid 1000. Only DATA_DIR itself is chowned,
 // never the files in it. A Node script, because the distroless image has no shell: the server is loaded into this process once it has given up root.
 import { chownSync, statSync } from "node:fs";
