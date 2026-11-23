@@ -4,7 +4,6 @@
 // schemas come from the field table (printfields.ts), so a field's limit and description are written once.
 import * as z from "zod";
 import { addOnOf } from "./addons";
-import { filamentColorSchema, keptFilamentColors } from "./bambuddy";
 import { PRINT_FIELDS } from "./printfields";
 import { siteOrder } from "./prints";
 import type { Runtime } from "./runtime";
@@ -27,10 +26,6 @@ export const siteExportSchema = z.object({
   version: z.literal(1),
   generatedAt: z.string().describe("When the export was made (ISO 8601)."),
   categories: z.array(z.object({ name: z.string(), slug: z.string() })).describe("The categories the published prints use, by name."),
-  filamentColors: z
-    .array(filamentColorSchema)
-    .optional()
-    .describe("The colours in stock, for the site's swatches; left out before the first list from Bambuddy."),
   prints: z
     .array(
       z.object({
@@ -74,7 +69,6 @@ const present = <T extends object>(o: T): T => Object.fromEntries(Object.entries
 
 export function siteExport(rt: Runtime): SiteExport {
   const prints = siteOrder(rt);
-  const colors = keptFilamentColors(rt);
   const used = new Map(prints.flatMap((p) => p.categories).map((c) => [c.id, c]));
   const addOns = new Map(rt.store.addOnsById([...new Set(prints.flatMap((p) => p.addOns.map((a) => a.addOnId)))]).map((a) => [a.id, addOnOf(a)]));
   const addOnsOf = (p: (typeof prints)[number]) =>
@@ -95,7 +89,6 @@ export function siteExport(rt: Runtime): SiteExport {
     version: 1,
     generatedAt: rt.clock().toISOString(),
     categories: [...used.values()].sort((a, b) => a.name.localeCompare(b.name, "de")).map((c) => ({ name: c.name, slug: c.slug })),
-    ...(colors.length > 0 ? { filamentColors: colors } : {}),
     prints: prints.map((p) => ({
       slug: p.slug,
       ...(present(Object.fromEntries(EXPORTED.map((n) => [n, p[n]]))) as Pick<SiteExport["prints"][number], (typeof EXPORTED)[number]>),

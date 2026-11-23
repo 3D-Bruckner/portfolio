@@ -3679,21 +3679,6 @@
                       },
                       "description": "The categories the published prints use, by name."
                     },
-                    "filamentColors": {
-                      "description": "The colours in stock, for the site's swatches; left out before the first list from Bambuddy.",
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "name": { "type": "string", "description": "The colour's name, as Bambuddy has it." },
-                          "material": { "type": "string", "description": "The material, e.g. PLA." },
-                          "finish": { "description": "The finish, e.g. Matte; null when it has none.", "type": ["string", "null"] },
-                          "rgba": { "type": "string", "pattern": "^[0-9A-F]{8}$", "description": "The swatch as RRGGBBAA." }
-                        },
-                        "required": ["name", "material", "finish", "rgba"],
-                        "additionalProperties": false
-                      }
-                    },
                     "prints": {
                       "type": "array",
                       "items": {

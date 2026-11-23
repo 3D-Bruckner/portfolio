@@ -6,7 +6,7 @@ import { openRuntime, type Runtime } from "./runtime";
 import { startSiteTimer } from "./site";
 
 export { API_TOKEN_PREFIX, APP_NAME, CONSENT_PAGE, ENV_PREFIX, SIGN_IN_PAGE, type MailWording } from "./accounts";
-export { filamentCosts, type FilamentCosts } from "./bambuddy";
+export { filamentCosts, type FilamentCosts } from "./bridge";
 export { createAddOn, deleteAddOn, listAddOns, updateAddOn, type AddOn } from "./addons";
 export { createCategory, deleteCategory, listCategories, renameCategory, type Category } from "./categories";
 export type { Config } from "./config";
