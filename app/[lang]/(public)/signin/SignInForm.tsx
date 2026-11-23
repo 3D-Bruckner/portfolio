@@ -1,12 +1,12 @@
 "use client";
 // The ways in that signInMethods offers: a code by mail (the mail also holds a link, except during an MCP client's sign-in, so the page
-// speaks of the code only), a passkey, and a button per provider. Each lands on `next`; during an MCP client's or a script's sign-in,
+// speaks of the code only) and a button per provider. Each lands on `next`; during an MCP client's or a script's sign-in,
 // Better Auth's answer names where to go instead (the consent page), and the auth client carries the signed query along.
 import { useState, type FormEvent } from "react";
 import { authClient } from "@/app/_lib/auth-client";
 import { useCopy } from "@/components/CopyProvider";
 
-type Methods = { email: boolean; passkey: boolean; providers: { id: string; label: string }[] };
+type Methods = { email: boolean; providers: { id: string; label: string }[] };
 
 const button = "w-full rounded bg-neutral-900 px-4 py-2 font-medium text-white disabled:opacity-50";
 const secondary = "w-full rounded border border-neutral-300 px-4 py-2 font-medium disabled:opacity-50";
@@ -51,17 +51,6 @@ export function SignInForm({ next, methods, signInPage, mailNotSent }: { next: s
       return setProblem(t.wrongCode);
     }
     go(data, next);
-  }
-
-  async function passkey() {
-    setBusy(true);
-    setProblem(null);
-    const result = await authClient.signIn.passkey();
-    if (!result || result.error) {
-      setBusy(false);
-      return setProblem(t.passkeyFailed);
-    }
-    go(result.data, next);
   }
 
   async function provider(id: string, label: string) {
@@ -120,14 +109,9 @@ export function SignInForm({ next, methods, signInPage, mailNotSent }: { next: s
           </button>
         </form>
       )}
-      {(methods.passkey || methods.providers.length > 0) && (
+      {methods.providers.length > 0 && (
         <div className="space-y-3">
           {methods.email && <p className="text-center text-sm text-neutral-500">{t.or}</p>}
-          {methods.passkey && (
-            <button type="button" disabled={busy} onClick={passkey} className={secondary}>
-              {t.passkey}
-            </button>
-          )}
           {methods.providers.map((p) => (
             <button key={p.id} type="button" disabled={busy} onClick={() => provider(p.id, p.label)} className={secondary}>
               {t.viaProvider(p.label)}

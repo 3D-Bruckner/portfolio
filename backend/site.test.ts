@@ -59,7 +59,7 @@ describe("the site build's trigger", () => {
     const [call] = calls;
     expect(call!.url).toBe(DISPATCH);
     expect(call!.init.method).toBe("POST");
-    expect(JSON.parse(call!.init.body as string)).toEqual({ ref: "main", inputs: { source: "portfolio" } });
+    expect(JSON.parse(call!.init.body as string)).toEqual({ ref: "main" });
     const headers = new Headers(call!.init.headers);
     expect(headers.get("authorization")).toBe(`Bearer ${TOKEN}`);
     expect(headers.get("accept")).toBe("application/vnd.github+json");

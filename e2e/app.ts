@@ -57,7 +57,7 @@ export async function readToken(page: Page): Promise<string> {
   await tab.getByLabel("Name des Tokens").fill(unique("e2e"));
   await tab.getByRole("button", { name: "Token erstellen" }).click();
   const shown = tab.getByLabel("Neuer Token");
-  await expect(shown).toHaveValue(/^upl_/, { timeout: 20_000 });
+  await expect(shown).toHaveValue(/^ptf_/, { timeout: 20_000 });
   token = await shown.inputValue();
   await tab.close();
   return token;

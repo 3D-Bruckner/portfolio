@@ -4,7 +4,7 @@ const euro = (n: number) => n.toLocaleString("en-IE", { style: "currency", curre
 
 export const en = {
   app: {
-    name: "portfolio",
+    name: "Portfolio",
     description: "Where 3dbruckner.de's prints are put in.",
   },
   language: {
@@ -35,13 +35,11 @@ export const en = {
     code: "Code",
     checkCode: "Sign in with the code",
     otherAddress: "Use another address",
-    passkey: "Sign in with a passkey",
     viaProvider: (label: string) => `Sign in with ${label}`,
     or: "or",
     failedSend: "The code couldn't be sent. Please try again in a moment.",
     mailNotSent: "The mail with the code couldn't be sent. Please try again later.",
     wrongCode: "That code is wrong or has expired. Request a new one.",
-    passkeyFailed: "Signing in with a passkey didn't work. Use a code instead, or try again.",
     providerFailed: (label: string) => `Signing in with ${label} didn't start. Please try again.`,
     refused: {
       email_not_allowed: "This address may not sign in here.",
@@ -341,22 +339,6 @@ export const en = {
       revokeConfirm: (name: string) => `Revoke the token “${name}”? Whatever uses it is refused from then on.`,
       revokeShort: "Revoke",
       revoked: "Token revoked",
-    },
-    passkeys: {
-      heading: "Passkeys",
-      intro: "Sign in with Face ID, a fingerprint or the device's PIN instead of a code.",
-      add: "Add passkey",
-      added: "Passkey added",
-      failed: "The passkey wasn't added. Please try again.",
-      list: "Your passkeys",
-      none: "No passkeys yet.",
-      listFailed: "The passkeys couldn't be loaded. Please reload the page.",
-      unnamed: "Passkey",
-      createdAt: (when: string) => `Added ${when}`,
-      remove: (name: string) => `Remove ${name}`,
-      removeShort: "Remove",
-      removeConfirm: (name: string) => `Remove the passkey “${name}”? It can't sign in any more.`,
-      removed: "Passkey removed",
     },
   },
   notFound: {

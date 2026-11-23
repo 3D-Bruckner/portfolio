@@ -73,7 +73,8 @@ jobs:
           # Someone not signed in is sent to the sign-in page, which speaks the browser's language.
           curl -s -o /dev/null -w '%{redirect_url}' http://127.0.0.1:3000/ | grep -q '/signin?next=%2F$'
           curl -s -H 'accept-language: de-DE' http://127.0.0.1:3000/signin | grep -q '<html lang="de"'
-          curl -s -H 'accept-language: de-DE' http://127.0.0.1:3000/signin | grep -q 'Mit Passkey anmelden'
+          curl -s -H 'accept-language: de-DE' http://127.0.0.1:3000/signin | grep -q 'E-Mail-Adresse'
+          if curl -s -H 'accept-language: de-DE' http://127.0.0.1:3000/signin | grep -qi 'passkey'; then echo "/signin offers a passkey" >&2; exit 1; fi
           # The pages are rendered per request and private: no prerendered page goes out with a shared cache's s-maxage.
           curl -sI http://127.0.0.1:3000/signin | grep -i '^cache-control:' | tee /dev/stderr | grep -q private
           if curl -sI http://127.0.0.1:3000/signin | grep -i '^cache-control:' | grep -q s-maxage; then echo "/signin carries s-maxage" >&2; exit 1; fi

@@ -1,11 +1,11 @@
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { openDatabase } from "./connection";
 import { MIGRATIONS } from "./migrations";
 
 describe("openDatabase", () => {
-  it("opens upload.sqlite in WAL mode with foreign keys on, at the last migration", () => {
+  it("opens portfolio.sqlite in WAL mode with foreign keys on, at the last migration", () => {
     const { raw } = openDatabase(mkdtempSync(join(process.env.DATA_DIR!, "db-")));
     try {
       expect(raw.pragma("journal_mode", { simple: true })).toBe("wal");
@@ -16,6 +16,13 @@ describe("openDatabase", () => {
     } finally {
       raw.close();
     }
+  });
+
+  it("refusesTheOldFileName: never a new, empty database beside upload.sqlite", () => {
+    const dir = mkdtempSync(join(process.env.DATA_DIR!, "db-"));
+    writeFileSync(join(dir, "upload.sqlite"), "");
+    expect(() => openDatabase(dir)).toThrow("upload.sqlite");
+    expect(readdirSync(dir)).toEqual(["upload.sqlite"]);
   });
 
   it("opens an existing file again without running a migration twice", () => {

@@ -16,7 +16,7 @@ export type Store = ReturnType<typeof printQueries> &
     close(): void;
   };
 
-/** Opens DATA_DIR/upload.sqlite, migrated to the last schema, and the queries on it. */
+/** Opens DATA_DIR/portfolio.sqlite, migrated to the last schema, and the queries on it. */
 export function openStore(dataDir: string): Store {
   const { exec, raw } = openDatabase(dataDir);
   return {

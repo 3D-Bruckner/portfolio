@@ -19,7 +19,7 @@ An empty value counts as unset, so a copied `.env.example` with a blank line kee
 | `PORTFOLIO_CLAUDE_TOKEN`      |          |                                 | portfolio's key at the gateway (made with its admin key).                                                                                                                                                                                                                                              |
 | `PORTFOLIO_SITE_REPO`         |          | `3D-Bruckner/3dbruckner`        | The site's repository, `owner/name`.                                                                                                                                                                                                                                                                   |
 | `PORTFOLIO_SITE_URL`          |          | `https://3dbruckner.de`         | The site itself: a published print's page there is linked as `<url>/portfolio/<slug>/`.                                                                                                                                                                                                                |
-| `PORTFOLIO_SITE_WORKFLOW`     |          | `pages.yml`                     | The workflow file that builds the site; it is started with `workflow_dispatch`, `{"ref":"main","inputs":{"source":"upload"}}`.                                                                                                                                                                         |
+| `PORTFOLIO_SITE_WORKFLOW`     |          | `pages.yml`                     | The workflow file that builds the site; it is started with `workflow_dispatch`, `{"ref":"main"}`.                                                                                                                                                                                                      |
 | `PORTFOLIO_MAX_PHOTO_MB`      |          | `40`                            | The largest photo an upload may send, in whole megabytes (at least 1); a larger one is refused with 413. What is stored is far smaller.                                                                                                                                                                |
 | `PORTFOLIO_LOG_LEVEL`         |          | `info`                          | The log's level: `debug`, `info`, `warn`, `error` or `silent` (read by `backend/log.ts`). The log is JSON on stdout and never holds a token, a photo's name or an email address.                                                                                                                       |
 | `DATA_DIR`                    |          | `/data` (in the image)          | Where the data lives (below).                                                                                                                                                                                                                                                                          |
@@ -50,7 +50,7 @@ The image itself sets `NODE_ENV=production`, `PORT=3000`, `HOSTNAME=0.0.0.0` and
 
 ```sh
 docker exec -u 1000 portfolio /nodejs/bin/node node_modules/next-app-kit/dist/cli.js token \
-  --prefix PORTFOLIO --token-prefix upl_ --email marcel@3dbruckner.de --name "site build" --scope read --days 365
+  --prefix PORTFOLIO --token-prefix ptf_ --email marcel@3dbruckner.de --name "site build" --scope read --days 365
 ```
 
 ## The data
@@ -59,8 +59,8 @@ Everything portfolio keeps is in `DATA_DIR`:
 
 ```text
 DATA_DIR/
-  upload.sqlite                     prints, photos' rows, categories, the order, reserved slugs, the site build's state
-  auth.sqlite                       next-app-kit's: people, sessions, passkeys, API tokens, MCP clients and grants
+  portfolio.sqlite                     prints, photos' rows, categories, the order, reserved slugs, the site build's state
+  auth.sqlite                       next-app-kit's: people, sessions, API tokens, MCP clients and grants
   photos/<printId>/<photoId>.jpg              the cutout: the part the site shows, long edge ≤ 2400 px, JPEG quality 85, no metadata
   photos/<printId>/<photoId>.orig.<jpg|png|webp>   the original as taken, without its metadata (orientation and colour profile kept)
   photos/<printId>/<photoId>.thumb.<sha>.jpg  the cutout's thumbnail for the lists (256 px), made on first ask; can be deleted

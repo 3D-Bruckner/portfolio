@@ -19,7 +19,7 @@ ENV
 npm run dev            # http://localhost:3000, signed in as PORTFOLIO_DEV_USER
 ```
 
-`PORTFOLIO_DEV_USER` skips the sign-in in development (refused in production; it can't make API tokens, passkeys or MCP connections); set `PORTFOLIO_SMTP_URL` instead to sign in by mail. Without `PORTFOLIO_GITHUB_TOKEN` nothing starts the site build. The checks CI runs:
+`PORTFOLIO_DEV_USER` skips the sign-in in development (refused in production; it can't make API tokens or MCP connections); set `PORTFOLIO_SMTP_URL` instead to sign in by mail. Without `PORTFOLIO_GITHUB_TOKEN` nothing starts the site build. The checks CI runs:
 
 ```sh
 npm run format:check && npm run lint && npm run typecheck && npm test && npm run test:e2e && npm run build && npm run generate -- --check
@@ -31,7 +31,7 @@ Open the app in Safari, tap Share, then "Add to Home Screen". It then opens full
 
 ## Deploying it
 
-CI publishes `ghcr.io/3d-bruckner/portfolio:main` from main once the checks passed. The server runs it from `compose.yaml` and `.env` alone ([`compose.yaml`](compose.yaml) here is that file); portfolio's deployment on products-1, behind gewerbe-1's Caddy, lives in [`3D-Bruckner/stacks`](https://github.com/3D-Bruckner/stacks) (`upload/`, written with plan 4).
+CI publishes `ghcr.io/3d-bruckner/portfolio:main` from main once the checks passed. The server runs it from `compose.yaml` and `.env` alone ([`compose.yaml`](compose.yaml) here is that file); portfolio's deployment on products-1, behind gewerbe-1's Caddy, lives in [`3D-Bruckner/stacks`](https://github.com/3D-Bruckner/stacks) (`portfolio/`, written with plan 4).
 
 ## Docs
 

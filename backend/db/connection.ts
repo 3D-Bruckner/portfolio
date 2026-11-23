@@ -3,7 +3,7 @@
 //
 // kysely builds the queries and better-sqlite3 runs them synchronously, so a domain function is one plain transaction (better-sqlite3's
 // transaction(), savepoints when nested) with no await inside it for another request to slip into.
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import Database from "better-sqlite3";
 import { Kysely, SqliteDialect, type Compilable } from "kysely";
@@ -22,10 +22,13 @@ export type Exec = {
 
 export type Connection = { exec: Exec; raw: Database.Database };
 
-/** Opens DATA_DIR/upload.sqlite (creating the directory), in WAL mode with foreign keys on, and brings it to the last migration. */
+/** Opens DATA_DIR/portfolio.sqlite (creating the directory), in WAL mode with foreign keys on, and brings it to the last migration. */
 export function openDatabase(dataDir: string): Connection {
   mkdirSync(dataDir, { recursive: true });
-  const raw = new Database(join(dataDir, "upload.sqlite"));
+  // The file's name before the rename: starting beside it would make a new, empty database and look as if every print were gone.
+  if (existsSync(join(dataDir, "upload.sqlite")) && !existsSync(join(dataDir, "portfolio.sqlite")))
+    throw new Error(`${dataDir} holds upload.sqlite but no portfolio.sqlite: rename it (with its -wal and -shm files) while the app is stopped`);
+  const raw = new Database(join(dataDir, "portfolio.sqlite"));
   try {
     raw.pragma("journal_mode = WAL");
     raw.pragma("foreign_keys = ON");
