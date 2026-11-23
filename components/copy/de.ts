@@ -213,6 +213,9 @@ export const de: Copy = {
       quantityOf: (name: string) => `Stück von ${name}`,
     },
     takeSuggestion: "Übernehmen",
+    margin: (cost: number, margin: number) => `Filament kostet dich ${euro(cost)}, vom Preis bleiben ${euro(margin)}`,
+    belowCost: (cost: number) => `Unter den Kosten: Allein das Filament kostet dich ${euro(cost)}`,
+    costUnavailable: "Filamentkosten nicht verfügbar: Bambuddy ist nicht erreichbar.",
     ownPrice: (euros: number) => `Eigener Preis, Formel: ${euros} €`,
     backToFormula: "Zurück zur Formel",
     link: {

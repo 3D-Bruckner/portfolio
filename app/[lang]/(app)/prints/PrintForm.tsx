@@ -17,7 +17,7 @@ import type { ReviewResult, ReviewRow } from "./AiReview";
 import { FieldTip, type FormTip, type TipApply } from "./FieldTip";
 import { LinkRefresh } from "./LinkRefresh";
 import { NewCategory } from "./NewCategory";
-import { followsFormula, formulaPrice, includedLines, priceAfterNumbers, priceInputOf, type PriceNumbers } from "./pricefollow";
+import { followsFormula, formulaPrice, includedLines, marginOf, priceAfterNumbers, priceInputOf, type PriceNumbers } from "./pricefollow";
 import { suggestionCache, type SuggestionPart } from "./suggestioncache";
 import { ThreeMfFill, type FillPart } from "./ThreeMfFill";
 
@@ -44,6 +44,8 @@ type Props = {
   categories: { id: string; name: string }[];
   /** The add-ons to pick from, with their prices per piece. */
   addOns?: { id: string; name: string; priceCents: number; available: boolean }[];
+  /** What a kilogram of filament costs, from Bambuddy; null when it can't be read. Only ever shown here. */
+  filamentCosts?: { PLA?: number; PETG?: number } | null;
   values: FormValues | null;
   slugFixed: boolean;
   /** Whether the blocks offer Claude (the server has a gateway). */
@@ -61,7 +63,7 @@ function snapshot(form: HTMLFormElement): Record<string, string> {
 /** 135 → "2 h 15 min". */
 const formatMinutes = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}` : `${m} min`);
 
-export function PrintForm({ printId, specs, categories, addOns = [], values, slugFixed, ai = false, tips = [] }: Props) {
+export function PrintForm({ printId, specs, categories, addOns = [], filamentCosts = null, values, slugFixed, ai = false, tips = [] }: Props) {
   const held = values?.categoryIds ?? [];
   const rank = (id: string) => (held.includes(id) ? held.indexOf(id) : held.length);
   const t = useCopy();
@@ -309,6 +311,7 @@ export function PrintForm({ printId, specs, categories, addOns = [], values, slu
   const ownPrice = !following && nums.price !== null;
   const exact = priceInput ? exactPrice(priceInput) : null;
   const parts = priceInput ? priceParts(priceInput) : null;
+  const earned = marginOf(nums.price ?? null, nums.weightGrams, filamentCosts?.PLA);
   function takeSuggestion() {
     const el = form.current?.elements.namedItem("price");
     if (suggestion === null || !(el instanceof HTMLInputElement)) return;
@@ -656,6 +659,15 @@ export function PrintForm({ printId, specs, categories, addOns = [], values, slu
                   )}
                 </p>
                 <p className="tabular text-xs text-muted">{t.print.priceParts(parts)}</p>
+                {filamentCosts === null ? (
+                  <p className="text-xs text-muted">{t.print.costUnavailable}</p>
+                ) : (
+                  earned && (
+                    <p className={`tabular mt-1 text-xs ${earned.margin < 0 ? "font-semibold text-danger" : "text-muted"}`}>
+                      {earned.margin < 0 ? t.print.belowCost(earned.cost) : t.print.margin(earned.cost, earned.margin)}
+                    </p>
+                  )
+                )}
               </div>
             )}
             <div className="mt-3 space-y-2 empty:hidden">{tipsAt("price", "weightGrams")}</div>

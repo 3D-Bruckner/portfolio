@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { followsFormula, formulaPrice, includedLines, priceAfterNumbers } from "./pricefollow";
+import { followsFormula, formulaPrice, includedLines, marginOf, priceAfterNumbers } from "./pricefollow";
 
 // 50 g PLA 2.25 € + 2 h 2 € + 2 € fee = 6.25, rounded up.
 const numbers = { weightGrams: 50, printTimeMinutes: 120, colors: 1 };
@@ -41,6 +41,14 @@ describe("priceFollowsFormula", () => {
     );
     expect(lines).toEqual([{ pricePerPiece: 0.25, quantity: 4 }]);
     expect(formulaPrice({ ...numbers, addOns: lines })).toBe(8); // 6.25 + 1.00 = 7.25
+  });
+
+  it("says what the filament cost and what is left of the price", () => {
+    expect(marginOf(7, 50, 16)).toEqual({ cost: 0.8, margin: 6.2 });
+    expect(marginOf(0, 100, 16)).toEqual({ cost: 1.6, margin: -1.6 });
+    expect(marginOf(null, 50, 16)).toBeNull();
+    expect(marginOf(7, null, 16)).toBeNull();
+    expect(marginOf(7, 50, undefined)).toBeNull();
   });
 
   it("keeps the price while a number is being retyped", () => {
