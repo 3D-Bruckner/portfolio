@@ -31,7 +31,7 @@ Open the app in Safari, tap Share, then "Add to Home Screen". It then opens full
 
 ## Deploying it
 
-CI publishes `ghcr.io/3d-bruckner/portfolio:main` from main once the checks passed. The server runs it from `compose.yaml` and `.env` alone ([`compose.yaml`](compose.yaml) here is that file); portfolio's deployment on products-1, behind gewerbe-1's Caddy, lives in [`3D-Bruckner/stacks`](https://github.com/3D-Bruckner/stacks) (`upload/`, written with plan 4).
+CI publishes `ghcr.io/3d-bruckner/portfolio:main` from main once the checks passed. The server runs it from `compose.yaml` and `.env` alone ([`compose.yaml`](compose.yaml) here is that file); portfolio's deployment on products-1, behind gewerbe-1's Caddy, lives in [`3D-Bruckner/stacks`](https://github.com/3D-Bruckner/stacks) (`portfolio/`, written with plan 4).
 
 ## Docs
 

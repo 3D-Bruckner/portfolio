@@ -6,7 +6,7 @@ import "./globals.css";
 
 // An address no route matches: the root layout sits in app/[lang], so there is none to compose this page from (Next's globalNotFound).
 // Its own document, in the language the proxy would have picked.
-export const metadata: Metadata = { title: "portfolio", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "Portfolio", robots: { index: false, follow: false } };
 
 export default async function GlobalNotFound() {
   const lang = negotiate((await cookies()).get(LANG_COOKIE)?.value, (await headers()).get("accept-language"));

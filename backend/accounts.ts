@@ -10,7 +10,7 @@ import type { Logger } from "pino";
 export const ENV_PREFIX = "PORTFOLIO";
 export const APP_NAME = "3D Bruckner Portfolio";
 /** API tokens start with this, so a bearer is told apart from an OAuth access token at a glance, and by a secret scanner. */
-export const API_TOKEN_PREFIX = "upl_";
+export const API_TOKEN_PREFIX = "ptf_";
 /** The sign-in page (app/[lang]/(public)/signin), where the kit and Better Auth send anyone not signed in. */
 export const SIGN_IN_PAGE = "/signin";
 /** The consent page (app/[lang]/(public)/consent), where an MCP client's or a script's OAuth sign-in asks the person. */
@@ -19,7 +19,7 @@ export const CONSENT_PAGE = "/consent";
 /** The sign-in mail's words per language (the first is the fallback) and the language of a request, by its headers. */
 export type MailWording = { texts: Record<string, MailTexts>; languageOf: (headers: Headers) => string };
 
-/** The kit's sign-in settings from the environment: auth.sqlite next to upload.sqlite; the kit's lines go to the app's log. */
+/** The kit's sign-in settings from the environment: auth.sqlite next to portfolio.sqlite; the kit's lines go to the app's log. */
 export function signInSettings(env: Record<string, string | undefined>, dataDir: string, log: Logger): SignInSettings {
   return signInFromEnv(env, { prefix: ENV_PREFIX, file: join(dataDir, "auth.sqlite"), appName: APP_NAME, log: (line) => log.info(line) });
 }

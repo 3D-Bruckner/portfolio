@@ -8,7 +8,7 @@ import { openRuntime } from "./runtime";
 import { TEST_MAIL } from "./testing/runtime";
 
 describe("openRuntime", () => {
-  it("opens DATA_DIR/upload.sqlite, creating the directory, and runs the migrations; sign-in opens auth.sqlite beside it at first use", async () => {
+  it("opens DATA_DIR/portfolio.sqlite, creating the directory, and runs the migrations; sign-in opens auth.sqlite beside it at first use", async () => {
     const dataDir = join(process.env.DATA_DIR!, "nested", "data");
     const env = {
       NODE_ENV: "test",
@@ -19,7 +19,7 @@ describe("openRuntime", () => {
     };
     const rt = openRuntime(loadConfig(env), signInSettings(env, dataDir, log), TEST_MAIL);
     try {
-      expect(existsSync(join(dataDir, "upload.sqlite"))).toBe(true);
+      expect(existsSync(join(dataDir, "portfolio.sqlite"))).toBe(true);
       expect(existsSync(join(dataDir, "auth.sqlite"))).toBe(false);
       expect(rt.store.answers()).toBe(true);
       expect(rt.clock()).toBeInstanceOf(Date);
@@ -27,7 +27,7 @@ describe("openRuntime", () => {
       expect(() => rt.onSiteChange()).not.toThrow();
       // A cookie or a token Better Auth didn't make is nobody.
       expect(await rt.person(new Headers({ cookie: "better-auth.session_token=x.y" }))).toBeNull();
-      expect(await rt.apiCaller(new Request("http://localhost/", { headers: { authorization: "Bearer upl_x" } }))).toBeNull();
+      expect(await rt.apiCaller(new Request("http://localhost/", { headers: { authorization: "Bearer ptf_x" } }))).toBeNull();
       expect(existsSync(join(dataDir, "auth.sqlite"))).toBe(true);
       expect(await rt.auth()).toBe(await rt.auth());
     } finally {

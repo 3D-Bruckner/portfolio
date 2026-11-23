@@ -4,7 +4,7 @@
 // print through portfolio's REST API with its slug, fields, categories, photos in filename order and cover, published. Then the showcases
 // in the start page's order and the rest in today's portfolio order (by folder name).
 //
-//   PORTFOLIO_URL=https://portfolio.3dbruckner.de PORTFOLIO_TOKEN=upl_… node scripts/import-site.mjs ../3dbruckner [--dry-run]
+//   PORTFOLIO_URL=https://portfolio.3dbruckner.de PORTFOLIO_TOKEN=ptf_… node scripts/import-site.mjs ../3dbruckner [--dry-run]
 //
 // The token must be allowed to write. A print whose slug is already in portfolio is left as it is, so a run that stopped half-way can run
 // again; a print left without photos (a failed upload) is a draft and is finished by the next run. js-yaml comes from the site checkout.

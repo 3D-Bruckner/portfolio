@@ -415,7 +415,7 @@ describe("API tokens", () => {
   it("create_api_token: the token once; hand it to Marcel for 1Password once and never repeat it", async () => {
     const me = await marcel();
     const made = await tool<{ id: string; token: string; scope: string }>("create_api_token", { name: "site build", scope: "read", expiresInDays: null }, me);
-    expect(made.token.startsWith("upl_")).toBe(true);
+    expect(made.token.startsWith("ptf_")).toBe(true);
     expect(said(made)).toMatch(/Marcel/);
     expect(said(made)).toMatch(/1Password/);
     expect(said(made)).toMatch(/once/);

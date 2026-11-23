@@ -1,6 +1,6 @@
 # The tool is called portfolio and stays its own product
 
-- Status: accepted
+- Status: accepted; its naming exceptions are superseded by [ADR 0003](0003-everything-is-named-portfolio.md)
 - Date: 2026-11-23
 
 ## Context and Problem Statement

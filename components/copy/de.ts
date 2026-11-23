@@ -5,7 +5,7 @@ const euro = (n: number) => n.toLocaleString("de-DE", { style: "currency", curre
 
 export const de: Copy = {
   app: {
-    name: "portfolio",
+    name: "Portfolio",
     description: "Hier kommen die Drucke von 3dbruckner.de hinein.",
   },
   language: {

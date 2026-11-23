@@ -3381,7 +3381,7 @@
       "bearer": {
         "type": "http",
         "scheme": "bearer",
-        "description": "An API token (`upl_…`, made in the web app or with create_api_token; a `read` token may only GET), or an OAuth access token from this instance issued for this API (`resource=<base>/api/v1`). A token for /mcp is refused here."
+        "description": "An API token (`ptf_…`, made in the web app or with create_api_token; a `read` token may only GET), or an OAuth access token from this instance issued for this API (`resource=<base>/api/v1`). A token for /mcp is refused here."
       }
     }
   }

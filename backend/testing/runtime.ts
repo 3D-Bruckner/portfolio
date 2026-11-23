@@ -1,4 +1,4 @@
-// A runtime for a test: a fresh upload.sqlite and auth.sqlite in a directory of its own under the test's DATA_DIR, onSiteChange counted
+// A runtime for a test: a fresh portfolio.sqlite and auth.sqlite in a directory of its own under the test's DATA_DIR, onSiteChange counted
 // (and marking the site build pending with the test's clock; nothing is dispatched unless a test ticks, with a fake fetch), and the
 // sign-in mail caught in `mail` instead of sent. `env` adds to or overrides the settings (an empty value unsets one). Close the store at
 // the end (afterEach).

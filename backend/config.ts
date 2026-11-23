@@ -7,7 +7,7 @@ import * as z from "zod";
 export type Config = {
   /** PUBLIC_URL without a trailing slash: links in mails and MCP results, the OAuth issuer. */
   publicUrl: string;
-  /** DATA_DIR: upload.sqlite, auth.sqlite and photos/. */
+  /** DATA_DIR: portfolio.sqlite, auth.sqlite and photos/. */
   dataDir: string;
   /** PORTFOLIO_SECRET: signs sessions and tokens. */
   secret: string;

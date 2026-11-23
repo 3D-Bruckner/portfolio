@@ -21,7 +21,7 @@ beforeEach(async () => {
   photo = added.value;
   // An API token that would be good for the cutout.
   rt.apiCaller = async (req) =>
-    req.headers.get("authorization") === "Bearer upl_read" ? { person: "u1", actor: "marcel@example.com", scope: "read", kind: "token" } : null;
+    req.headers.get("authorization") === "Bearer ptf_read" ? { person: "u1", actor: "marcel@example.com", scope: "read", kind: "token" } : null;
 });
 afterEach(() => rt.store.close());
 
@@ -38,7 +38,7 @@ describe("GET /photos/[id]/original", () => {
   });
 
   it("refuses an API token and anyone not signed in: 401, never cached", async () => {
-    for (const headers of [{ authorization: "Bearer upl_read" }, {}] as Record<string, string>[]) {
+    for (const headers of [{ authorization: "Bearer ptf_read" }, {}] as Record<string, string>[]) {
       const r = await serveOriginal(rt, get(headers), photo.id);
       expect(r.status).toBe(401);
       expect(r.headers.get("cache-control")).toBe("no-store");

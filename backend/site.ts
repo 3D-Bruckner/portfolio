@@ -160,7 +160,8 @@ async function dispatch(rt: Runtime, token: string): Promise<string | null> {
     const r = await rt.fetch(workflowUrl(rt, "/dispatches"), {
       method: "POST",
       headers: { ...githubHeaders(token), "content-type": "application/json" },
-      body: JSON.stringify({ ref: "main", inputs: { source: "portfolio" } }),
+      // No inputs: the site's workflow declares none, and GitHub refuses a dispatch with undeclared ones.
+      body: JSON.stringify({ ref: "main" }),
       signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
     });
     // 204 as documented; any 2xx means it was taken (GitHub may answer 200 with the run's details).

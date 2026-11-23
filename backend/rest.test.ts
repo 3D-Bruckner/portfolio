@@ -90,7 +90,7 @@ describe("GET /api/v1/export", () => {
 
   it("withoutToken: 401, and a wrong token too", async () => {
     expect((await withToken("GET", "/export")).status).toBe(401);
-    expect((await withToken("GET", "/export", "upl_nope")).status).toBe(401);
+    expect((await withToken("GET", "/export", "ptf_nope")).status).toBe(401);
   });
 });
 
@@ -225,7 +225,7 @@ describe("the operations", () => {
     expect(made.status).toBe(201);
     const t = await json<{ id: string; token: string; scope: string; expires_at: string | null }>(made);
     expect(t).toMatchObject({ scope: "read", expires_at: null });
-    expect(t.token.startsWith("upl_")).toBe(true);
+    expect(t.token.startsWith("ptf_")).toBe(true);
     const list = await json<{ tokens: { id: string }[] }>(await call("GET", "/tokens", undefined, me));
     expect(list.tokens.map((x) => x.id)).toEqual([t.id]);
     expect(JSON.stringify(list)).not.toContain(t.token);

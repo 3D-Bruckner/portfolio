@@ -6,7 +6,7 @@ How portfolio is put together: where each part lives and the rules between them.
 flowchart LR
   P["Marcel's phone<br/>(web app)"] --> A
   C["Claude<br/>(MCP, OAuth)"] --> A
-  A["upload<br/>app/ → backend/"] --> D[("DATA_DIR<br/>upload.sqlite, auth.sqlite, photos/")]
+  A["portfolio<br/>app/ → backend/"] --> D[("DATA_DIR<br/>portfolio.sqlite, auth.sqlite, photos/")]
   A -- "workflow_dispatch<br/>60 s after the last change" --> G["GitHub Actions<br/>3dbruckner pages.yml"]
   G -- "GET /api/v1/export, /photos/{id}<br/>read token" --> A
   G --> S["3dbruckner.de<br/>(GitHub Pages)"]
@@ -43,7 +43,7 @@ flowchart LR
 
 ## Sign-in
 
-Sign-in, API tokens, MCP, REST, migrations and multipart come from next-app-kit; nothing it provides is copied here. `backend/accounts.ts` wires sign-in (prefix `UPLOAD`, token prefix `upl_`, pages `/signin` and `/consent` under `app/[lang]/`); the route files under `app/api/auth`, `app/.well-known` and `app/api/test/sign-in` are one line each over the kit's handlers. Pages that need someone signed in call `requirePerson(path)` (`app/_lib/signin.ts`); e2e tests sign in through the kit's test route (`e2e/signin.ts`).
+Sign-in, API tokens, MCP, REST, migrations and multipart come from next-app-kit; nothing it provides is copied here. `backend/accounts.ts` wires sign-in (prefix `UPLOAD`, token prefix `ptf_`, pages `/signin` and `/consent` under `app/[lang]/`); the route files under `app/api/auth`, `app/.well-known` and `app/api/test/sign-in` are one line each over the kit's handlers. Pages that need someone signed in call `requirePerson(path)` (`app/_lib/signin.ts`); e2e tests sign in through the kit's test route (`e2e/signin.ts`).
 
 ## Logs
 
