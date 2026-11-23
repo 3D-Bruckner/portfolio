@@ -16,10 +16,19 @@ export type ReviewRow = {
 };
 export type ReviewResult = { ok: true; rows: ReviewRow[]; notes: string[] } | { ok: false; error: string };
 
-type Props = { form: RefObject<HTMLFormElement | null>; rows: ReviewRow[]; notes: string[]; onClose: () => void };
+type Props = {
+  form: RefObject<HTMLFormElement | null>;
+  rows: ReviewRow[];
+  notes: string[];
+  onClose: () => void;
+  /** Whose suggestion this is, when it isn't Claude's (a model page's). */
+  proposal?: string;
+  noChange?: string;
+};
 
-export function AiReview({ form, rows, notes, onClose }: Props) {
-  const t = useCopy().print.ai;
+export function AiReview({ form, rows, notes, onClose, proposal, noChange }: Props) {
+  const words = useCopy().print.ai;
+  const t = { ...words, proposal: proposal ?? words.proposal, noChange: noChange ?? words.noChange };
   const read = () => Object.fromEntries(rows.map((r) => [r.key, r.now()]));
   const [nows, setNows] = useState<Record<string, string>>(read);
   const [undos, setUndos] = useState<Record<string, () => void>>({});

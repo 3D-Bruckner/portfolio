@@ -3,3 +3,4 @@
 export { exactPrice, priceParts, suggestedPrice } from "./pricing";
 export { readThreeMf, type ByteSource, type ThreeMfReading } from "./threemf";
 export type { EnhanceInput, Suggestion } from "./enhance";
+export type { ModelReading } from "./sources";

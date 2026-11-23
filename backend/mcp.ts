@@ -34,7 +34,7 @@ import {
   tokenSchema,
 } from "./shapes";
 import { buildStatus, type BuildStatus } from "./site";
-import { importFromLink } from "./sources";
+import { importFromLink, modelReadingSchema, readModel } from "./sources";
 
 /** The server's own text: what a client may drop, so nothing here is needed after a call (that is each result's guidance). */
 export const MCP_INSTRUCTIONS = [
@@ -193,6 +193,31 @@ export function mcpTools(rt: Runtime): Tool[] {
             "The description is the site's, often English: the site's is German, so write it in German with update_print (what the print is, short).",
             `The ${photos} photo${photos === 1 ? " is" : "s are"} the designer's pictures, not Marcel's: before publishing, Marcel adds his own at ${link} and removes these.`,
             ...tips(print),
+          ],
+        };
+      },
+    }),
+    defineTool({
+      name: "read_model_link",
+      description:
+        "Read what a model page on MakerWorld, Printables or Thingiverse says now, without changing anything: its title and description, the slicer's weight, time and colours, the formula's price, and the model's print profiles. A MakerWorld link's #profileId-<n> picks the profile. Use it to fill in or compare a print's numbers, then change the print with update_print.",
+      input: z.object({ url: z.string().min(1).describe("The model page's address.") }),
+      output: modelReadingSchema,
+      annotations: { readOnlyHint: true, openWorldHint: true },
+      handle: async ({ url }) => {
+        const got = await readModel(rt, url);
+        if (!got.ok) return refused(got);
+        const r = got.value;
+        return {
+          ...r,
+          guidance: [
+            r.weightGrams === null || r.printTimeMinutes === null
+              ? `${r.site} has no complete slicer numbers for this model: keep the print's own.`
+              : `Numbers from ${r.profile ? `"${r.profile}"` : r.site}. Nothing was changed: update_print applies what Marcel wants.`,
+            ...(r.profiles.length > 1
+              ? ["The model has several profiles that can differ a lot in size: ask Marcel which one, then read the link with #profileId-<id>."]
+              : []),
+            ...(r.scaled ? [`The time was sliced for a ${r.scaled.from} and scaled by ${r.scaled.factor} for the ${r.scaled.to}: an estimate.`] : []),
           ],
         };
       },

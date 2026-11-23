@@ -1203,6 +1203,102 @@
         }
       }
     },
+    "/model-link": {
+      "get": {
+        "operationId": "readModelLink",
+        "summary": "Read what a model page says now (words, slicer numbers, price, profiles), without changing anything",
+        "description": "The REST counterpart of the MCP tool `read_model_link`.",
+        "tags": ["Prints"],
+        "security": [{ "bearer": [] }],
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "The model page's address; a MakerWorld link's #profileId-<n> picks the profile (encoded as %23).",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The model page's address; a MakerWorld link's #profileId-<n> picks the profile (encoded as %23)."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What the page says",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "site": { "type": "string", "description": "The model site." },
+                    "title": { "type": "string", "description": "The model's title as the site has it, often English." },
+                    "description": { "type": "string", "description": "Its description as plain text, as the site has it." },
+                    "weightGrams": { "description": "The profile's weight in grams; null when the site has no slicer numbers.", "type": ["number", "null"] },
+                    "printTimeMinutes": { "description": "The profile's print time in minutes, put onto the A1.", "type": ["number", "null"] },
+                    "colors": { "description": "How many colours; null when the site doesn't say.", "type": ["number", "null"] },
+                    "price": { "description": "The formula's customer price for these numbers, in whole euros.", "type": ["number", "null"] },
+                    "profile": { "description": "The profile or file the numbers are from.", "type": ["string", "null"] },
+                    "profileId": { "description": "The profile picked, as a link's #profileId-<n> names it.", "type": ["number", "null"] },
+                    "profiles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "number" },
+                          "name": { "type": "string" },
+                          "printer": { "type": ["string", "null"] },
+                          "printTimeMinutes": { "type": ["number", "null"] },
+                          "weightGrams": { "type": ["number", "null"] }
+                        },
+                        "required": ["id", "name", "printer", "printTimeMinutes", "weightGrams"],
+                        "additionalProperties": false
+                      },
+                      "description": "The model's print profiles; empty on a site without #profileId links."
+                    },
+                    "scaled": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": { "from": { "type": "string" }, "factor": { "type": "number" }, "to": { "type": "string" } },
+                          "required": ["from", "factor", "to"],
+                          "additionalProperties": false
+                        },
+                        { "type": "null" }
+                      ],
+                      "description": "When the time was scaled from a faster printer."
+                    }
+                  },
+                  "required": [
+                    "site",
+                    "title",
+                    "description",
+                    "weightGrams",
+                    "printTimeMinutes",
+                    "colors",
+                    "price",
+                    "profile",
+                    "profileId",
+                    "profiles",
+                    "scaled"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request can't be read, or a value in it is not acceptable (`invalid_input`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "401": {
+            "description": "No valid API token or OAuth access token for this API (`unauthorized`)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "404": { "description": "No such thing (`not_found`)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
     "/prints/{id}/publish": {
       "post": {
         "operationId": "publishPrint",

@@ -12,7 +12,7 @@ export { siteExport, type SiteExport } from "./export";
 export { healthResponse } from "./health";
 export { log } from "./log";
 export { MCP_INSTRUCTIONS, mcpContext } from "./mcp";
-export { importFromLink, modelLink, printOfModel } from "./sources";
+export { importFromLink, modelLink, printOfModel, readModel, type ModelReading } from "./sources";
 export { suggestForPrint, type EnhanceInput, type Suggestion } from "./enhance";
 export { toGerman, type Texts } from "./translate";
 export { movePrint, moveShowcase, setShowcase } from "./order";

@@ -202,6 +202,18 @@ export const de: Copy = {
     takeSuggestion: "Übernehmen",
     ownPrice: (euros: number) => `Eigener Preis, Formel: ${euros} €`,
     backToFormula: "Zurück zur Formel",
+    link: {
+      refresh: "Vom Link aktualisieren",
+      busy: "Link wird gelesen…",
+      proposal: "Vom Link",
+      noChange: "Der Link sagt nichts anderes.",
+      noLink: "Füge zuerst einen Link zu einem Modell auf MakerWorld, Printables oder Thingiverse hinzu.",
+      noNumbers: "Diese Seite hat keine vollständigen Slicer-Zahlen.",
+      scaled: (printer: string, factor: number) => `Die Zeit wurde für einen ${printer} berechnet und mit ${factor} auf den A1 umgerechnet: eine Schätzung.`,
+      profile: "Druckprofil",
+      profileOption: (name: string, grams: number | null, time: string | null) =>
+        [name, ...(grams === null ? [] : [`${grams} g`]), ...(time === null ? [] : [time])].join(" · "),
+    },
     readiness: {
       heading: "Für die Website",
       ready: "Alles da, was die Website zeigt.",

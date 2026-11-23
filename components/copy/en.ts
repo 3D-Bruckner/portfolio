@@ -153,6 +153,18 @@ export const en = {
     takeSuggestion: "Use it",
     ownPrice: (euros: number) => `Own price, formula: ${euros} €`,
     backToFormula: "Back to formula",
+    link: {
+      refresh: "Refresh from link",
+      busy: "Reading the link…",
+      proposal: "From the link",
+      noChange: "The link says nothing different.",
+      noLink: "Add a link to a model on MakerWorld, Printables or Thingiverse first.",
+      noNumbers: "This page has no complete slicer numbers.",
+      scaled: (printer: string, factor: number) => `The time was sliced for a ${printer} and scaled by ${factor} for the A1: an estimate.`,
+      profile: "Print profile",
+      profileOption: (name: string, grams: number | null, time: string | null) =>
+        [name, ...(grams === null ? [] : [`${grams} g`]), ...(time === null ? [] : [time])].join(" · "),
+    },
     readiness: {
       heading: "For the website",
       ready: "Everything the website shows is there.",

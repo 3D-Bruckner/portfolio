@@ -29,7 +29,7 @@ export function draftFrom(thing: z.infer<typeof thingSchema>, images: z.infer<ty
   const pick = (sizes: { type: string; size: string; url: string }[]) =>
     (sizes.find((s) => s.type === "display" && s.size === "large") ?? sizes.find((s) => s.type === "display") ?? sizes[0])?.url;
   const pictures = images.map((i) => pick(i.sizes ?? [])).filter((u): u is string => Boolean(u));
-  return { input, pictures, profile: null, slicedFor: null, factor: 1 };
+  return { input, pictures, profile: null, profileId: null, profiles: [], slicedFor: null, factor: 1 };
 }
 
 export const thingiverse: Reader = {

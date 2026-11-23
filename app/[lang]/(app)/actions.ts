@@ -18,7 +18,10 @@ import {
   deletePhoto,
   deletePrint,
   importFromLink,
+  modelLink,
   printOfModel,
+  readModel,
+  type ModelReading,
   suggestForPrint,
   type EnhanceInput,
   type Suggestion,
@@ -115,16 +118,31 @@ export async function importLink(url: string): Promise<{ ok: true; id: string } 
   const t = await words();
   if (!(await actionPerson())) return { ok: false, error: t.common.signedOut };
   const got = await importFromLink(runtime(), url);
-  const e = t.list.importErrors;
   if (got.ok) return { ok: true, id: got.value.print.id };
   if (got.reason === "conflict") {
     const id = /is print ([0-9a-f-]{36})/.exec(got.message)?.[1];
-    return { ok: false, error: e.already, ...(id ? { id } : {}) };
+    return { ok: false, error: t.list.importErrors.already, ...(id ? { id } : {}) };
   }
-  if (got.reason === "not_found") return { ok: false, error: e.noModel };
-  if (got.message.startsWith("url:")) return { ok: false, error: e.link };
-  if (got.message.startsWith("thingiverse:")) return { ok: false, error: e.thingiverse };
-  return { ok: false, error: e.unreachable };
+  return { ok: false, error: linkProblem(got, t) };
+}
+
+/** Why a model page couldn't be read, in words. */
+function linkProblem(o: { reason: string; message: string }, t: Copy): string {
+  const e = t.list.importErrors;
+  if (o.reason === "not_found") return e.noModel;
+  if (o.message.startsWith("url:")) return e.link;
+  if (o.message.startsWith("thingiverse:")) return e.thingiverse;
+  return e.unreachable;
+}
+
+/** What the first model link among a print's sources says now (backend/sources); nothing is changed or saved. */
+export async function readModelLink(urls: string[]): Promise<{ ok: true; link: string; value: ModelReading } | { ok: false; error: string }> {
+  const t = await words();
+  if (!(await actionPerson())) return { ok: false, error: t.common.signedOut };
+  const link = urls.find((u) => modelLink(u) !== null);
+  if (!link) return { ok: false, error: t.print.link.noLink };
+  const got = await readModel(runtime(), link);
+  return got.ok ? { ok: true, link, value: got.value } : { ok: false, error: linkProblem(got, t) };
 }
 
 /** Another print made from the same model page as `link` (a 3MF's MakerWorld page), so the form can say so before a second one is saved. */

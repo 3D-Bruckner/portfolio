@@ -11,12 +11,18 @@ import { onOurPrinter } from "./printer";
 export const USER_AGENT = "3dbruckner-portfolio (+https://portfolio.3dbruckner.de)";
 export const TIMEOUT_MS = 20_000;
 
+/** One of a model's print profiles, its time put onto the A1. They can differ a lot in size, so a refresh offers them to choose from. */
+export type ModelProfile = { id: number; name: string; printer: string | null; printTimeMinutes: number | null; weightGrams: number | null };
+
 /** What a reader makes of a model page: the print's fields, its pictures' addresses, and where its numbers came from. */
 export type Draft = {
   input: PrintInput;
   pictures: string[];
   /** The profile or file the numbers are from, as the site names it. */
   profile: string | null;
+  /** The profile picked, by the id a link's #profileId-<n> names, and all the model has; none on a site without such links. */
+  profileId: number | null;
+  profiles: ModelProfile[];
   /** The printer those numbers were sliced for, and the factor its time was scaled by for the A1 (1: unchanged). */
   slicedFor: string | null;
   factor: number;

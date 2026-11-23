@@ -11,6 +11,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import sharp from "sharp";
+import * as z from "zod";
 import { conflict, invalid, ok, type Outcome } from "../outcome";
 import { addPhoto } from "../photos";
 import { createPrint, getPrint, keepOriginalTexts, listPrints, type Print } from "../prints";
@@ -63,6 +64,54 @@ export function printOfModel(rt: Runtime, link: string, except: string | null = 
     return l !== null && l.reader === named.reader && l.id === named.id;
   };
   return listPrints(rt).find((p) => p.id !== except && p.sources.some((s) => same(s.url))) ?? null;
+}
+
+export const modelReadingSchema = z.object({
+  site: z.string().describe("The model site."),
+  title: z.string().describe("The model's title as the site has it, often English."),
+  description: z.string().describe("Its description as plain text, as the site has it."),
+  weightGrams: z.number().nullable().describe("The profile's weight in grams; null when the site has no slicer numbers."),
+  printTimeMinutes: z.number().nullable().describe("The profile's print time in minutes, put onto the A1."),
+  colors: z.number().nullable().describe("How many colours; null when the site doesn't say."),
+  price: z.number().nullable().describe("The formula's customer price for these numbers, in whole euros."),
+  profile: z.string().nullable().describe("The profile or file the numbers are from."),
+  profileId: z.number().nullable().describe("The profile picked, as a link's #profileId-<n> names it."),
+  profiles: z
+    .array(
+      z.object({
+        id: z.number(),
+        name: z.string(),
+        printer: z.string().nullable(),
+        printTimeMinutes: z.number().nullable(),
+        weightGrams: z.number().nullable(),
+      }),
+    )
+    .describe("The model's print profiles; empty on a site without #profileId links."),
+  scaled: z.object({ from: z.string(), factor: z.number(), to: z.string() }).nullable().describe("When the time was scaled from a faster printer."),
+});
+export type ModelReading = z.infer<typeof modelReadingSchema>;
+
+/** What the model page at `link` says now, for comparing with a print. Reads only: nothing is created, changed or saved, and no picture is fetched. */
+export async function readModel(rt: Runtime, link: string): Promise<Outcome<ModelReading>> {
+  const named = modelLink(link);
+  if (!named) return invalid("url: a model's address on MakerWorld, Printables or Thingiverse, e.g. https://makerworld.com/de/models/123456");
+  const draft = await named.reader.read(rt, named.id, named.url);
+  if (!draft.ok) return draft;
+  const { input, profile, profileId, profiles, slicedFor, factor } = draft.value;
+  return ok({
+    site: named.reader.site,
+    title: input.title,
+    description: input.description ?? "",
+    weightGrams: input.weightGrams ?? null,
+    printTimeMinutes: input.printTimeMinutes ?? null,
+    // A site with profiles lists their filaments, so no second colour means one. Elsewhere the number of colours isn't known.
+    colors: input.colors ?? (profileId !== null && input.weightGrams ? 1 : null),
+    price: input.price ?? null,
+    profile,
+    profileId,
+    profiles,
+    scaled: slicedFor && factor !== 1 ? { from: slicedFor, factor, to: OUR_PRINTER } : null,
+  });
 }
 
 /** Creates a draft from the model page at `link`, with its photos. */

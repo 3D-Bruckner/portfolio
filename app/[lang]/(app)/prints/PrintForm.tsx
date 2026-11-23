@@ -4,7 +4,7 @@
 // save keeps what was typed.
 import Link from "next/link";
 import { Fragment, startTransition, useActionState, useEffect, useRef, useState, type FormEvent } from "react";
-import { exactPrice, priceParts, type EnhanceInput, type Suggestion, type ThreeMfReading } from "@/backend/client";
+import { exactPrice, priceParts, type EnhanceInput, type ModelReading, type Suggestion, type ThreeMfReading } from "@/backend/client";
 import { useCopy } from "@/components/CopyProvider";
 import { AddIcon, CloseIcon } from "@/components/icons";
 import { Notice } from "@/components/Notice";
@@ -15,6 +15,7 @@ import { FORM_GROUPS, FORM_ORDER, type FieldSpec, type PrintFieldName } from "./
 import { AiBlockHeading } from "./AiBlockHeading";
 import type { ReviewResult, ReviewRow } from "./AiReview";
 import { FieldTip, type FormTip, type TipApply } from "./FieldTip";
+import { LinkRefresh } from "./LinkRefresh";
 import { NewCategory } from "./NewCategory";
 import { followsFormula, formulaPrice, priceAfterNumbers, priceInputOf } from "./pricefollow";
 import { suggestionCache, type SuggestionPart } from "./suggestioncache";
@@ -262,8 +263,11 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
   });
   // Kept rather than compared on each change: clearing a number to retype it leaves no formula for a moment, and the price must keep following.
   const [following, setFollowing] = useState(() => followsFormula(values?.price ?? null, formulaPrice(values ?? {})));
+  const numOf = (name: string) => (text(name) === "" ? null : Number(text(name)));
   const setNum = (name: string, value: string) => {
-    const next = { ...nums, [name]: value === "" ? null : Number(value) };
+    // From the fields, not the last render: "Apply all" sets several numbers in one go.
+    const held = { price: numOf("price"), weightGrams: numOf("weightGrams"), printTimeMinutes: numOf("printTimeMinutes"), colors: numOf("colors") };
+    const next: Record<string, number | null> = { ...held, [name]: value === "" ? null : Number(value) };
     if (name === "price") setFollowing(followsFormula(next.price ?? null, formulaPrice(next)));
     else {
       next.price = priceAfterNumbers(next.price ?? null, following, next);
@@ -283,6 +287,48 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
     el.value = String(suggestion);
     setNum("price", el.value);
   }
+
+  // What a model page says, as review rows: the words, then the numbers with the price last, so "Apply all" judges it against the new ones.
+  function numberRow(name: "weightGrams" | "printTimeMinutes" | "colors" | "price", value: number | null): ReviewRow[] {
+    if (value === null) return [];
+    const next = String(value);
+    return [
+      {
+        key: name,
+        label: t.print.fields[name].label,
+        now: () => text(name),
+        next,
+        take: taking(() => {
+          const was = text(name);
+          setText(name, next);
+          setNum(name, next);
+          return () => {
+            setText(name, was);
+            setNum(name, was);
+          };
+        }),
+      },
+    ];
+  }
+  function linkRows(r: ModelReading, german: { title: string; description: string }): ReviewRow[] {
+    // The page's own words are kept with the print once one of them is taken.
+    const words = [...textRow("title", german.title), ...textRow("description", german.description)].map((row) => ({
+      ...row,
+      take: () => {
+        originals.current ??= { title: r.title, description: r.description };
+        return row.take();
+      },
+    }));
+    return [
+      ...words,
+      ...numberRow("weightGrams", r.weightGrams),
+      ...numberRow("printTimeMinutes", r.printTimeMinutes),
+      ...numberRow("colors", r.colors),
+      ...numberRow("price", r.price),
+    ];
+  }
+  const sourceUrls = () =>
+    [...(form.current?.querySelectorAll<HTMLInputElement>('input[name="sources.url"]') ?? [])].map((i) => i.value.trim()).filter(Boolean);
 
   // A tip's button, where the app can help: the formula's price at once, or Claude's words for this one field as a review.
   const reviewFor = (code: string): Promise<ReviewResult> =>
@@ -463,6 +509,7 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
               <AddIcon aria-hidden="true" className={ui.iconSize} />
               {t.print.addSource}
             </button>
+            <LinkRefresh form={form} urls={sourceUrls} rowsOf={linkRows} formatMinutes={formatMinutes} />
           </fieldset>
         );
       case "slug":
