@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { averageCosts, filamentCosts } from "./bambuddy";
-import { siteExportSchema } from "./export";
+import { averageCosts, filamentCosts, keptFilamentColors, publicColors, refreshFilamentColors } from "./bambuddy";
+import { siteExport, siteExportSchema } from "./export";
 import { testRuntime, type TestRuntime } from "./testing/runtime";
 
 let rt: TestRuntime;
@@ -50,6 +50,42 @@ describe("filament costs", () => {
 
   it("neverReachesTheSiteExport", () => {
     expect(JSON.stringify(exportedFields())).not.toMatch(/cost/i);
+  });
+});
+
+describe("filament colours", () => {
+  const spool = { material: "PLA", subtype: "Matte", color_name: "Blue", rgba: "5a9be0ff", cost_per_kg: 16 };
+
+  it("publicHoldsNoPrice: one entry per colour, stable and without anything private", () => {
+    const list = publicColors([spool, { ...spool, cost_per_kg: 99 }, { ...spool, color_name: "Azure", archived_at: "2026-01-01T00:00:00Z" }]);
+    expect(list).toEqual([{ name: "Blue", material: "PLA", finish: "Matte", rgba: "5A9BE0FF" }]);
+  });
+
+  it("leavesOutWhatIsNoColour", () => {
+    expect(
+      publicColors([
+        { ...spool, rgba: "red" },
+        { ...spool, color_name: "" },
+        { ...spool, material: null },
+      ]),
+    ).toEqual([]);
+  });
+
+  it("theExportCarriesThemAndKeepsThemWhileBambuddyIsAway", async () => {
+    expect(siteExport(rt).filamentColors).toBeUndefined();
+    rt.fetch = (async () => new Response(JSON.stringify([spool]))) as typeof fetch;
+    await refreshFilamentColors(rt);
+    rt.fetch = (async () => new Response("down", { status: 502 })) as typeof fetch;
+    await refreshFilamentColors(rt);
+    expect(siteExport(rt).filamentColors).toEqual([{ name: "Blue", material: "PLA", finish: "Matte", rgba: "5A9BE0FF" }]);
+  });
+
+  it("anEmptyInventoryLeavesTheLastList", async () => {
+    rt.fetch = (async () => new Response(JSON.stringify([spool]))) as typeof fetch;
+    await refreshFilamentColors(rt);
+    rt.fetch = (async () => new Response("[]")) as typeof fetch;
+    await refreshFilamentColors(rt);
+    expect(keptFilamentColors(rt)).toHaveLength(1);
   });
 });
 

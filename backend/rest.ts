@@ -20,6 +20,7 @@ import {
   type AddOnInput,
   type AddOnPatch,
 } from "./addons";
+import { refreshFilamentColors } from "./bambuddy";
 import { createCategory, deleteCategory, listCategories, renameCategory } from "./categories";
 import { siteExport, siteExportSchema } from "./export";
 import { movePrint, moveShowcase, setShowcase } from "./order";
@@ -454,7 +455,10 @@ export const REST_OPS: Op<Runtime>[] = [
     tag: "Site",
     ok: { status: 200, description: "The export", schema: siteExportSchema },
     errors: [401],
-    handle: ({ ctx }) => ({ status: 200, body: siteExport(ctx) }),
+    handle: async ({ ctx }) => {
+      await refreshFilamentColors(ctx);
+      return { status: 200, body: siteExport(ctx) };
+    },
   },
   {
     method: "GET",
