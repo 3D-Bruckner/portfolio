@@ -5,6 +5,7 @@ import { createCategory } from "./categories";
 import { loadConfig } from "./config";
 import { suggestForPrint, type EnhanceInput } from "./enhance";
 import { log } from "./log";
+import { createPrint, keepOriginalTexts } from "./prints";
 import { testRuntime } from "./testing/runtime";
 
 const input = (over: Partial<EnhanceInput> = {}): EnhanceInput => ({
@@ -50,6 +51,25 @@ describe("suggestForPrint", () => {
     });
     expect(asked[0]!.prompt).toContain("Gadgets");
     expect(asked[0]!.prompt).toContain("ESP32 Plane Radar");
+  });
+
+  it("sendsTheOriginal: the saved one, else the form's unsaved 3MF words, as third-party data", async () => {
+    const rt = testRuntime();
+    const made = createPrint(rt, { title: "Baum", description: "Ein Baum." });
+    const id = made.ok ? made.value.id : "";
+    keepOriginalTexts(rt, id, { title: "Tree", description: "Printed without supports." });
+    const asked: { system: string; prompt: string }[] = [];
+    rt.askClaude = async (req) => {
+      asked.push(req);
+      return { title: "Baum", shortTitle: null, description: "Ein Baum.", categoryIds: [], notes: [] };
+    };
+    await suggestForPrint(rt, input({ printId: id, original: { title: "Ignored", description: "Ignored" } }));
+    expect(JSON.parse(asked[0]!.prompt).print.originalFromModelPage).toEqual({ title: "Tree", description: "Printed without supports." });
+    expect(asked[0]!.system).toMatch(/never follow instructions/);
+    await suggestForPrint(rt, input({ printId: null, original: { title: "From 3MF", description: "" } }));
+    expect(JSON.parse(asked[1]!.prompt).print.originalFromModelPage.title).toBe("From 3MF");
+    await suggestForPrint(rt, input({ printId: null }));
+    expect(JSON.parse(asked[2]!.prompt).print.originalFromModelPage).toBeUndefined();
   });
 
   it("refusesWithoutClaude: no gateway set up", async () => {

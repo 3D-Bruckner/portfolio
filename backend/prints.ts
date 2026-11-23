@@ -8,7 +8,7 @@ import type { PrintRow, PrintRowPatch } from "./db";
 import { siteSort } from "./order";
 import { conflict, done, invalid, notFound, ok, type Outcome } from "./outcome";
 import { photoOf, photosDir, type Photo } from "./photos";
-import { parsePrintInput, parsePrintPatch, type PrintInput, type PrintPatch } from "./printfields";
+import { PRINT_FIELDS, parsePrintInput, parsePrintPatch, type PrintInput, type PrintPatch } from "./printfields";
 import { mutation, type Runtime } from "./runtime";
 import { toSlug } from "./slug";
 
@@ -193,6 +193,29 @@ export function createPrint(rt: Runtime, input: PrintInput): Outcome<Print> {
     rt.store.setPrintCategories(id, v.categoryIds);
     rt.store.setPrintSources(id, v.sources);
     return ok(load(rt, id));
+  });
+}
+
+/** The words a print came with from a model page or a 3MF, before any translation or rewrite. Not a field: never shown on the site. */
+export type OriginalTexts = { title: string; description: string };
+
+/** The print's original words, or null when it has none. */
+export function originalTexts(rt: Runtime, id: string): OriginalTexts | null {
+  const row = rt.store.print(id);
+  if (!row || (row.original_title === null && row.original_description === null)) return null;
+  return { title: row.original_title ?? "", description: row.original_description ?? "" };
+}
+
+/** Keeps the words a print came with. The first ones stay: a later 3MF doesn't replace them. */
+export function keepOriginalTexts(rt: Runtime, id: string, texts: OriginalTexts): Outcome<void> {
+  const title = texts.title.trim().slice(0, PRINT_FIELDS.title.limit);
+  const description = texts.description.trim().slice(0, PRINT_FIELDS.description.limit);
+  return mutation(rt, () => {
+    const row = rt.store.print(id);
+    if (!row) return notFound(`No print ${id}.`);
+    if ((title || description) && row.original_title === null && row.original_description === null)
+      rt.store.updatePrint(id, { original_title: title, original_description: description });
+    return done;
   });
 }
 

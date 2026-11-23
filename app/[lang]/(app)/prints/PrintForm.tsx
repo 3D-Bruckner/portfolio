@@ -72,6 +72,8 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
   // the description only into empty fields, the MakerWorld page only when no source is set. Nothing is saved until the form is.
   function fill(r: ThreeMfReading): FillPart[] {
     const filled: FillPart[] = [];
+    // The file's own words, before any translation: saved with the print as context for Claude.
+    if (r.title || r.description) originals.current ??= { title: r.title ?? "", description: r.description ?? "" };
     const put = (name: FillPart, value: string | number | undefined, onlyIfEmpty = false) => {
       const el = form.current?.elements.namedItem(name);
       if (value === undefined || !(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) return;
@@ -101,6 +103,8 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
     if (ai && (filled.includes("title") || filled.includes("description"))) translate();
     return filled;
   }
+
+  const originals = useRef<{ title: string; description: string } | null>(null);
 
   // A 3MF's words are mostly English and the site is German. Each field takes the translation only if it still holds what was sent.
   const [translating, setTranslating] = useState(false);
@@ -139,6 +143,7 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
       weightGrams: num("weightGrams"),
       printTimeMinutes: num("printTimeMinutes"),
       colors: num("colors"),
+      original: originals.current,
     };
   }
   const setText = (name: string, value: string) => {
@@ -231,6 +236,10 @@ export function PrintForm({ printId, specs, categories, values, slugFixed, ai = 
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    if (originals.current) {
+      fd.set("_originalTitle", originals.current.title);
+      fd.set("_originalDescription", originals.current.description);
+    }
     if (printId !== null && shown.current) {
       const now = snapshot(e.currentTarget);
       fd.set("_fields", FORM_ORDER.filter((n) => now[n] !== shown.current![n]).join(","));

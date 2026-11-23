@@ -10,6 +10,7 @@ import { actionPerson } from "@/app/_lib/signin";
 import { runtime } from "@/app/_lib/runtime";
 import {
   createCategory,
+  keepOriginalTexts,
   toGerman,
   type Texts,
   createPrint,
@@ -83,13 +84,17 @@ export async function savePrint(id: string | null, _prev: Result | null, fd: For
   const t = await words();
   if (!(await actionPerson())) return { ok: false, error: t.common.signedOut };
   const rt = runtime();
+  // A 3MF's own words, kept with the print as context for Claude.
+  const original = fd.has("_originalTitle") ? { title: String(fd.get("_originalTitle")), description: String(fd.get("_originalDescription") ?? "") } : null;
   if (id === null) {
     const made = createPrint(rt, formValues(fd, "create") as Parameters<typeof createPrint>[1]);
     if (!made.ok) return { ok: false, error: printProblem(made, t, true) };
+    if (original) keepOriginalTexts(rt, made.value.id, original);
     redirect(`/prints/${made.value.id}`);
   }
   const saved = updatePrint(rt, id, formValues(fd, "edit"));
   if (!saved.ok) return { ok: false, error: printProblem(saved, t) };
+  if (original) keepOriginalTexts(rt, id, original);
   refresh();
   return { ok: true, message: t.common.saved };
 }

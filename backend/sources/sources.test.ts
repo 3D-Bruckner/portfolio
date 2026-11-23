@@ -1,7 +1,7 @@
 // Importing from a model page with fake sites (rt.fetch): never the real ones.
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
-import { getPrint, listPrints } from "../prints";
+import { getPrint, keepOriginalTexts, listPrints, originalTexts } from "../prints";
 import { testRuntime } from "../testing/runtime";
 import { importFromLink, modelLink, printOfModel } from ".";
 import { draftFrom as fromMakerWorld, MAKERWORLD_API } from "./makerworld";
@@ -231,6 +231,12 @@ describe("importFromLink", () => {
     rt.askClaude = async () => ({ title: "Flugradar", description: "Zeigt Flugzeuge." });
     const got = await importFromLink(rt, "https://makerworld.com/en/models/2872376");
     expect(got.ok && got.value.print).toMatchObject({ title: "Flugradar", description: "Zeigt Flugzeuge.", weightGrams: 9 });
+    // The words it came with stay, for Claude later, and a later file doesn't replace them.
+    const id = got.ok ? got.value.print.id : "";
+    expect(originalTexts(rt, id)?.title).toBe(design.title);
+    expect(originalTexts(rt, id)?.description).toContain("ESP32 C3 Plane Radar");
+    keepOriginalTexts(rt, id, { title: "Another", description: "Other" });
+    expect(originalTexts(rt, id)?.title).toBe(design.title);
 
     const failing = await withSites({ [MAKERWORLD_API]: { body: design } });
     failing.rt.askClaude = async () => {
