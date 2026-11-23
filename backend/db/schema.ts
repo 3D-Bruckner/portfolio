@@ -1,6 +1,6 @@
 // The tables of upload.sqlite as kysely sees them, one entry per table that backend/db/migrations.ts creates. Rows come out of the store
 // as Selectable<…> (snake_case, as stored); the domain turns them into its own types.
-import type { Insertable, Selectable, Updateable } from "kysely";
+import type { Generated, Insertable, Selectable, Updateable } from "kysely";
 
 export interface CategoriesTable {
   id: string;
@@ -26,6 +26,9 @@ export interface PrintsTable {
   position: number | null;
   showcase_position: number | null;
   cover_photo_id: string | null;
+  /** The model page's or 3MF's own words, as they came (before any translation); null when the print has none. */
+  original_title: Generated<string | null>;
+  original_description: Generated<string | null>;
   created_at: string;
   updated_at: string;
 }

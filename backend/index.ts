@@ -33,6 +33,9 @@ export {
 } from "./photos";
 export { PRINT_FIELDS, parsePrintInput, parsePrintPatch, printInputSchema, printPatchSchema } from "./printfields";
 export {
+  keepOriginalTexts,
+  originalTexts,
+  type OriginalTexts,
   createPrint,
   deletePrint,
   findPrint,

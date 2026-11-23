@@ -104,4 +104,13 @@ export const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    // The words a print came with from a model page or a 3MF, before any translation or rewrite: context for Claude later. Null for a
+    // print that has none, and for every print made before this.
+    name: "original_texts",
+    sql: `
+      alter table prints add column original_title text;
+      alter table prints add column original_description text;
+    `,
+  },
 ];
