@@ -27,6 +27,8 @@ export default async function SignInPage({ params, searchParams }: PageProps<"/[
   const query = await searchParams;
   const { signIn } = runtime();
   const refused = refusedSignIn(query, signIn);
+  // Only what this app offers goes to the browser; the kit also reports passkeys, which it doesn't (ADR 0004).
+  const { email, providers } = signInMethods(signIn);
   return (
     <div className="mx-auto max-w-sm">
       <h1 className="text-xl font-semibold">{t.title}</h1>
@@ -36,7 +38,7 @@ export default async function SignInPage({ params, searchParams }: PageProps<"/[
           {refusal(refused, t.refused)}
         </p>
       )}
-      <SignInForm next={safeNext(query.next)} methods={signInMethods(signIn)} signInPage={SIGN_IN_PAGE} mailNotSent={MAIL_NOT_SENT.code} />
+      <SignInForm next={safeNext(query.next)} methods={{ email, providers }} signInPage={SIGN_IN_PAGE} mailNotSent={MAIL_NOT_SENT.code} />
     </div>
   );
 }
