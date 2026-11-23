@@ -29,10 +29,10 @@ export function testRuntime(env: Record<string, string> = {}, mail: MailWording 
   const dataDir = mkdtempSync(join(process.env.DATA_DIR!, "rt-"));
   const all: Record<string, string | undefined> = {
     NODE_ENV: "test",
-    PUBLIC_URL: "https://upload.example.com",
-    UPLOAD_SECRET: "s".repeat(32),
-    UPLOAD_ALLOWED_EMAILS: MARCEL,
-    UPLOAD_SMTP_URL: "smtp://127.0.0.1:2525",
+    PUBLIC_URL: "https://portfolio.example.com",
+    PORTFOLIO_SECRET: "s".repeat(32),
+    PORTFOLIO_ALLOWED_EMAILS: MARCEL,
+    PORTFOLIO_SMTP_URL: "smtp://127.0.0.1:2525",
     DATA_DIR: dataDir,
     ...env,
   };

@@ -72,7 +72,7 @@ describe("siteExport", () => {
           sha256: vase.photos[0]!.sha256,
           width: 2400,
           height: 1800,
-          url: `https://upload.example.com/api/v1/photos/${vase.photos[0]!.id}`,
+          url: `https://portfolio.example.com/api/v1/photos/${vase.photos[0]!.id}`,
         },
       ],
     });

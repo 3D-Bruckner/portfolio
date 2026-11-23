@@ -14,7 +14,7 @@ let rt: TestRuntime;
 let tmp: string;
 beforeEach(() => {
   rt = testRuntime();
-  tmp = mkdtempSync(join(process.env.DATA_DIR!, "upload-"));
+  tmp = mkdtempSync(join(process.env.DATA_DIR!, "portfolio-"));
 });
 afterEach(() => rt.store.close());
 

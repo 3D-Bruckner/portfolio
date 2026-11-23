@@ -1,4 +1,4 @@
-// A print from a model page's link: paste the address of a model on MakerWorld, Printables or Thingiverse and upload makes the draft
+// A print from a model page's link: paste the address of a model on MakerWorld, Printables or Thingiverse and portfolio makes the draft
 // from what the site says about it, so in the best case nothing is typed by hand. Each site's reader (makerworld.ts, printables.ts,
 // thingiverse.ts) turns its answer into a draft: the title, the description as plain text, the page as its source, the slicer's numbers
 // where the site has them (the time put onto Marcel's A1, printer.ts) with the site's price, and its pictures. Here the draft becomes a
@@ -38,7 +38,7 @@ export type Imported = {
   scaled: { from: string; factor: number; to: string } | null;
 };
 
-/** The site and model a link names, or null when it is no model page upload reads. */
+/** The site and model a link names, or null when it is no model page portfolio reads. */
 export function modelLink(input: string): { reader: Reader; id: string; url: URL } | null {
   let url: URL;
   try {
@@ -97,7 +97,7 @@ export async function importFromLink(rt: Runtime, link: string): Promise<Outcome
   ].slice(0, PHOTO_MAX);
   let photos = 0;
   let skipped = 0;
-  const dir = mkdtempSync(join(tmpdir(), "upload-import-"));
+  const dir = mkdtempSync(join(tmpdir(), "portfolio-import-"));
   try {
     for (const [i, url] of pictures.entries()) {
       const file = join(dir, `${i}.jpg`);

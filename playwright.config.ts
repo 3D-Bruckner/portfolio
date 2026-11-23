@@ -7,7 +7,7 @@ import { defineConfig } from "@playwright/test";
 
 const PORT = 3310;
 // Made once, in the main process; the workers that load this file again inherit it.
-process.env.E2E_DATA_DIR ??= mkdtempSync(join(tmpdir(), "upload-e2e-"));
+process.env.E2E_DATA_DIR ??= mkdtempSync(join(tmpdir(), "portfolio-e2e-"));
 
 export default defineConfig({
   testDir: "e2e",
@@ -29,12 +29,12 @@ export default defineConfig({
       DATA_DIR: process.env.E2E_DATA_DIR,
       PUBLIC_URL: `http://localhost:${PORT}`,
       PORT: String(PORT),
-      UPLOAD_E2E: "1",
-      UPLOAD_SECRET: "e2e-secret-".padEnd(48, "x"),
-      UPLOAD_ALLOWED_EMAILS: "marcel@example.com",
+      PORTFOLIO_E2E: "1",
+      PORTFOLIO_SECRET: "e2e-secret-".padEnd(48, "x"),
+      PORTFOLIO_ALLOWED_EMAILS: "marcel@example.com",
       // Sign-in by email is on, so the instance has a way in; the tests never send a mail.
-      UPLOAD_SMTP_URL: "smtp://127.0.0.1:2525",
-      UPLOAD_SMTP_FROM: "upload <noreply@example.com>",
+      PORTFOLIO_SMTP_URL: "smtp://127.0.0.1:2525",
+      PORTFOLIO_SMTP_FROM: "portfolio <noreply@example.com>",
     },
   },
 });

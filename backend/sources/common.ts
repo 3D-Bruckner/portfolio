@@ -8,7 +8,7 @@ import type { Runtime } from "../runtime";
 import { plainText } from "../threemf";
 import { onOurPrinter } from "./printer";
 
-export const USER_AGENT = "3dbruckner-upload (+https://upload.3dbruckner.de)";
+export const USER_AGENT = "3dbruckner-portfolio (+https://portfolio.3dbruckner.de)";
 export const TIMEOUT_MS = 20_000;
 
 /** What a reader makes of a model page: the print's fields, its pictures' addresses, and where its numbers came from. */
@@ -50,7 +50,7 @@ export async function getJson<T>(rt: Runtime, site: string, url: string, init: R
     const parsed = schema.safeParse(await r.json());
     if (!parsed.success) {
       rt.log.warn({ site, issues: parsed.error.issues.slice(0, 3) }, "import: an answer of another shape");
-      return invalid(`${site} answered with something upload doesn't read; the import needs a change.`);
+      return invalid(`${site} answered with something portfolio doesn't read; the import needs a change.`);
     }
     return ok(parsed.data);
   } catch (e) {

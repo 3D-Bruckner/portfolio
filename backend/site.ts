@@ -1,6 +1,6 @@
 // The site build's trigger: every change the site shows marks the site changed (rt.onSiteChange → markSiteChanged); once nothing has
-// changed for a quiet minute, tick() dispatches the site's workflow (UPLOAD_SITE_REPO's UPLOAD_SITE_WORKFLOW, 3D-Bruckner/3dbruckner's
-// pages.yml) on GitHub with UPLOAD_GITHUB_TOKEN, so a burst of saves is one build. What is pending lives in site_state, so a restart
+// changed for a quiet minute, tick() dispatches the site's workflow (PORTFOLIO_SITE_REPO's PORTFOLIO_SITE_WORKFLOW, 3D-Bruckner/3dbruckner's
+// pages.yml) on GitHub with PORTFOLIO_GITHUB_TOKEN, so a burst of saves is one build. What is pending lives in site_state, so a restart
 // inside the quiet minute still builds. A failed dispatch stays pending and is tried again after 1, 2, 4 … minutes, at most 30. Without
 // a token (development) nothing is dispatched; that is logged once. The process ticks every 10 s (startSiteTimer, from
 // instrumentation.ts). The token is never logged nor stored.
@@ -78,7 +78,7 @@ export async function tick(rt: Runtime): Promise<void> {
   if (!token) {
     if (!toldNoToken.has(rt.store)) {
       toldNoToken.add(rt.store);
-      rt.log.info("UPLOAD_GITHUB_TOKEN is not set: the site build is not triggered");
+      rt.log.info("PORTFOLIO_GITHUB_TOKEN is not set: the site build is not triggered");
     }
     return;
   }
@@ -148,7 +148,7 @@ const githubHeaders = (token: string): Record<string, string> => ({
   authorization: `Bearer ${token}`,
   accept: "application/vnd.github+json",
   "x-github-api-version": GITHUB_API_VERSION,
-  "user-agent": "3dbruckner-upload",
+  "user-agent": "3dbruckner-portfolio",
 });
 
 /** What went wrong with a request that threw (a timeout, no network), without anything of the request itself. */
@@ -160,7 +160,7 @@ async function dispatch(rt: Runtime, token: string): Promise<string | null> {
     const r = await rt.fetch(workflowUrl(rt, "/dispatches"), {
       method: "POST",
       headers: { ...githubHeaders(token), "content-type": "application/json" },
-      body: JSON.stringify({ ref: "main", inputs: { source: "upload" } }),
+      body: JSON.stringify({ ref: "main", inputs: { source: "portfolio" } }),
       signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
     });
     // 204 as documented; any 2xx means it was taken (GitHub may answer 200 with the run's details).

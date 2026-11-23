@@ -1,11 +1,11 @@
 // Claude for "Enhance with AI", through Marcel's Claude gateway (https://claude.marceltov.de, in his homelab): OCP, an
 // OpenAI-compatible proxy that runs Claude Code on his subscription for the apps he builds, so the Claude Code program and its
-// token live in one place and not in every app. upload asks with the OpenAI chat-completions format and a JSON schema for the answer
-// (response_format json_schema), and reads the JSON back from the message. UPLOAD_CLAUDE_URL is the gateway's address,
-// UPLOAD_CLAUDE_TOKEN upload's key there; without both, the app offers no AI. Each call counts against his plan's limits.
+// token live in one place and not in every app. portfolio asks with the OpenAI chat-completions format and a JSON schema for the answer
+// (response_format json_schema), and reads the JSON back from the message. PORTFOLIO_CLAUDE_URL is the gateway's address,
+// PORTFOLIO_CLAUDE_TOKEN portfolio's key there; without both, the app offers no AI. Each call counts against his plan's limits.
 // Tests replace rt.askClaude: they never reach Claude.
 //
-//   POST <UPLOAD_CLAUDE_URL>/v1/chat/completions   Authorization: Bearer <token>
+//   POST <PORTFOLIO_CLAUDE_URL>/v1/chat/completions   Authorization: Bearer <token>
 //   { model, messages: [{role: "system"}, {role: "user"}], response_format: {type: "json_schema", json_schema: {name, schema}} }
 //   200 { choices: [{ message: { content: "<JSON matching the schema>" } }] }   anything else: the request failed
 import type { Logger } from "pino";
@@ -17,7 +17,7 @@ export type AskClaude = (req: { system: string; prompt: string; schema: Record<s
 const TIMEOUT_MS = 100_000;
 const MODEL = "claude-sonnet-5-5";
 
-/** The asker for this config, or null without UPLOAD_CLAUDE_URL and UPLOAD_CLAUDE_TOKEN (then the app offers no AI). */
+/** The asker for this config, or null without PORTFOLIO_CLAUDE_URL and PORTFOLIO_CLAUDE_TOKEN (then the app offers no AI). */
 export function claudeAsker(config: Config, log: Logger, fetcher: typeof fetch = globalThis.fetch): AskClaude | null {
   const { claudeUrl: url, claudeToken: token } = config;
   if (!url || !token) return null;

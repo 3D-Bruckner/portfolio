@@ -22,7 +22,7 @@ beforeEach(() => {
 });
 afterEach(() => rt.store.close());
 
-const BASE = "https://upload.example.com";
+const BASE = "https://portfolio.example.com";
 const WRITER: RestCaller = { person: "u1", actor: MARCEL, scope: "read+write", kind: "token" };
 
 function value<T>(o: Outcome<T>): T {
@@ -280,7 +280,7 @@ describe("the table", () => {
   it("openapiIsCurrent: the committed openapi.json is the table's document (npm run generate writes it)", () => {
     const committed = JSON.parse(readFileSync(join(import.meta.dirname, "..", "openapi.json"), "utf8")) as unknown;
     expect(committed).toEqual(openApiFile());
-    expect(openApiFile()).toEqual(openApiDocument(REST_OPS, { ...OPEN_API, serverUrl: "https://upload.3dbruckner.de/api/v1" }));
+    expect(openApiFile()).toEqual(openApiDocument(REST_OPS, { ...OPEN_API, serverUrl: "https://portfolio.3dbruckner.de/api/v1" }));
   });
 
   it("names the MCP tool each operation mirrors, or why none (export and photo bytes)", () => {

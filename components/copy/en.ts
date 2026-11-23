@@ -4,7 +4,7 @@ const euro = (n: number) => n.toLocaleString("en-IE", { style: "currency", curre
 
 export const en = {
   app: {
-    name: "upload",
+    name: "portfolio",
     description: "Where 3dbruckner.de's prints are put in.",
   },
   language: {
@@ -62,10 +62,10 @@ export const en = {
   },
   // The sign-in mail (next-app-kit's texts), in the language the page was in when the code was asked for.
   mail: {
-    subject: (code: string) => `${code} is your sign-in code for 3D Bruckner Upload`,
+    subject: (code: string) => `${code} is your sign-in code for 3D Bruckner Portfolio`,
     body: (code: string, link: string | undefined) =>
       [
-        `Your sign-in code for 3D Bruckner Upload: ${code}`,
+        `Your sign-in code for 3D Bruckner Portfolio: ${code}`,
         ...(link ? ["", "Or sign in with this link:", link] : []),
         "",
         "The code and the link are valid for a few minutes. If you didn't ask for them, ignore this mail.",
@@ -120,7 +120,7 @@ export const en = {
       already: "This model is a print already; it's open now.",
       noModel: "There is no model at this address.",
       unreachable: "The site can't be reached right now. Try again in a moment.",
-      thingiverse: "Thingiverse needs an app token on this server (UPLOAD_THINGIVERSE_TOKEN).",
+      thingiverse: "Thingiverse needs an app token on this server (PORTFOLIO_THINGIVERSE_TOKEN).",
     },
     emptyPublished: "No print is published yet. Open a draft and publish it.",
     emptyDrafts: "No drafts. Start one with “New print”.",
@@ -199,7 +199,7 @@ export const en = {
       translating: "Claude is translating…",
       undo: "Undo",
       errors: {
-        off: "AI isn't set up on this server (UPLOAD_CLAUDE_URL).",
+        off: "AI isn't set up on this server (PORTFOLIO_CLAUDE_URL).",
         empty: "Give it a title or a description to start from.",
         failed: "Claude didn't answer. Try again in a moment.",
       },

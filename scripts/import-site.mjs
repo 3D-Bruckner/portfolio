@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// One-off import of 3dbruckner.de's prints into upload (the spec's Migration, step 1): reads src/assets/printed/<slug>/ (meta.yaml and the
+// One-off import of 3dbruckner.de's prints into portfolio (the spec's Migration, step 1): reads src/assets/printed/<slug>/ (meta.yaml and the
 // photos) and the start page's showcases (homePrints in src/pages/index.astro) from a checkout of 3D-Bruckner/3dbruckner, and creates each
-// print through upload's REST API with its slug, fields, categories, photos in filename order and cover, published. Then the showcases
+// print through portfolio's REST API with its slug, fields, categories, photos in filename order and cover, published. Then the showcases
 // in the start page's order and the rest in today's portfolio order (by folder name).
 //
-//   UPLOAD_URL=https://upload.3dbruckner.de UPLOAD_TOKEN=upl_… node scripts/import-site.mjs ../3dbruckner [--dry-run]
+//   PORTFOLIO_URL=https://portfolio.3dbruckner.de PORTFOLIO_TOKEN=upl_… node scripts/import-site.mjs ../3dbruckner [--dry-run]
 //
-// The token must be allowed to write. A print whose slug is already in upload is left as it is, so a run that stopped half-way can run
+// The token must be allowed to write. A print whose slug is already in portfolio is left as it is, so a run that stopped half-way can run
 // again; a print left without photos (a failed upload) is a draft and is finished by the next run. js-yaml comes from the site checkout.
 import { readdirSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -14,10 +14,10 @@ import { join, resolve } from "node:path";
 
 const site = resolve(process.argv[2] ?? "");
 const dryRun = process.argv.includes("--dry-run");
-const base = (process.env.UPLOAD_URL ?? "").replace(/\/$/, "");
-const token = process.env.UPLOAD_TOKEN ?? "";
+const base = (process.env.PORTFOLIO_URL ?? "").replace(/\/$/, "");
+const token = process.env.PORTFOLIO_TOKEN ?? "";
 if (!process.argv[2] || !base || (!token && !dryRun)) {
-  console.error("usage: UPLOAD_URL=… UPLOAD_TOKEN=… node scripts/import-site.mjs <checkout of 3D-Bruckner/3dbruckner> [--dry-run]");
+  console.error("usage: PORTFOLIO_URL=… PORTFOLIO_TOKEN=… node scripts/import-site.mjs <checkout of 3D-Bruckner/3dbruckner> [--dry-run]");
   process.exit(2);
 }
 const yaml = createRequire(join(site, "package.json"))("js-yaml");
@@ -30,7 +30,7 @@ const folders = readdirSync(printedDir, { withFileTypes: true })
   .map((d) => d.name)
   .sort();
 // A print's address on the site is its folder's name as the site's toSlug writes it (zigaretten-anhänger: /portfolio/zigaretten-anhaenger);
-// upload keeps that address as the slug, so every page keeps its address.
+// portfolio keeps that address as the slug, so every page keeps its address.
 const toSlug = (name) =>
   name
     .toLowerCase()
@@ -63,7 +63,7 @@ if (dryRun) {
   process.exit(0);
 }
 
-// upload's REST API.
+// portfolio's REST API.
 async function api(method, path, body) {
   const r = await fetch(`${base}/api/v1${path}`, {
     method,

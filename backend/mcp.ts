@@ -38,13 +38,13 @@ import { importFromLink } from "./sources";
 
 /** The server's own text: what a client may drop, so nothing here is needed after a call (that is each result's guidance). */
 export const MCP_INSTRUCTIONS = [
-  "3D Bruckner Upload is where the prints on 3dbruckner.de's portfolio are put in: their details, photos, categories and order. Marcel runs it.",
+  "3D Bruckner Portfolio is where the prints on 3dbruckner.de's portfolio are put in: their details, photos, categories and order. Marcel runs it.",
   "Photos are added only in the web app's form, at a print's url (usually from his phone); the tools here order, crop and delete photos but can't upload them. The one exception: import_from_link brings a model page's pictures along with its details.",
   "A new print is a draft, and a draft is not on the site; publish_print puts it there. The site rebuilds itself about a minute after the last change it shows (site_build_status).",
   "A print's description is German, as the site shows it; everything else here is English.",
 ].join(" ");
 
-const SERVER_INFO = { name: "3dbruckner-upload", version: "1" };
+const SERVER_INFO = { name: "3dbruckner-portfolio", version: "1" };
 
 // ---- what the tools say
 

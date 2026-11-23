@@ -5,8 +5,8 @@ import type { MetadataRoute } from "next";
 // (app/[lang]/layout.tsx) follows it. The icons are made by scripts/generate-icons.mjs from app/icon.svg.
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "3D Bruckner Upload",
-    short_name: "Upload",
+    name: "3D Bruckner Portfolio",
+    short_name: "Portfolio",
     description: "Prints for 3dbruckner.de: photos and details, from the phone.",
     start_url: "/",
     scope: "/",

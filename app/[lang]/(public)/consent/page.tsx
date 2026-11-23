@@ -7,7 +7,7 @@ import { SIGN_IN_PAGE } from "@/backend";
 import { copyFor } from "@/components/copy";
 import { ConsentForm } from "./ConsentForm";
 
-// The consent page, copied from next-app-kit's examples/minimal (its README, "The consent page") in upload's words: Better Auth sends the
+// The consent page, copied from next-app-kit's examples/minimal (its README, "The consent page") in portfolio's words: Better Auth sends the
 // signed-in person here during an MCP client's or a script's OAuth sign-in (openAuth's pages.consent), with the client and its scopes in
 // a signed query; ConsentForm answers it, and the client gets its code.
 export async function generateMetadata({ params }: PageProps<"/[lang]/consent">): Promise<Metadata> {
@@ -21,7 +21,7 @@ export default async function ConsentPage({ params, searchParams }: PageProps<"/
   const query = await searchParams;
   const rt = runtime();
   const auth = await rt.auth();
-  // The kit's personOf without UPLOAD_DEV_USER, as the kit's example does: a consent is given by someone really signed in.
+  // The kit's personOf without PORTFOLIO_DEV_USER, as the kit's example does: a consent is given by someone really signed in.
   const person = await personOf(h, auth);
   // Not signed in: to the sign-in page, carrying this page and its signed query as `?next=`, so the person comes back here.
   if (!person) {

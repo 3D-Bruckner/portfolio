@@ -77,7 +77,7 @@ describe("POST /api/prints/[id]/photos", () => {
   it("picks the language itself, as the pages do: the switch's cookie over the browser's (proxy.ts doesn't run on this route)", async () => {
     const heic = photoFile("image/heic", "IMG_0001.HEIC");
     const r = await post(heic, "de", {});
-    const withCookie = new Request(r, { headers: { ...Object.fromEntries(r.headers), cookie: "upload_lang=en" } });
+    const withCookie = new Request(r, { headers: { ...Object.fromEntries(r.headers), cookie: "portfolio_lang=en" } });
     expect((await answer(await uploadPhoto(rt, withCookie, print.id))).body).toEqual({ error: "Please upload it as a JPEG" });
   });
 
@@ -88,7 +88,7 @@ describe("POST /api/prints/[id]/photos", () => {
     expect(storedFiles()).toEqual([]);
   });
 
-  it("answers 413 for a photo over UPLOAD_MAX_PHOTO_MB", async () => {
+  it("answers 413 for a photo over PORTFOLIO_MAX_PHOTO_MB", async () => {
     rt.config.maxPhotoMb = 1;
     const big = new File([new Uint8Array(1024 * 1024 + 1)], "big.jpg", { type: "image/jpeg" });
     expect(await answer(await uploadPhoto(rt, await post(big), print.id))).toEqual({ status: 413, body: { error: "Dieses Foto ist zu groß." } });

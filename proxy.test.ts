@@ -14,11 +14,11 @@ describe("proxy", () => {
   });
 
   it("prefers the language picked in the switch (its cookie) over the browser's", () => {
-    expect(rewrite(get("/", { "accept-language": "de", cookie: "upload_lang=en" }))).toBe("http://localhost/en");
+    expect(rewrite(get("/", { "accept-language": "de", cookie: "portfolio_lang=en" }))).toBe("http://localhost/en");
   });
 
   it("passes the language on as a request header", () => {
-    expect(get("/", { "accept-language": "de" }).headers.get("x-middleware-request-x-upload-lang")).toBe("de");
+    expect(get("/", { "accept-language": "de" }).headers.get("x-middleware-request-x-portfolio-lang")).toBe("de");
   });
 
   it("bodiesBypassProxy: never runs on a route handler, so no post is cut at Next's 10 MB proxied-body limit (a photo upload)", () => {

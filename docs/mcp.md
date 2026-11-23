@@ -1,6 +1,6 @@
 # MCP tools
 
-upload's MCP server is at `<PUBLIC_URL>/mcp` (Streamable HTTP, POST only), for Claude and any MCP client. A client signs in with OAuth (next-app-kit's: the client registers itself, Marcel signs in on the app's own sign-in page and agrees on `/consent`); the allowlist (`UPLOAD_ALLOWED_EMAILS`) applies. The tools are in `backend/mcp.ts`.
+portfolio's MCP server is at `<PUBLIC_URL>/mcp` (Streamable HTTP, POST only), for Claude and any MCP client. A client signs in with OAuth (next-app-kit's: the client registers itself, Marcel signs in on the app's own sign-in page and agrees on `/consent`); the allowlist (`PORTFOLIO_ALLOWED_EMAILS`) applies. The tools are in `backend/mcp.ts`.
 
 ## How the tools answer
 

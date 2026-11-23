@@ -6,6 +6,6 @@ export async function register(): Promise<void> {
   const { log, startSiteBuilds } = await import("@/backend");
   const { runtime } = await import("@/app/_lib/runtime");
   const rt = runtime();
-  log.info({ publicUrl: rt.config.publicUrl, allowed: rt.config.allowedEmails.length, devUser: Boolean(rt.config.devUser) }, "upload started");
+  log.info({ publicUrl: rt.config.publicUrl, allowed: rt.config.allowedEmails.length, devUser: Boolean(rt.config.devUser) }, "portfolio started");
   if (process.env.NEXT_PHASE !== "phase-production-build") startSiteBuilds(rt);
 }

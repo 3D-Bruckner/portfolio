@@ -38,10 +38,10 @@ import { buildStatus } from "./site";
 import { importFromLink } from "./sources";
 
 /** Where the committed openapi.json says the API is; a running instance serves its own at <PUBLIC_URL>/api/v1/openapi.json. */
-export const PRODUCTION_URL = "https://upload.3dbruckner.de";
+export const PRODUCTION_URL = "https://portfolio.3dbruckner.de";
 
 export const OPEN_API: OpenApiInfo = {
-  title: "3D Bruckner Upload API",
+  title: "3D Bruckner Portfolio API",
   version: "1",
   description:
     "3dbruckner.de's prints: their fields, photos, categories and order, and the export the site build reads. Every operation but the export and a photo's bytes mirrors an MCP tool of /mcp, named in its description.",

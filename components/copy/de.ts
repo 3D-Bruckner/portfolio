@@ -5,7 +5,7 @@ const euro = (n: number) => n.toLocaleString("de-DE", { style: "currency", curre
 
 export const de: Copy = {
   app: {
-    name: "upload",
+    name: "portfolio",
     description: "Hier kommen die Drucke von 3dbruckner.de hinein.",
   },
   language: {
@@ -62,10 +62,10 @@ export const de: Copy = {
     failed: "Das hat nicht geklappt. Fang in der App, die dich hierher geschickt hat, noch einmal an.",
   },
   mail: {
-    subject: (code: string) => `${code} ist dein Anmeldecode für 3D Bruckner Upload`,
+    subject: (code: string) => `${code} ist dein Anmeldecode für 3D Bruckner Portfolio`,
     body: (code: string, link: string | undefined) =>
       [
-        `Dein Anmeldecode für 3D Bruckner Upload: ${code}`,
+        `Dein Anmeldecode für 3D Bruckner Portfolio: ${code}`,
         ...(link ? ["", "Oder melde dich mit diesem Link an:", link] : []),
         "",
         "Code und Link gelten ein paar Minuten. Wenn du sie nicht angefordert hast, ignoriere diese Mail.",
@@ -119,7 +119,7 @@ export const de: Copy = {
       already: "Dieses Modell ist schon ein Druck; er ist jetzt geöffnet.",
       noModel: "Unter dieser Adresse gibt es kein Modell.",
       unreachable: "Die Seite ist gerade nicht erreichbar. Versuch es gleich noch einmal.",
-      thingiverse: "Für Thingiverse fehlt auf diesem Server der App-Token (UPLOAD_THINGIVERSE_TOKEN).",
+      thingiverse: "Für Thingiverse fehlt auf diesem Server der App-Token (PORTFOLIO_THINGIVERSE_TOKEN).",
     },
     emptyPublished: "Noch ist kein Druck veröffentlicht. Öffne einen Entwurf und veröffentliche ihn.",
     emptyDrafts: "Keine Entwürfe. Fang einen mit „Neuer Druck“ an.",
@@ -165,7 +165,7 @@ export const de: Copy = {
       translating: "Claude übersetzt…",
       undo: "Rückgängig",
       errors: {
-        off: "KI ist auf diesem Server nicht eingerichtet (UPLOAD_CLAUDE_URL).",
+        off: "KI ist auf diesem Server nicht eingerichtet (PORTFOLIO_CLAUDE_URL).",
         empty: "Gib einen Titel oder eine Beschreibung als Anfang.",
         failed: "Claude hat nicht geantwortet. Versuch es gleich noch einmal.",
       },

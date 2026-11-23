@@ -5,7 +5,7 @@
 import { personOf, type Auth, type Person, type SignInSettings } from "next-app-kit/signin";
 import { restCaller, type RestCaller } from "next-app-kit/tokens";
 import type { Logger } from "pino";
-import { openUploadAuth, type MailWording } from "./accounts";
+import { openPortfolioAuth, type MailWording } from "./accounts";
 import type { Config } from "./config";
 import { openStore, type Store } from "./db";
 import { claudeAsker, type AskClaude } from "./claude";
@@ -19,19 +19,19 @@ export type Runtime = {
   clock: () => Date;
   fetch: typeof fetch;
   log: Logger;
-  /** Claude through Marcel's gateway (claude.ts), or null without UPLOAD_CLAUDE_URL and UPLOAD_CLAUDE_TOKEN. Tests replace it. */
+  /** Claude through Marcel's gateway (claude.ts), or null without PORTFOLIO_CLAUDE_URL and PORTFOLIO_CLAUDE_TOKEN. Tests replace it. */
   askClaude: AskClaude | null;
   /**
    * Called by every mutation the site shows (a published print, a category in use, the order, the showcases), after it is stored:
    * markSiteChanged, so the site build is dispatched after a quiet minute (site.ts); a failure to mark is logged, not thrown (noteSiteChange).
    */
   onSiteChange: () => void;
-  /** The kit's sign-in settings (UPLOAD_*, from signInFromEnv). */
+  /** The kit's sign-in settings (PORTFOLIO_*, from signInFromEnv). */
   signIn: SignInSettings;
   /** Better Auth, opened at the first call (auth.sqlite migrated then); a failed start is tried again at the next. */
   auth: () => Promise<Auth>;
   /**
-   * Who a page's or the app's own route's request is, by its session cookie: the kit's personOf, with UPLOAD_DEV_USER when it is set
+   * Who a page's or the app's own route's request is, by its session cookie: the kit's personOf, with PORTFOLIO_DEV_USER when it is set
    * (never in production). Tests may set a person of their own.
    */
   person: (h: Headers) => Promise<Person | null>;
@@ -43,7 +43,7 @@ export function openRuntime(config: Config, signIn: SignInSettings, mail: MailWo
   let opened: Promise<Auth> | null = null;
   const auth = (): Promise<Auth> => {
     if (!opened) {
-      const p = openUploadAuth(signIn, mail);
+      const p = openPortfolioAuth(signIn, mail);
       opened = p;
       p.catch(() => {
         if (opened === p) opened = null;

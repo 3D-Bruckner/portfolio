@@ -1,5 +1,5 @@
 // MakerWorld (Bambu Lab's model site). Its design data comes from Bambu Lab's own API host, which answers a plain client
-// (makerworld.com's copy of the same API sits behind bot protection, which upload doesn't try to get around):
+// (makerworld.com's copy of the same API sits behind bot protection, which portfolio doesn't try to get around):
 //   GET https://api.bambulab.com/v1/design-service/design/<id>
 //   title, summary (HTML), designExtension.design_pictures / real_pictures (the gallery), coverUrl, defaultInstanceId and instances[]: the
 //   print profiles, each with prediction (seconds), weight (grams), instanceFilaments[{type, color, usedG}], pictures, and

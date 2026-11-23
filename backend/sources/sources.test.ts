@@ -208,7 +208,7 @@ describe("Thingiverse", () => {
     const without = await withSites(pages);
     expect(await importFromLink(without.rt, "https://www.thingiverse.com/thing:763622")).toMatchObject({ ok: false, reason: "invalid" });
     expect(without.asked).toEqual([]);
-    const { rt, asked } = await withSites(pages, { UPLOAD_THINGIVERSE_TOKEN: "tv-token" });
+    const { rt, asked } = await withSites(pages, { PORTFOLIO_THINGIVERSE_TOKEN: "tv-token" });
     expect(await importFromLink(rt, "https://www.thingiverse.com/thing:763622")).toMatchObject({ ok: true, value: { photos: 1 } });
     expect(new Headers(asked[0]!.init?.headers).get("authorization")).toBe("Bearer tv-token");
   });
