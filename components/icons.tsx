@@ -38,4 +38,5 @@ export {
   Star as CoverIcon,
   Trash2 as DeleteIcon,
   X as CloseIcon,
+  LogOut as SignOutIcon,
 } from "lucide-react";
