@@ -481,6 +481,7 @@ export function PrintForm({ printId, specs, categories, addOns = [], filamentCos
                         <span className="block truncate text-sm font-medium">{t.print.addOn.line(a.name, a.priceCents / 100)}</span>
                         <select
                           aria-label={t.print.addOn.mode(a.name)}
+                          disabled={!hydrated}
                           value={c?.mode ?? "none"}
                           onChange={(e) => choose(a.id, e.currentTarget.value as AddOnChoice["mode"] | "none", c?.quantity ?? 1)}
                           className={ui.input}
@@ -497,6 +498,7 @@ export function PrintForm({ printId, specs, categories, addOns = [], filamentCos
                             type="number"
                             inputMode="numeric"
                             aria-label={t.print.addOn.quantityOf(a.name)}
+                            disabled={!hydrated}
                             min={1}
                             max={1000}
                             step={1}
