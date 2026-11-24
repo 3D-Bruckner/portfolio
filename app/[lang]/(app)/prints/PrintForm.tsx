@@ -44,7 +44,7 @@ type Props = {
   categories: { id: string; name: string }[];
   /** The add-ons to pick from, with their prices per piece. */
   addOns?: { id: string; name: string; priceCents: number; available: boolean }[];
-  /** What a kilogram of filament costs, from Bambuddy; null when it can't be read. Only ever shown here. */
+  /** What a kilogram of filament costs, from print-bridge; null when it can't be read. Only ever shown here. */
   filamentCosts?: { PLA?: number; PETG?: number } | null;
   values: FormValues | null;
   slugFixed: boolean;

@@ -169,7 +169,7 @@ export const en = {
     takeSuggestion: "Use it",
     margin: (cost: number, margin: number) => `Filament cost you ${euro(cost)}, ${euro(margin)} left of the price`,
     belowCost: (cost: number) => `Below cost: the filament alone cost you ${euro(cost)}`,
-    costUnavailable: "Filament cost unavailable: Bambuddy can't be reached.",
+    costUnavailable: "Filament cost unavailable: print-bridge can't be reached.",
     ownPrice: (euros: number) => `Own price, formula: ${euros} €`,
     backToFormula: "Back to formula",
     link: {
