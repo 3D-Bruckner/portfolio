@@ -34,6 +34,7 @@
     "fflate": "0.8.3",
     "kysely": "0.29.8",
     "lucide-react": "^1.76.0",
+    "model-readers": "https://github.com/3D-Bruckner/model-readers/releases/download/v0.1.0/model-readers-0.1.0.tgz",
     "next": "16.4.6",
     "next-app-kit": "https://github.com/Marceltov/next-app-kit/releases/download/v0.1.7/next-app-kit-0.1.7.tgz",
     "nodemailer": "10.5.0",
