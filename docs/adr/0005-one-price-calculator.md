@@ -9,7 +9,7 @@ The portfolio and 3dbruckner.de each held a copy of the price formula, kept in s
 
 ## Considered Options
 
-- A small package, `Marceltov/print-pricing`, that both install from a release tag.
+- A small package, `3D-Bruckner/print-pricing` (until 2026-11-27 `Marceltov/print-pricing`), that both install from a release tag.
 - The formula stays in the portfolio, which exports its rates. The website would still need its own copy of the code.
 - Only the rates are shared, and each side keeps its own formula.
 
